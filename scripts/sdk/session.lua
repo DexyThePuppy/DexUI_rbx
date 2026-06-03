@@ -48,6 +48,8 @@ return function(manifest, DexUI)
 		loop = {},
 		dexui = {},
 		fmt = {},
+		util = {},
+		helpers = {},
 	}
 
 	-- Optional extra fields (game-specific handles on ctx root).

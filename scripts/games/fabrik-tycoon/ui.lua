@@ -112,7 +112,7 @@ return function(ctx)
 	end)
 	ui:AddButton("Print diagnostics", function()
 		local diag = string.format(
-			"phase %s Ã‚Â· alive %s Ã‚Â· cycles %d Ã‚Â· errors %d Ã‚Â· last %.1fs Ã‚Â· %s",
+			"phase %s Â· alive %s Â· cycles %d Â· errors %d Â· last %.1fs Â· %s",
 			ctx.log.phase,
 			tostring(ctx.isAlive()),
 			stats.cycles,
@@ -134,14 +134,13 @@ return function(ctx)
 
 	ui:AddDivider()
 	ui:AddSection("Danger")
-	ui:AddButton("Quit Ã¢â‚¬â€ stop farm & unload", unloadScript)
+	ui:AddButton("Quit â€” stop farm & unload", unloadScript)
 
 	ctx.dexui.addAboutTab(ui)
 
 	ui:Show()
 	ctx.notify.push({
 		Title = ctx.name,
-		Content = "Loaded â€” enable Master auto farm when ready.",
+		Content = "Loaded — enable Master auto farm when ready.",
 		Duration = 3,
 	})
-end

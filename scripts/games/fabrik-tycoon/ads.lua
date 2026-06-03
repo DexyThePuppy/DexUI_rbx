@@ -42,7 +42,7 @@ end
 -- Transparency = NumberValue_Transparency.Value and BillboardGuis get Enabled = true.
 -- So a one-shot hide gets reverted. We instead neutralize the *restore targets*
 -- (NumberValue_Transparency -> 1, BoolValue_Collision -> false) and hide the
--- billboard's child GuiObjects (which ShowAndHide never touches Ã¢â‚¬â€ it only flips
+-- billboard's child GuiObjects (which ShowAndHide never touches â€” it only flips
 -- .Enabled). Result: the pad stays invisible even when the game re-shows it.
 local function disableWorldAdInstance(inst)
 	if inst:IsA("BasePart") or inst:IsA("UnionOperation") or inst:IsA("MeshPart") then
@@ -329,11 +329,11 @@ setAdHidingEnabled = function(enabled)
 	Config.HideMonetization = enabled
 	if not startupReady then return end
 	if enabled then
-		logInfo("ad hiding ON Ã¢â‚¬â€ scheduling clean pass")
+		logInfo("ad hiding ON â€” scheduling clean pass")
 		bindAdCleanerListeners()
 		task.spawn(hideMonetizationAdsNow)
 	else
-		logInfo("ad hiding OFF Ã¢â‚¬â€ listeners disconnected")
+		logInfo("ad hiding OFF â€” listeners disconnected")
 		disconnectAdCleanerListeners()
 		if adHideDebounceThread then
 			adHidePending = false

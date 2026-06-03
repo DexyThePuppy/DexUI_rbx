@@ -2,19 +2,11 @@
   [UPD] Fabrik-Tycoon — DexUI auto farmer
   Place: 15197136141
 
-  Hub entry (manifest + startup). Logic is loaded by sdk/bootstrap.lua:
-    scripts/helpers/fabrik/   shared tycoon API (fmt, getters, cash HUD)
-    scripts/games/fabrik-tycoon/  init, farm, ads, ui
+  Hub entry (this file): manifest + SDK bootstrap only.
+  scripts/sdk/              Session, loops, helper loader, module pipeline
+  scripts/helpers/          Optional packs (util = generic; fabrik/api = tycoon API)
+  scripts/games/fabrik-tycoon/  Game modules (init, farm, ads, ui, runtime)
 ]]
-
-local DexUI = (getgenv and getgenv().DexUI) or nil
-if not DexUI then
-	error("[fabrik-tycoon] DexUI not found. Launch from the DexUI scripts hub.")
-end
-
-if not (readfile and isfile and loadstring) then
-	error("[fabrik-tycoon] Executor must support readfile / isfile / loadstring.")
-end
 
 local PATHS = { "scripts/", "DexUI/scripts/" }
 
@@ -32,11 +24,6 @@ local function loadFile(name)
 	error("[fabrik-tycoon] missing " .. name, 0)
 end
 
-local PART_PREFIXES = {
-	"scripts/games/fabrik-tycoon/",
-	"DexUI/scripts/games/fabrik-tycoon/",
-}
-
 local manifest = {
 	id = "fabrik-tycoon",
 	name = "Fabrik Farm",
@@ -44,6 +31,16 @@ local manifest = {
 	logTag = "FabrikFarm",
 	placeId = 15197136141,
 	placeIds = { 15197136141 },
+
+	helpers = { "util", "fabrik/api" },
+
+	prefixes = {
+		"scripts/games/fabrik-tycoon/",
+		"DexUI/scripts/games/fabrik-tycoon/",
+	},
+	pipeline = { "init", "farm", "ads", "ui", "runtime" },
+	abortAfter = { "init" },
+
 	legacyGuis = { "M3_FabrikFarm", "M3_FabrikFarmHistory" },
 	genv = {
 		session = "__FabrikFarmSession",
@@ -117,103 +114,10 @@ local manifest = {
 		gameCashLabel = nil,
 		gameCashHooked = false,
 	},
-
-	helperPrefixes = {
-		"scripts/helpers/fabrik/",
-		"DexUI/scripts/helpers/fabrik/",
-	},
-	helpers = { "api" },
-
-	prefixes = PART_PREFIXES,
-	pipeline = { "init", "farm", "ads" },
-	abortAfter = { "init" },
-	ui = "ui",
-
-	onReady = function(ctx)
-		local Config = ctx.config
-		local stats = ctx.stats
-
-		ctx.loop.runSteps({
-			{ name = "initSyncConfig", run = function()
-				ctx.log.verbose = Config.VerboseLogging
-			end },
-			{ name = "initRebirthProgress", run = function()
-				ctx.progress.update(true)
-			end },
-			{ name = "initStatus", run = ctx.status.update },
-			{ name = "hookGameCash", run = ctx.game.hookCashHud },
-		})
-
-		task.spawn(function()
-			for _ = 1, 20 do
-				if ctx.game.gameCashHooked then
-					break
-				end
-				ctx.game.hookCashHud()
-				task.wait(1)
-			end
-		end)
-
-		ctx.startupReady = true
-		ctx.log.info("startup complete — ad hiding gated behind toggle")
-
-		ctx.runStep("startAdCleaner", ctx.ads.start)
-
-		ctx.runStep("consumeServerError", function()
-			local RS = ctx.rs
-			local serverErr = RS:FindFirstChild("Events") and RS.Events:FindFirstChild("ServerError")
-			if serverErr and serverErr:IsA("RemoteEvent") then
-				ctx.track(serverErr.OnClientEvent:Connect(function(msg)
-					if ctx.log.verbose then
-						ctx.log.debug("ServerError: " .. tostring(msg))
-					end
-				end))
-			end
-		end)
-
-		ctx.loop.warnWrongPlace()
-
-		if not ctx.findPath then
-			ctx.log.warn("Rebirth findPath unavailable — auto rebirth progress may be wrong")
-		end
-
-		ctx.log.setPhase("ready")
-		ctx.log.info("Loaded (DexUI) — all toggles default OFF | " .. ctx.status.line())
-
-		ctx.loop.startHeartbeat({
-			masterKey = "Enabled",
-			delayKey = "LoopDelay",
-			tick = ctx.farm.safeOnce,
-		})
-
-		ctx.loop.startWatchdog({
-			masterKey = "Enabled",
-			onTick = function()
-				ctx.log.verbose = Config.VerboseLogging
-				ctx.status.update()
-			end,
-			logLine = function()
-				return string.format(
-					"[%s] %s | btn:%d drop:%d gem:%d col:%d reb:%d err:%d | %.2fs | phase:%s | %s",
-					ctx.logTag,
-					ctx.status.line(),
-					stats.buttons,
-					stats.manualDrops,
-					stats.upgrades,
-					stats.collects,
-					stats.rebirths,
-					stats.errors,
-					Config.LoopDelay,
-					ctx.log.phase,
-					stats.lastMsg ~= "" and stats.lastMsg or "—"
-				)
-			end,
-		})
-	end,
 }
 
-local bootstrap = loadFile("sdk/bootstrap.lua")
-local ctx = bootstrap(manifest, DexUI)
+local runEntry = loadFile("sdk/entry.lua")
+local ctx = runEntry(manifest, (getgenv and getgenv().DexUI) or nil)
 if not ctx.isAlive() then
 	return
 end

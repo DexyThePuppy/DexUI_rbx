@@ -1,9 +1,11 @@
 --[[
-  DexUI Script SDK — session + loop + dexui from a manifest table.
+  DexUI Script SDK — session, helpers, optional module pipeline.
 
-  Use sdk/bootstrap.lua for helpers + pipeline + ui + onReady.
-  This module only builds ctx; bootstrap runs helpers/pipeline on top.
+  manifest.helpers     — helper packs under scripts/helpers/ (default includes "util")
+  manifest.prefixes    — game modules for manifest.pipeline
+  manifest.pipeline    — return function(ctx) modules loaded in order
 ]]
+
 local SDK_PREFIXES = {
 	"scripts/sdk/",
 	"DexUI/scripts/sdk/",
@@ -27,6 +29,7 @@ local makeLoader = loadFrom(SDK_PREFIXES, "loader")
 local createSession = loadFrom(SDK_PREFIXES, "session")
 local attachLoop = loadFrom(SDK_PREFIXES, "loop")
 local attachDexui = loadFrom(SDK_PREFIXES, "dexui")
+local attachHelpers = loadFrom(SDK_PREFIXES, "helpers")
 
 return function(manifest, DexUI)
 	if type(manifest) == "function" then
@@ -39,6 +42,12 @@ return function(manifest, DexUI)
 	local ctx = createSession(manifest, DexUI)
 	attachLoop(ctx)
 	attachDexui(ctx)
+	attachHelpers(ctx, manifest)
+
+	local modulePrefixes = manifest.prefixes or manifest.modulePrefixes
+	if modulePrefixes then
+		ctx.loadModule = makeLoader(modulePrefixes)
+	end
 
 	local pipeline = manifest.pipeline
 	if pipeline and #pipeline > 0 then

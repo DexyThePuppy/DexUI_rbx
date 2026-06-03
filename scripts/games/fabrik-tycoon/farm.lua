@@ -94,16 +94,7 @@ local CATEGORY_KEYWORDS = {
 	{ "Manual", 60 },
 }
 
-local function tableCount(t)
-	if not t then
-		return 0
-	end
-	local n = 0
-	for _ in t do
-		n += 1
-	end
-	return n
-end
+local tableCount = ctx.util.tableCount
 
 -- Cache per-ore income worth per button model (weak keys so destroyed pads are GC'd).
 -- We count BOTH `oreValue` (droppers) and `Upg` (upgraders / the factory line), since
