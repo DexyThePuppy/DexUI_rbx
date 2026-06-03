@@ -261,10 +261,9 @@ local function buildScroll(parent: Instance, deps: GridDeps, maxHeight: number?)
 end
 
 local function buildInline(parent: Instance, deps: GridDeps): GridMount
+	-- Badges are circular: Fit inside a full-width thumb (same footprint as other tabs).
 	local spec = table.clone(SPEC) :: GridSpec
 	spec.thumbScale = Enum.ScaleType.Fit
-	spec.thumbSquare = true
-	spec.thumbPad = 4
 
 	local layout = Instance.new("UIGridLayout")
 	layout.Name = "GridLayout"
