@@ -52,6 +52,7 @@ export type GameBadgeEntry = {
 	displayName: string?,
 	description: string?,
 	iconImageId: number,
+	iconUri: string?,
 	claimed: boolean,
 }
 
@@ -67,7 +68,27 @@ local CDN_CACHE_FOLDER = "DexUI/thumbnails"
 local cdnAssetCache: { [string]: string } = {}
 
 local function placeThumb(placeId: number, w: number, h: number): string
-	return string.format("rbxthumb://type=Place&id=%d&w=%d&h=%d", placeId, w, h)
+	return string.format("rbxthumb://type=GameThumbnail&id=%d&w=%d&h=%d", placeId, w, h)
+end
+
+local function normalizeRbxThumbUri(uri: string): string
+	local id = string.match(uri, "id=(%d+)")
+	if not id then
+		return uri
+	end
+	local w, h = string.match(uri, "w=(%d+)&h=(%d+)")
+	w = w or "420"
+	h = h or "420"
+	if string.find(uri, "type=Place", 1, true) or string.find(uri, "type=GameThumbnail", 1, true) then
+		return string.format("rbxthumb://type=GameThumbnail&id=%s&w=%s&h=%s", id, w, h)
+	end
+	if string.find(uri, "type=BadgeAsset", 1, true) or string.find(uri, "type=BadgeIcon", 1, true) then
+		return string.format("rbxthumb://type=BadgeIcon&id=%s&w=150&h=150", id)
+	end
+	if string.find(uri, "type=GameIcon", 1, true) then
+		return string.format("rbxthumb://type=GameIcon&id=%s&w=%s&h=%s", id, w, h)
+	end
+	return uri
 end
 
 local function canCacheFiles(): boolean
@@ -80,6 +101,32 @@ local function addImage(list: { string }, seen: { [string]: boolean }, uri: stri
 	end
 	seen[uri] = true
 	table.insert(list, uri)
+end
+
+local function resolveLoadableUri(uri: string?): string?
+	if not uri or uri == "" then
+		return nil
+	end
+	if string.find(uri, "rbxasset://", 1, true) then
+		return uri
+	end
+	if string.find(uri, "https://", 1, true) or string.find(uri, "http://", 1, true) then
+		return cdnUrlToLoadable(uri)
+	end
+	if string.find(uri, "rbxassetid://", 1, true) then
+		return uri
+	end
+	if string.find(uri, "rbxthumb://", 1, true) then
+		return normalizeRbxThumbUri(uri)
+	end
+	return uri
+end
+
+local function addResolvedImage(list: { string }, seen: { [string]: boolean }, uri: string?)
+	local resolved = resolveLoadableUri(uri)
+	if resolved then
+		addImage(list, seen, resolved)
+	end
 end
 
 local function decodeJson(body: string): any?
@@ -101,14 +148,20 @@ local function httpGetJson(url: string): any?
 end
 
 local function httpGetRaw(url: string): string?
-	-- Prefer binary HttpGet (executor); JSON APIs still use Util.httpRequest above.
+	-- Prefer game:HttpGet (executor); Volt rejects HttpGet(url, true).
 	local httpGet = (game :: any).HttpGet
 	if type(httpGet) == "function" then
 		local ok, body = pcall(function()
-			return httpGet(url, true)
+			return httpGet(url)
 		end)
 		if ok and type(body) == "string" and #body > 128 then
 			return body
+		end
+		local okBin, bodyBin = pcall(function()
+			return httpGet(url, true)
+		end)
+		if okBin and type(bodyBin) == "string" and #bodyBin > 128 then
+			return bodyBin
 		end
 	end
 	local ok, res = Util.httpRequest({ Url = url, Method = "GET" })
@@ -273,6 +326,25 @@ end
 
 local MAX_BADGE_PAGES = 5
 
+local function fetchBadgeIconUri(badgeId: number): string?
+	local data = httpGetJson(
+		"https://thumbnails.roblox.com/v1/badges/icons?badgeIds="
+			.. tostring(badgeId)
+			.. "&size=150x150&format=Png&isCircular=false"
+	)
+	if type(data) ~= "table" or type(data.data) ~= "table" or #data.data == 0 then
+		return string.format("rbxthumb://type=BadgeIcon&id=%d&w=150&h=150", badgeId)
+	end
+	local row = data.data[1]
+	if type(row) == "table" and type(row.imageUrl) == "string" then
+		local cached = cdnUrlToLoadable(row.imageUrl)
+		if cached then
+			return cached
+		end
+	end
+	return string.format("rbxthumb://type=BadgeIcon&id=%d&w=150&h=150", badgeId)
+end
+
 local function userHasBadge(userId: number, badgeId: number): boolean
 	local ok, has = pcall(function()
 		return BadgeService:UserHasBadgeAsync(userId, badgeId)
@@ -314,6 +386,7 @@ local function fetchUniverseBadges(universeId: number, userId: number?): ({ Game
 						elseif type(row.description) == "string" then row.description
 						else nil,
 					iconImageId = iconId,
+					iconUri = fetchBadgeIconUri(row.id),
 					claimed = false,
 				})
 			end
@@ -336,6 +409,7 @@ local function fetchUniverseBadges(universeId: number, userId: number?): ({ Game
 				displayName = badge.displayName,
 				description = badge.description,
 				iconImageId = badge.iconImageId,
+				iconUri = badge.iconUri,
 				claimed = userHasBadge(userId, badge.id),
 			}
 			if i % 8 == 0 then
@@ -565,17 +639,17 @@ local function fetchCurrentGameMetadata(): GameMetadata
 	local images: { string } = {}
 	local seen: { [string]: boolean } = {}
 	for _, uri in fetchLoadableThumbnailUris(universeId, iconAssetId) do
-		addImage(images, seen, uri)
+		addResolvedImage(images, seen, uri)
 	end
 	for _, assetId in fetchMediaAssetIds(universeId) do
-		addImage(images, seen, "rbxassetid://" .. string.format("%.0f", assetId))
+		addResolvedImage(images, seen, "rbxassetid://" .. string.format("%.0f", assetId))
 	end
 	if rootPlaceId then
-		addImage(images, seen, placeThumb(rootPlaceId, 768, 432))
+		addResolvedImage(images, seen, placeThumb(rootPlaceId, 768, 432))
 	end
-	addImage(images, seen, placeThumb(placeId, 420, 420))
+	addResolvedImage(images, seen, placeThumb(placeId, 420, 420))
 	if #images == 0 then
-		addImage(images, seen, placeThumb(placeId, 768, 432))
+		addResolvedImage(images, seen, placeThumb(placeId, 768, 432))
 	end
 
 	local placeVersion, jobId, serverLabel = readSessionInfo()
@@ -621,5 +695,6 @@ return {
 	fetchCurrentGameMetadata = fetchCurrentGameMetadata,
 	fetchPublicServers = fetchPublicServers,
 	fetchPrivateServersEnabled = fetchPrivateServersEnabled,
+	resolveLoadableUri = resolveLoadableUri,
 	placeThumb = placeThumb,
 }

@@ -20,19 +20,8 @@ return function(ctx)
 	local Players = game:GetService("Players")
 	local TeleportService = game:GetService("TeleportService")
 
-	local function formatImage(uri: string): string
-		if string.find(uri, "rbxassetid://", 1, true)
-			or string.find(uri, "rbxthumb://", 1, true)
-			or string.find(uri, "rbxasset://", 1, true)
-		then
-			return uri
-		end
-		-- Never pass CDN https URLs straight to ImageLabel (they will not render).
-		local digits = string.match(uri, "(%d+)")
-		if digits then
-			return "rbxassetid://" .. digits
-		end
-		return uri
+	local function formatImage(uri: string): string?
+		return GameMetadata.resolveLoadableUri(uri)
 	end
 
 	local function formatNumber(n: number?): string
@@ -427,11 +416,16 @@ return function(ctx)
 		badgeGridLayout.HorizontalAlignment = Enum.HorizontalAlignment.Left
 		badgeGridLayout.Parent = badgeGrid
 
-		local function badgeThumbUri(iconImageId: number): string
-			if iconImageId > 0 then
-				return string.format("rbxthumb://type=BadgeAsset&id=%d&w=150&h=150", iconImageId)
+		local function badgeThumbUri(badge: any): string?
+			if type(badge.iconUri) == "string" and badge.iconUri ~= "" then
+				return badge.iconUri
 			end
-			return ""
+			if type(badge.id) == "number" then
+				return GameMetadata.resolveLoadableUri(
+					string.format("rbxthumb://type=BadgeIcon&id=%d&w=150&h=150", badge.id)
+				)
+			end
+			return nil
 		end
 
 		local function clearBadgeGrid()
@@ -481,9 +475,10 @@ return function(ctx)
 				icon.ScaleType = Enum.ScaleType.Fit
 				icon.ImageTransparency = if badge.claimed then 0 else 0.45
 				icon.Parent = cell
-				local uri = badgeThumbUri(badge.iconImageId)
-				if uri ~= "" then
-					icon.Image = formatImage(uri)
+				local uri = badgeThumbUri(badge)
+				if uri then
+					icon.Image = uri
+					icon.ImageTransparency = if badge.claimed then 0 else 0.45
 				end
 
 				if badge.claimed then
@@ -891,12 +886,20 @@ return function(ctx)
 		end
 
 		local function waitForLoaded(slide: ImageLabel, uri: string): boolean
-			slide.Image = formatImage(uri)
+			local resolved = formatImage(uri)
+			if not resolved then
+				return false
+			end
+			slide.Image = resolved
 			slide.ImageTransparency = 1
 			pcall(function()
 				ContentProvider:PreloadAsync({ slide })
 			end)
-			for _ = 1, 40 do
+			if string.find(resolved, "rbxasset://", 1, true) then
+				task.wait(0.15)
+				return true
+			end
+			for _ = 1, 50 do
 				if not slide.Parent then
 					return false
 				end
@@ -913,7 +916,7 @@ return function(ctx)
 			local seen: { [string]: boolean } = {}
 			for _, uri in images do
 				local formatted = formatImage(uri)
-				if formatted ~= "" and not seen[formatted] then
+				if formatted and formatted ~= "" and not seen[formatted] then
 					seen[formatted] = true
 					table.insert(out, formatted)
 				end
@@ -1057,11 +1060,17 @@ return function(ctx)
 			local images: { string } = {}
 			if entry and entry.images then
 				for _, img in entry.images do
-					table.insert(images, formatImage(img))
+					local resolved = formatImage(img)
+					if resolved then
+						table.insert(images, resolved)
+					end
 				end
 			end
 			for _, img in meta.images do
-				table.insert(images, formatImage(img))
+				local resolved = formatImage(img)
+				if resolved then
+					table.insert(images, resolved)
+				end
 			end
 			if #images == 0 then
 				table.insert(images, GameMetadata.placeThumb(meta.placeId, 768, 432))
