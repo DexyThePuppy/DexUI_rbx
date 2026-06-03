@@ -265,7 +265,7 @@ end
 local function buildInline(parent: Instance, deps: GridDeps): GridMount
 	local spec = table.clone(SPEC) :: GridSpec
 	spec.thumbScale = Enum.ScaleType.Fit
-	spec.thumbFillBackground = true
+	spec.thumbFillBackground = false
 	spec.thumbSquare = true
 	spec.thumbPad = 4
 
