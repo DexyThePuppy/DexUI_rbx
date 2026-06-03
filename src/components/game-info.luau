@@ -3,6 +3,7 @@
 
 local Registry = require("../hub/registry")
 local GameMetadata = require("../hub/game-metadata")
+local RbxServers = require("../hub/rbxservers")
 local Services = require("../services")
 
 return function(ctx)
@@ -618,14 +619,14 @@ return function(ctx)
 			badgeGrid.Size = UDim2.new(1, 0, 0, rows * (BADGE_CELL_H + 6) - 6)
 		end
 
-		-- Public servers (sorted low → high, paged like Media tab)
+		-- RBXServers VIP list (from rbxservers.com game page, like FreeServer extension)
 		local serversSection = makeSection(4)
 
 		local serversHeading = Instance.new("TextLabel")
 		serversHeading.LayoutOrder = 0
 		serversHeading.Size = UDim2.new(1, 0, 0, 20)
 		serversHeading.BackgroundTransparency = 1
-		serversHeading.Text = "Public servers"
+		serversHeading.Text = "VIP servers"
 		serversHeading.FontFace = fontWeight(Enum.FontWeight.Medium)
 		serversHeading.TextSize = 14
 		serversHeading.TextXAlignment = Enum.TextXAlignment.Left
@@ -637,7 +638,7 @@ return function(ctx)
 		serversStatusLbl.Size = UDim2.new(1, 0, 0, 0)
 		serversStatusLbl.AutomaticSize = Enum.AutomaticSize.Y
 		serversStatusLbl.BackgroundTransparency = 1
-		serversStatusLbl.Text = "Loading public servers…"
+		serversStatusLbl.Text = "Loading VIP servers from RBXServers…"
 		serversStatusLbl.FontFace = m3Font
 		serversStatusLbl.TextSize = 11
 		serversStatusLbl.TextXAlignment = Enum.TextXAlignment.Left
@@ -657,16 +658,16 @@ return function(ctx)
 		serversListLayout.Padding = UDim.new(0, 6)
 		serversListLayout.Parent = serversList
 
-		local publicServers: { any } = {}
-		local joinPlaceId = game.PlaceId
+		local vipServers: { any } = {}
+		local rbxServerTotal: number? = nil
 		local serverPageIndex = 0
 		local serverRowBtns: { Frame } = {}
 
 		local function serverPageCount(): number
-			if #publicServers == 0 then
+			if #vipServers == 0 then
 				return 0
 			end
-			return math.ceil(#publicServers / MEDIA_PAGE_SIZE)
+			return math.ceil(#vipServers / MEDIA_PAGE_SIZE)
 		end
 
 		for i = 1, MEDIA_PAGE_SIZE do
@@ -711,7 +712,7 @@ return function(ctx)
 			joinBtn.Size = UDim2.fromOffset(72, 30)
 			joinBtn.AnchorPoint = Vector2.new(1, 0.5)
 			joinBtn.Position = UDim2.new(1, -10, 0.5, 0)
-			joinBtn.Text = "Join"
+			joinBtn.Text = "Link"
 			joinBtn.FontFace = fontWeight(Enum.FontWeight.Medium)
 			joinBtn.TextSize = 12
 			joinBtn.AutoButtonColor = false
@@ -722,19 +723,17 @@ return function(ctx)
 
 			local slot = i
 			joinBtn.MouseButton1Click:Connect(function()
-				local srv = publicServers[serverPageIndex * MEDIA_PAGE_SIZE + slot]
+				local srv = vipServers[serverPageIndex * MEDIA_PAGE_SIZE + slot]
 				if not srv then
 					return
 				end
 				playFeedback("light")
-				local player = Players.LocalPlayer
-				if not player then
-					return
+				local url = RbxServers.serverPageUrl(srv.id)
+				if trySetClipboard(url) then
+					serversStatusLbl.Text = "Copied RBXServers link — open in browser to join."
+				else
+					serversStatusLbl.Text = url
 				end
-				serversStatusLbl.Text = "Joining server…"
-				pcall(function()
-					TeleportService:TeleportToPlaceInstance(joinPlaceId, srv.id, player)
-				end)
 			end)
 
 			serverRowBtns[i] = row
@@ -773,37 +772,43 @@ return function(ctx)
 			end
 		end
 
-		local function formatServerStatus(srv: any): string
+		local function formatVipServerStatus(srv: any): string
 			local parts = {}
-			if srv.maxPlayers > 0 then
-				table.insert(parts, string.format("%d / %d players", srv.playing, srv.maxPlayers))
-			else
-				table.insert(parts, string.format("%d players", srv.playing))
+			if srv.community then
+				table.insert(parts, "Community")
 			end
-			if srv.ping then
-				table.insert(parts, srv.ping .. " ms")
+			if srv.votesPositive > 0 or srv.votesNegative > 0 then
+				table.insert(parts, string.format("+%d / -%d votes", srv.votesPositive, srv.votesNegative))
 			end
-			if srv.fps then
-				table.insert(parts, string.format("%.0f fps", srv.fps))
+			if #parts == 0 then
+				table.insert(parts, "RBXServers")
 			end
 			return table.concat(parts, " · ")
 		end
 
-		local function renderPublicServers()
+		local function serversStatusPrefix(): string
+			local shown = #vipServers
+			if rbxServerTotal and rbxServerTotal > shown then
+				return string.format("%d shown of %d on RBXServers", shown, rbxServerTotal)
+			end
+			return string.format("%d VIP server(s)", shown)
+		end
+
+		local function renderVipServers()
 			local pages = serverPageCount()
 			if pages > 0 and serverPageIndex >= pages then
 				serverPageIndex = pages - 1
 			end
 			local startIdx = serverPageIndex * MEDIA_PAGE_SIZE + 1
 			for i = 1, MEDIA_PAGE_SIZE do
-				local srv = publicServers[startIdx + i - 1]
+				local srv = vipServers[startIdx + i - 1]
 				local row = serverRowBtns[i]
 				if srv then
 					row.Visible = true
 					local title = row:FindFirstChild("Title") :: TextLabel
 					local sub = row:FindFirstChild("Subtitle") :: TextLabel
-					title.Text = "Server " .. string.sub(srv.id, 1, 8)
-					sub.Text = formatServerStatus(srv)
+					title.Text = srv.name
+					sub.Text = formatVipServerStatus(srv)
 				else
 					row.Visible = false
 				end
@@ -829,11 +834,11 @@ return function(ctx)
 			btn.MouseButton1Click:Connect(function()
 				if pageNum < serverPageCount() then
 					serverPageIndex = pageNum
-					renderPublicServers()
+					renderVipServers()
 					local pages = serverPageCount()
 					serversStatusLbl.Text = string.format(
-						"%d server(s) · players low → high · page %d / %d",
-						#publicServers,
+						"%s · page %d / %d",
+						serversStatusPrefix(),
 						serverPageIndex + 1,
 						math.max(1, pages)
 					)
@@ -861,10 +866,10 @@ return function(ctx)
 			end
 			if serverPageIndex < pages - 1 then
 				serverPageIndex += 1
-				renderPublicServers()
+				renderVipServers()
 				serversStatusLbl.Text = string.format(
-					"%d server(s) · players low → high · page %d / %d",
-					#publicServers,
+					"%s · page %d / %d",
+					serversStatusPrefix(),
 					serverPageIndex + 1,
 					pages
 				)
@@ -1173,7 +1178,7 @@ return function(ctx)
 			if not ok or type(meta) ~= "table" or not holder.Parent then
 				titleLbl.Text = "Current experience"
 				bodyLbl.Text = "Could not load game metadata. Check HttpService / executor request support."
-				serversStatusLbl.Text = "Public servers unavailable."
+				serversStatusLbl.Text = "VIP servers unavailable."
 				badgesSection.Visible = false
 				return
 			end
@@ -1224,24 +1229,20 @@ return function(ctx)
 				renderExtraBadges(meta)
 			end
 
-			joinPlaceId = meta.rootPlaceId or meta.placeId
-			local servers, serversErr = GameMetadata.fetchPublicServers(joinPlaceId)
-			publicServers = servers
+			local listPlaceId = meta.rootPlaceId or meta.placeId
+			local servers, totalCount, serversErr = RbxServers.fetchVipServers(listPlaceId)
+			vipServers = servers
+			rbxServerTotal = totalCount
 			serverPageIndex = 0
-			renderPublicServers()
+			renderVipServers()
 
 			local pages = serverPageCount()
-			if #publicServers == 0 then
-				serversStatusLbl.Text = serversErr or "No public servers returned for this experience."
+			if #vipServers == 0 then
+				serversStatusLbl.Text = serversErr or "No VIP servers on RBXServers for this experience."
 				pagerRow.Visible = false
 			else
 				pagerRow.Visible = pages > 1
-				serversStatusLbl.Text = string.format(
-					"%d server(s) · players low → high · page %d / %d",
-					#publicServers,
-					1,
-					math.max(1, pages)
-				)
+				serversStatusLbl.Text = string.format("%s · page 1 / %d", serversStatusPrefix(), math.max(1, pages))
 			end
 		end)
 	end

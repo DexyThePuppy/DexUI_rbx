@@ -3,6 +3,14 @@ import urllib.request
 
 API = "https://fast-api.rbxservers.xyz"
 PATHS = [
+    "/games/v1/list",
+    "/games/v1/list?page=1",
+    "/games/v1/search?query=adopt",
+    "/games/v1/2753915549",
+    "/games/v1/2753915549/servers",
+    "/games/v1/place/2753915549",
+    "/games/v1/place/2753915549/servers",
+    "/games/2753915549/servers/v1/list",
     "/docs",
     "/openapi.json",
     "/redoc",

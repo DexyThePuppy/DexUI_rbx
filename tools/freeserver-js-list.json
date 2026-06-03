@@ -1,0 +1,18 @@
+[
+  {
+    "name": "jquery.js",
+    "path": "js/jquery.js",
+    "sha": "200b54e470a5d67925b91e87f4e769191a9f8c16",
+    "size": 89500,
+    "url": "https://api.github.com/repos/Kelvinouo/FreeServer/contents/js/jquery.js?ref=master",
+    "html_url": "https://github.com/Kelvinouo/FreeServer/blob/master/js/jquery.js",
+    "git_url": "https://api.github.com/repos/Kelvinouo/FreeServer/git/blobs/200b54e470a5d67925b91e87f4e769191a9f8c16",
+    "download_url": "https://raw.githubusercontent.com/Kelvinouo/FreeServer/master/js/jquery.js",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/Kelvinouo/FreeServer/contents/js/jquery.js?ref=master",
+      "git": "https://api.github.com/repos/Kelvinouo/FreeServer/git/blobs/200b54e470a5d67925b91e87f4e769191a9f8c16",
+      "html": "https://github.com/Kelvinouo/FreeServer/blob/master/js/jquery.js"
+    }
+  }
+]
