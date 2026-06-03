@@ -14,19 +14,18 @@ return {
 		Large = 18,
 	},
 
-	-- Compact hub / badge grids (scripts, tools, icons, game info badges).
+	-- Modular hub grid (scripts, tools, icons, game info badges — same cell layout).
 	HubGrid = {
-		ScrollPad = 8,
-		CellGap = 6,
-		CardInset = 5,
-		NameBand = 22,
-		ListGap = 3,
-		ScriptsCell = { 106, 118 },
-		ToolsCell = { 110, 120 },
-		IconsCell = { 76, 70 },
-		BadgeCell = { 64, 78 },
-		BadgeIcon = 40,
-		BadgeCols = 4,
+		Cell = { 96, 104 },
+		ScrollPad = 6,
+		CellGap = 8,
+		CardInset = 4,
+		NameBand = 20,
+		GapThumbTitle = 2,
+		CardCorner = 10,
+		ThumbCorner = 8,
+		MaxViewport = 320,
+		BadgeIcon = 36,
 	},
 
 	-- Intro

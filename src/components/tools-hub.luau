@@ -12,7 +12,6 @@ return function(ctx)
 	local curTheme = ctx.theme
 	local reg = ctx.reg
 	local tween, corner, ripple = ctx.tween, ctx.corner, ctx.ripple
-	local m3Font = ctx.m3Font
 	local beginCardRow = ctx.beginCardRow
 	local playFeedback = ctx.playFeedback
 	local fontWeight = ctx.fontWeight
@@ -21,6 +20,7 @@ return function(ctx)
 	local textSize = ctx.textSize
 	local HubGrid = ctx.hubGrid
 
+	local gridDeps = { corner = corner, reg = reg }
 	local launching: { [string]: boolean } = {}
 
 	local function formatThumb(url: string): string
@@ -70,42 +70,11 @@ return function(ctx)
 
 	function lib:PopulateToolsHub(entries: { ToolEntry }?)
 		local list = entries or ToolsRegistry.load()
-		local spec = HubGrid.specForCell(HubGrid.toolsCell)
 
-		local holder = Instance.new("Frame")
-		holder.Name = "ToolsHub"
-		holder.Size = UDim2.new(1, 0, 0, 0)
-		holder.AutomaticSize = Enum.AutomaticSize.Y
-		holder.BackgroundTransparency = 1
-		holder.Parent = beginCardRow(nil, true)
-
-		local header = Instance.new("TextLabel")
-		header.Size = UDim2.new(1, 0, 0, 0)
-		header.AutomaticSize = Enum.AutomaticSize.Y
-		header.BackgroundTransparency = 1
-		header.Text = "Developer tools — click a card to load"
-		header.FontFace = fontWeight(Enum.FontWeight.Medium)
-		header.TextSize = textSize("sm")
-		header.TextXAlignment = Enum.TextXAlignment.Left
-		header.TextWrapped = true
-		header.Parent = holder
-		reg(header, "TextColor3", "out")
-
-		local gridHost = Instance.new("Frame")
-		gridHost.Size = UDim2.new(1, 0, 0, 0)
-		gridHost.AutomaticSize = Enum.AutomaticSize.Y
-		gridHost.BackgroundTransparency = 1
-		gridHost.Parent = holder
-
-		local layout = Instance.new("UIListLayout")
-		layout.Padding = UDim.new(0, 8)
-		layout.SortOrder = Enum.SortOrder.LayoutOrder
-		layout.Parent = holder
-		header.LayoutOrder = 0
-		gridHost.LayoutOrder = 1
-
-		local grid = HubGrid.createGridHost(gridHost, spec, 400, corner, reg)
-		gridHost.Size = UDim2.new(1, 0, 0, 0)
+		local _, mount = HubGrid.buildSection(beginCardRow(nil, true), gridDeps, {
+			title = "Developer tools — click a card to load",
+			maxHeight = HubGrid.spec.maxViewport,
+		})
 
 		local sorted = table.clone(list)
 		table.sort(sorted, function(a, b)
@@ -113,65 +82,63 @@ return function(ctx)
 		end)
 
 		for order, entry in sorted do
-			local btn, _thumbWrap, thumb, nameLbl = HubGrid.createCard(grid.inner, spec, order, corner)
-			btn.Name = entry.id
-			reg(btn, "BackgroundColor3", "inact")
+			local card = mount.addCard(order)
+			card.root.Name = entry.id
+			reg(card.root, "BackgroundColor3", "inact")
 
 			local stroke = Instance.new("UIStroke")
 			stroke.Thickness = 1
 			stroke.Transparency = 0.55
-			stroke.Parent = btn
+			stroke.Parent = card.root
 			reg(stroke, "Color", "out")
 
-			local state = HubGrid.addStateLayer(btn, spec, corner, reg)
-
-			thumb.Image = formatThumb(entry.thumbnail)
+			card.image.Image = formatThumb(entry.thumbnail)
 			ToolAssets.resolveToolThumbnailAsync(entry.thumbnail, function(uri)
-				if thumb.Parent and uri and uri ~= ToolAssets.PLACEHOLDER then
-					thumb.Image = uri
+				if card.image.Parent and uri and uri ~= ToolAssets.PLACEHOLDER then
+					card.image.Image = uri
 				end
 			end)
 
-			nameLbl.Text = entry.name
-			nameLbl.FontFace = fontWeight(Enum.FontWeight.Medium)
-			nameLbl.TextSize = textSize("sm")
-			reg(nameLbl, "TextColor3", "fg")
+			card.title.Text = entry.name
+			card.title.FontFace = fontWeight(Enum.FontWeight.Medium)
+			card.title.TextSize = textSize("sm")
+			reg(card.title, "TextColor3", "fg")
 
 			local extBadge = Instance.new("TextLabel")
-			extBadge.Size = UDim2.new(0, 52, 0, 16)
+			extBadge.Size = UDim2.fromOffset(52, 16)
 			extBadge.Position = UDim2.new(1, -4, 0, 4)
 			extBadge.AnchorPoint = Vector2.new(1, 0)
 			extBadge.BackgroundTransparency = 0
 			extBadge.Text = "External"
 			extBadge.FontFace = fontWeight(Enum.FontWeight.Bold)
 			extBadge.TextSize = textSize("sm")
-			extBadge.ZIndex = 4
-			extBadge.Parent = thumb.Parent
+			extBadge.ZIndex = 5
+			extBadge.Parent = card.thumb
 			corner(extBadge, 6)
 			reg(extBadge, "BackgroundColor3", "pri")
 			reg(extBadge, "TextColor3", "onpri")
 
-			btn.MouseEnter:Connect(function()
-				tween(state, "BackgroundTransparency", 0.92, 0.12)
+			card.root.MouseEnter:Connect(function()
+				tween(card.state, "BackgroundTransparency", 0.92, 0.12)
 				playFeedback("hover")
 			end)
-			btn.MouseLeave:Connect(function()
-				tween(state, "BackgroundTransparency", 1, 0.12)
+			card.root.MouseLeave:Connect(function()
+				tween(card.state, "BackgroundTransparency", 1, 0.12)
 			end)
-			btn.MouseButton1Click:Connect(function()
-				ripple(btn, curTheme.pri)
+			card.root.MouseButton1Click:Connect(function()
+				ripple(card.root, curTheme.pri)
 				playFeedback("selection")
 				launchTool(entry)
 			end)
 
 			if tooltip then
-				tooltip.attach(btn, function()
+				tooltip.attach(card.root, function()
 					return buildToolTooltip(entry)
 				end, { delay = 0.35 })
 			end
 
 			if entry.repo and trySetClipboard then
-				btn.MouseButton2Click:Connect(function()
+				card.root.MouseButton2Click:Connect(function()
 					if trySetClipboard(entry.repo :: string) then
 						lib:Notify({ Title = "Copied", Content = "Repository link", Duration = 2 })
 					end
@@ -179,6 +146,6 @@ return function(ctx)
 			end
 		end
 
-		grid.setCount(#sorted)
+		task.defer(mount.sync)
 	end
 end

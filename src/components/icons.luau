@@ -91,8 +91,6 @@ return function(ctx)
 		statusLbl.Parent = holder
 		reg(statusLbl, "TextColor3", "out")
 
-		local spec = HubGrid.specForCell(HubGrid.iconsCell)
-
 		local gridHost = Instance.new("Frame")
 		gridHost.LayoutOrder = 3
 		gridHost.Size = UDim2.new(1, 0, 0, 0)
@@ -100,7 +98,7 @@ return function(ctx)
 		gridHost.BackgroundTransparency = 1
 		gridHost.Parent = holder
 
-		local grid = HubGrid.createGridHost(gridHost, spec, 380, corner, reg)
+		local grid = HubGrid.buildScroll(gridHost, { corner = corner, reg = reg }, 360)
 
 		type IconCell = { root: TextButton, name: string, nameLower: string, id: number }
 		local cells: { IconCell } = {}
@@ -146,39 +144,37 @@ return function(ctx)
 		end
 
 		local function makeIconCell(icon: { name: string, id: number }, order: number)
-			local btn, _thumbWrap, iconImg, nameLbl = HubGrid.createCard(grid.inner, spec, order, corner)
-			btn.Name = icon.name
-			reg(btn, "BackgroundColor3", "inact")
+			local card = grid.addCard(order)
+			card.root.Name = icon.name
+			reg(card.root, "BackgroundColor3", "inact")
 
-			local state = HubGrid.addStateLayer(btn, spec, corner, reg)
+			card.image.Size = UDim2.fromOffset(32, 32)
+			card.image.AnchorPoint = Vector2.new(0.5, 0.5)
+			card.image.Position = UDim2.new(0.5, 0, 0.5, 0)
+			card.image.Image = "rbxassetid://" .. tostring(icon.id)
+			card.image.ScaleType = Enum.ScaleType.Fit
+			reg(card.image, "ImageColor3", "fg")
 
-			iconImg.Size = UDim2.fromOffset(32, 32)
-			iconImg.AnchorPoint = Vector2.new(0.5, 0.5)
-			iconImg.Position = UDim2.new(0.5, 0, 0.5, 0)
-			iconImg.Image = "rbxassetid://" .. tostring(icon.id)
-			iconImg.ScaleType = Enum.ScaleType.Fit
-			reg(iconImg, "ImageColor3", "fg")
+			card.title.Text = icon.name:gsub("_", " ")
+			card.title.FontFace = m3Font
+			card.title.TextSize = textSize("sm")
+			reg(card.title, "TextColor3", "out")
 
-			nameLbl.Text = icon.name:gsub("_", " ")
-			nameLbl.FontFace = m3Font
-			nameLbl.TextSize = textSize("sm")
-			reg(nameLbl, "TextColor3", "out")
-
-			btn.MouseEnter:Connect(function()
-				tween(state, "BackgroundTransparency", 0.9, 0.12)
+			card.root.MouseEnter:Connect(function()
+				tween(card.state, "BackgroundTransparency", 0.9, 0.12)
 				playFeedback("hover")
 			end)
-			btn.MouseLeave:Connect(function()
-				tween(state, "BackgroundTransparency", 1, 0.12)
+			card.root.MouseLeave:Connect(function()
+				tween(card.state, "BackgroundTransparency", 1, 0.12)
 			end)
-			btn.MouseButton1Click:Connect(function()
-				ripple(btn, curTheme.fg, UserInputService:GetMouseLocation().X, UserInputService:GetMouseLocation().Y)
-				copyIcon({ root = btn, name = icon.name, nameLower = string.lower(icon.name), id = icon.id })
+			card.root.MouseButton1Click:Connect(function()
+				ripple(card.root, curTheme.fg, UserInputService:GetMouseLocation().X, UserInputService:GetMouseLocation().Y)
+				copyIcon({ root = card.root, name = icon.name, nameLower = string.lower(icon.name), id = icon.id })
 			end)
 
 			if tooltip then
 				local displayName = icon.name:gsub("_", " ")
-				tooltip.attach(btn, {
+				tooltip.attach(card.root, {
 					blocks = {
 						{ kind = "title", text = displayName },
 						{ kind = "stat", label = "Asset ID", value = tostring(icon.id) },
@@ -190,7 +186,7 @@ return function(ctx)
 			end
 
 			table.insert(cells, {
-				root = btn,
+				root = card.root,
 				name = icon.name,
 				nameLower = string.lower(icon.name),
 				id = icon.id,
@@ -214,7 +210,7 @@ return function(ctx)
 			end
 
 			applyFilter()
-			grid.setCount(#cells)
+			grid.sync()
 		end)
 	end
 

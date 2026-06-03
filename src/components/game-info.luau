@@ -460,9 +460,8 @@ return function(ctx)
 			extraBadgeRow.Visible = extraBadgeRow:FindFirstChild("Badge") ~= nil
 		end
 
-		local badgeSpec = HubGrid.specForCell(HubGrid.badgeCell)
-		local BADGE_COLS = HubGrid.badgeCols
-		local BADGE_ICON = HubGrid.badgeIcon
+		local badgeGridDeps = { corner = corner, reg = reg }
+		local BADGE_ICON = HubGrid.spec.badgeIcon
 		local CLAIMED_GREEN = Color3.fromRGB(56, 170, 92)
 
 		local badgesSection = makeSection(3)
@@ -501,12 +500,7 @@ return function(ctx)
 		badgeGrid.BackgroundTransparency = 1
 		badgeGrid.Parent = badgesSection
 
-		local badgeGridLayout = Instance.new("UIGridLayout")
-		badgeGridLayout.CellSize = UDim2.fromOffset(badgeSpec.cellW, badgeSpec.cellH)
-		badgeGridLayout.CellPadding = UDim2.fromOffset(badgeSpec.cellGap, badgeSpec.cellGap)
-		badgeGridLayout.SortOrder = Enum.SortOrder.LayoutOrder
-		badgeGridLayout.HorizontalAlignment = Enum.HorizontalAlignment.Left
-		badgeGridLayout.Parent = badgeGrid
+		local badgeMount = HubGrid.buildInline(badgeGrid, badgeGridDeps)
 
 		local function badgeThumbUri(badge: any): string?
 			if type(badge.iconUri) == "string" and badge.iconUri ~= "" then
@@ -522,7 +516,7 @@ return function(ctx)
 
 		local function clearBadgeGrid()
 			for _, ch in badgeGrid:GetChildren() do
-				if ch:IsA("GuiButton") and ch.Name:find("Badge", 1, true) == 1 then
+				if ch:IsA("TextButton") then
 					if tooltip then
 						tooltip.detach(ch)
 					end
@@ -551,21 +545,21 @@ return function(ctx)
 			badgesHeading.Text = string.format("Badges · %d / %s claimed", claimed, totalLabel)
 
 			for i, badge in badges do
-				local cell, _thumbWrap, icon, nameLbl = HubGrid.createCard(badgeGrid, badgeSpec, i, corner)
-				cell.Name = "Badge" .. tostring(badge.id)
-				cell.BackgroundTransparency = if badge.claimed then 0.35 else 0.55
-				reg(cell, "BackgroundColor3", "bg")
+				local card = badgeMount.addCard(i)
+				card.root.Name = "Badge" .. tostring(badge.id)
+				card.root.BackgroundTransparency = if badge.claimed then 0.35 else 0.55
+				reg(card.root, "BackgroundColor3", "bg")
 
-				icon.Size = UDim2.fromOffset(BADGE_ICON, BADGE_ICON)
-				icon.AnchorPoint = Vector2.new(0.5, 0.5)
-				icon.Position = UDim2.new(0.5, 0, 0.5, 0)
-				icon.ScaleType = Enum.ScaleType.Fit
-				icon.ImageTransparency = if badge.claimed then 0 else 0.45
-				icon.Active = false
-				icon.Selectable = false
+				card.image.Size = UDim2.fromOffset(BADGE_ICON, BADGE_ICON)
+				card.image.AnchorPoint = Vector2.new(0.5, 0.5)
+				card.image.Position = UDim2.new(0.5, 0, 0.5, 0)
+				card.image.ScaleType = Enum.ScaleType.Fit
+				card.image.ImageTransparency = if badge.claimed then 0 else 0.45
+				card.image.Active = false
+				card.image.Selectable = false
 				local uri = badgeThumbUri(badge)
 				if uri then
-					icon.Image = uri
+					card.image.Image = uri
 				end
 
 				if badge.claimed then
@@ -579,36 +573,30 @@ return function(ctx)
 					tick.FontFace = fontWeight(Enum.FontWeight.Bold)
 					tick.TextSize = textSize("sm")
 					tick.TextColor3 = VIP_BADGE_ON
-					tick.ZIndex = 4
+					tick.ZIndex = 5
 					tick.Active = false
 					tick.Selectable = false
-					tick.Parent = icon.Parent
+					tick.Parent = card.thumb
 					corner(tick, 999)
 				end
 
-				nameLbl.Text = badge.name
-				nameLbl.FontFace = m3Font
-				nameLbl.TextSize = textSize("sm")
-				nameLbl.TextWrapped = true
-				nameLbl.TextTruncate = Enum.TextTruncate.AtEnd
-				nameLbl.TextColor3 = if badge.claimed then curTheme.fg else curTheme.out
-				nameLbl.Active = false
-				nameLbl.Selectable = false
+				card.title.Text = badge.name
+				card.title.FontFace = m3Font
+				card.title.TextSize = textSize("sm")
+				card.title.TextWrapped = true
+				card.title.TextTruncate = Enum.TextTruncate.AtEnd
+				card.title.TextColor3 = if badge.claimed then curTheme.fg else curTheme.out
+				card.title.Active = false
+				card.title.Selectable = false
 
 				if tooltip then
-					tooltip.attach(cell, function()
+					tooltip.attach(card.root, function()
 						return GameMetadata.buildBadgeTooltipContent(badge)
 					end)
 				end
 			end
 
-			local rows = math.max(1, math.ceil(count / BADGE_COLS))
-			badgeGrid.Size = UDim2.new(
-				1,
-				0,
-				0,
-				rows * (badgeSpec.cellH + badgeSpec.cellGap) - badgeSpec.cellGap
-			)
+			task.defer(badgeMount.sync)
 		end
 
 		-- Public servers (sorted low → high, paged like Media tab)

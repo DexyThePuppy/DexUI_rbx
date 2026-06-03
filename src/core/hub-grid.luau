@@ -1,5 +1,6 @@
 --!nonstrict
--- Shared hub grid: scroll host, UIGridLayout, and card interior layout (thumb + title band).
+-- Modular hub grid for Scripts, Tools, Icons, and Game Info badges.
+-- One cell layout (thumb + title band), responsive columns, tight scroll metrics.
 
 local Config = require("../config")
 local G = Config.HubGrid or {}
@@ -11,224 +12,319 @@ export type GridSpec = {
 	cellGap: number,
 	inset: number,
 	nameH: number,
-	listGap: number,
+	gapThumbTitle: number,
 	cardCorner: number,
 	thumbCorner: number,
+	maxViewport: number,
+	badgeIcon: number,
 }
 
-export type GridHost = {
-	scroll: ScrollingFrame,
+export type CardParts = {
+	root: TextButton,
+	thumb: Frame,
+	image: ImageLabel,
+	title: TextLabel,
+	state: Frame,
+}
+
+export type GridMount = {
 	inner: Frame,
 	layout: UIGridLayout,
-	pad: number,
-	maxHeight: number,
-	setCount: (n: number) -> (),
+	spec: GridSpec,
+	scroll: ScrollingFrame?,
+	addCard: (order: number) -> CardParts,
+	sync: () -> (),
 }
 
-local DEFAULTS = {
-	scrollPad = G.ScrollPad or 8,
-	cellGap = G.CellGap or 6,
-	inset = G.CardInset or 5,
-	nameH = G.NameBand or 22,
-	listGap = G.ListGap or 3,
-	cardCorner = 10,
-	thumbCorner = 8,
+local SPEC: GridSpec = {
+	cellW = (G.Cell and G.Cell[1]) or 96,
+	cellH = (G.Cell and G.Cell[2]) or 104,
+	scrollPad = G.ScrollPad or 6,
+	cellGap = G.CellGap or 8,
+	inset = G.CardInset or 4,
+	nameH = G.NameBand or 20,
+	gapThumbTitle = G.GapThumbTitle or 2,
+	cardCorner = G.CardCorner or 10,
+	thumbCorner = G.ThumbCorner or 8,
+	maxViewport = G.MaxViewport or 320,
+	badgeIcon = G.BadgeIcon or 36,
 }
 
-local function specForCell(cell: { number }): GridSpec
+local function thumbHeight(spec: GridSpec): number
+	return spec.cellH - spec.inset * 2 - spec.nameH - spec.gapThumbTitle
+end
+
+local function columnCount(viewportW: number, spec: GridSpec): number
+	local innerW = math.max(0, viewportW - spec.scrollPad * 2)
+	return math.max(1, math.floor((innerW + spec.cellGap) / (spec.cellW + spec.cellGap)))
+end
+
+type GridDeps = {
+	corner: (Instance, number) -> UICorner,
+	reg: (Instance, string, string?) -> (),
+}
+
+local function bindLayout(
+	mount: GridMount,
+	viewport: GuiObject,
+	deps: GridDeps
+)
+	local spec = mount.spec
+	local layout = mount.layout
+	local inner = mount.inner
+	local scroll = mount.scroll
+	local pad = spec.scrollPad
+
+	local function applyMetrics()
+		local viewW = if scroll then scroll.AbsoluteSize.X else viewport.AbsoluteSize.X
+		if viewW < 4 then
+			return
+		end
+		local cols = columnCount(viewW, spec)
+		layout.FillDirection = Enum.FillDirection.Horizontal
+		layout.FillDirectionMaxCells = cols
+
+		local contentY = layout.AbsoluteContentSize.Y
+		if contentY < 1 then
+			contentY = spec.cellH
+		end
+		inner.Size = UDim2.new(1, 0, 0, contentY)
+
+		if scroll then
+			local totalH = contentY + pad * 2
+			scroll.CanvasSize = UDim2.new(0, 0, 0, totalH)
+			scroll.Size = UDim2.new(1, 0, 0, math.min(spec.maxViewport, totalH))
+		end
+	end
+
+	layout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(applyMetrics)
+	viewport:GetPropertyChangedSignal("AbsoluteSize"):Connect(applyMetrics)
+
+	mount.sync = applyMetrics
+end
+
+local function createCard(
+	parent: Instance,
+	spec: GridSpec,
+	order: number,
+	deps: GridDeps
+): CardParts
+	local thumbH = thumbHeight(spec)
+	local inset = spec.inset
+
+	local btn = Instance.new("TextButton")
+	btn.Name = "Card"
+	btn.LayoutOrder = order
+	btn.BackgroundTransparency = 0
+	btn.Text = ""
+	btn.AutoButtonColor = false
+	btn.ClipsDescendants = true
+	btn.Parent = parent
+	deps.corner(btn, spec.cardCorner)
+
+	local thumb = Instance.new("Frame")
+	thumb.Name = "Thumb"
+	thumb.Position = UDim2.fromOffset(inset, inset)
+	thumb.Size = UDim2.new(1, -inset * 2, 0, thumbH)
+	thumb.BackgroundTransparency = 1
+	thumb.BorderSizePixel = 0
+	thumb.ClipsDescendants = true
+	thumb.ZIndex = 1
+	thumb.Parent = btn
+	deps.corner(thumb, spec.thumbCorner)
+
+	local image = Instance.new("ImageLabel")
+	image.Name = "Image"
+	image.Size = UDim2.fromScale(1, 1)
+	image.BackgroundTransparency = 1
+	image.ScaleType = Enum.ScaleType.Crop
+	image.ZIndex = 2
+	image.Parent = thumb
+
+	local title = Instance.new("TextLabel")
+	title.Name = "Title"
+	title.AnchorPoint = Vector2.new(0, 1)
+	title.Position = UDim2.new(0, inset, 1, -inset)
+	title.Size = UDim2.new(1, -inset * 2, 0, spec.nameH)
+	title.BackgroundTransparency = 1
+	title.Text = ""
+	title.TextWrapped = false
+	title.TextTruncate = Enum.TextTruncate.AtEnd
+	title.TextYAlignment = Enum.TextYAlignment.Center
+	title.TextXAlignment = Enum.TextXAlignment.Center
+	title.ZIndex = 3
+	title.Parent = btn
+
+	local state = Instance.new("Frame")
+	state.Name = "State"
+	state.Size = UDim2.fromScale(1, 1)
+	state.BackgroundTransparency = 1
+	state.BorderSizePixel = 0
+	state.ZIndex = 4
+	state.Parent = btn
+	deps.corner(state, spec.cardCorner)
+	deps.reg(state, "BackgroundColor3", "fg")
+
 	return {
-		cellW = cell[1],
-		cellH = cell[2],
-		scrollPad = DEFAULTS.scrollPad,
-		cellGap = DEFAULTS.cellGap,
-		inset = DEFAULTS.inset,
-		nameH = DEFAULTS.nameH,
-		listGap = DEFAULTS.listGap,
-		cardCorner = DEFAULTS.cardCorner,
-		thumbCorner = DEFAULTS.thumbCorner,
+		root = btn,
+		thumb = thumb,
+		image = image,
+		title = title,
+		state = state,
 	}
 end
 
-local function thumbHeight(spec: GridSpec): number
-	return spec.cellH - spec.inset * 2 - spec.nameH - spec.listGap
-end
-
-local function columnCount(innerWidth: number, spec: GridSpec): number
-	return math.max(1, math.floor((innerWidth + spec.cellGap) / (spec.cellW + spec.cellGap)))
-end
-
-local function estimatedCanvasHeight(count: number, cols: number, spec: GridSpec): number
-	local rows = math.max(1, math.ceil(count / cols))
-	return spec.scrollPad * 2 + rows * spec.cellH + math.max(0, rows - 1) * spec.cellGap
-end
-
-local function createGridHost(
-	parent: Instance,
-	spec: GridSpec,
-	maxHeight: number?,
-	corner: (Instance, number) -> UICorner,
-	reg: (Instance, string) -> ()
-): GridHost
-	local pad = spec.scrollPad
-	local maxH = maxHeight or 420
+-- Scrolling grid (Scripts / Tools / Icons tabs).
+local function buildScroll(parent: Instance, deps: GridDeps, maxHeight: number?): GridMount
+	local spec = table.clone(SPEC) :: GridSpec
+	if maxHeight then
+		spec.maxViewport = maxHeight
+	end
 
 	local scroll = Instance.new("ScrollingFrame")
-	scroll.Name = "GridScroll"
-	scroll.Size = UDim2.new(1, 0, 0, maxH)
+	scroll.Name = "HubGridScroll"
+	scroll.Size = UDim2.new(1, 0, 0, spec.cellH + spec.scrollPad * 2)
 	scroll.BackgroundTransparency = 1
 	scroll.BorderSizePixel = 0
 	scroll.ScrollBarThickness = 4
+	scroll.ScrollingDirection = Enum.ScrollingDirection.Y
 	scroll.CanvasSize = UDim2.new(0, 0, 0, 0)
 	scroll.AutomaticCanvasSize = Enum.AutomaticSize.None
+	scroll.ClipsDescendants = true
 	scroll.Parent = parent
-	corner(scroll, 12)
-	reg(scroll, "BackgroundColor3", "bg")
 
-	local gridPad = Instance.new("UIPadding")
-	gridPad.PaddingTop = UDim.new(0, pad)
-	gridPad.PaddingBottom = UDim.new(0, pad)
-	gridPad.PaddingLeft = UDim.new(0, pad)
-	gridPad.PaddingRight = UDim.new(0, pad)
-	gridPad.Parent = scroll
+	local pad = Instance.new("UIPadding")
+	pad.PaddingTop = UDim.new(0, spec.scrollPad)
+	pad.PaddingBottom = UDim.new(0, spec.scrollPad)
+	pad.PaddingLeft = UDim.new(0, spec.scrollPad)
+	pad.PaddingRight = UDim.new(0, spec.scrollPad)
+	pad.Parent = scroll
 
 	local inner = Instance.new("Frame")
-	inner.Name = "GridInner"
+	inner.Name = "HubGridInner"
 	inner.Size = UDim2.new(1, 0, 0, 0)
-	inner.AutomaticSize = Enum.AutomaticSize.Y
 	inner.BackgroundTransparency = 1
+	inner.BorderSizePixel = 0
 	inner.Parent = scroll
 
 	local layout = Instance.new("UIGridLayout")
 	layout.CellSize = UDim2.fromOffset(spec.cellW, spec.cellH)
 	layout.CellPadding = UDim2.fromOffset(spec.cellGap, spec.cellGap)
 	layout.SortOrder = Enum.SortOrder.LayoutOrder
+	layout.HorizontalAlignment = Enum.HorizontalAlignment.Left
+	layout.VerticalAlignment = Enum.VerticalAlignment.Top
 	layout.Parent = inner
 
-	local function syncViewport(count: number)
-		local innerW = math.max(inner.AbsoluteSize.X, spec.cellW)
-		local cols = columnCount(innerW, spec)
-		local contentH = estimatedCanvasHeight(count, cols, spec)
-		scroll.CanvasSize = UDim2.new(0, 0, 0, contentH)
-		scroll.Size = UDim2.new(1, 0, 0, math.min(maxH, contentH))
-	end
-
-	local host: GridHost = {
-		scroll = scroll,
+	local mount: GridMount = {
 		inner = inner,
 		layout = layout,
-		pad = pad,
-		maxHeight = maxH,
-		setCount = syncViewport,
+		spec = spec,
+		scroll = scroll,
+		addCard = function(order: number)
+			return createCard(inner, spec, order, deps)
+		end,
+		sync = function() end,
 	}
 
-	layout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
-		local h = layout.AbsoluteContentSize.Y + pad * 2
-		scroll.CanvasSize = UDim2.new(0, 0, 0, h)
-		scroll.Size = UDim2.new(1, 0, 0, math.min(maxH, h))
-	end)
-
-	inner:GetPropertyChangedSignal("AbsoluteSize"):Connect(function()
-		-- Re-sync when width changes (column wrap).
-		local h = layout.AbsoluteContentSize.Y + pad * 2
-		if h > 0 then
-			scroll.CanvasSize = UDim2.new(0, 0, 0, h)
-			scroll.Size = UDim2.new(1, 0, 0, math.min(maxH, h))
-		end
-	end)
-
-	return host
+	bindLayout(mount, scroll, deps)
+	return mount
 end
 
--- Card button sized to the grid cell; returns thumb frame (for image) and name label.
-local function createCard(
-	parent: Instance,
-	spec: GridSpec,
-	order: number,
-	corner: (Instance, number) -> UICorner
-): (TextButton, Frame, ImageLabel, TextLabel)
-	local btn = Instance.new("TextButton")
-	btn.Name = "Card"
-	btn.LayoutOrder = order
-	btn.Size = UDim2.fromOffset(spec.cellW, spec.cellH)
-	btn.BackgroundTransparency = 0
-	btn.Text = ""
-	btn.AutoButtonColor = false
-	btn.ClipsDescendants = true
-	btn.Parent = parent
-	corner(btn, spec.cardCorner)
+-- Inline grid (Game Info badges — no scroll wrapper).
+local function buildInline(parent: Instance, deps: GridDeps): GridMount
+	local spec = SPEC
 
-	local cardPad = Instance.new("UIPadding")
-	cardPad.PaddingTop = UDim.new(0, spec.inset)
-	cardPad.PaddingBottom = UDim.new(0, spec.inset)
-	cardPad.PaddingLeft = UDim.new(0, spec.inset)
-	cardPad.PaddingRight = UDim.new(0, spec.inset)
-	cardPad.Parent = btn
+	local layout = Instance.new("UIGridLayout")
+	layout.Name = "HubGridLayout"
+	layout.CellSize = UDim2.fromOffset(spec.cellW, spec.cellH)
+	layout.CellPadding = UDim2.fromOffset(spec.cellGap, spec.cellGap)
+	layout.SortOrder = Enum.SortOrder.LayoutOrder
+	layout.HorizontalAlignment = Enum.HorizontalAlignment.Left
+	layout.VerticalAlignment = Enum.VerticalAlignment.Top
+	layout.Parent = parent
 
-	local stack = Instance.new("UIListLayout")
-	stack.FillDirection = Enum.FillDirection.Vertical
-	stack.SortOrder = Enum.SortOrder.LayoutOrder
-	stack.Padding = UDim.new(0, spec.listGap)
-	stack.Parent = btn
+	local mount: GridMount = {
+		inner = parent,
+		layout = layout,
+		spec = spec,
+		scroll = nil,
+		addCard = function(order: number)
+			return createCard(parent, spec, order, deps)
+		end,
+		sync = function() end,
+	}
 
-	local thumbH = thumbHeight(spec)
-	local thumbWrap = Instance.new("Frame")
-	thumbWrap.Name = "Thumb"
-	thumbWrap.LayoutOrder = 1
-	thumbWrap.Size = UDim2.new(1, 0, 0, thumbH)
-	thumbWrap.BackgroundTransparency = 1
-	thumbWrap.BorderSizePixel = 0
-	thumbWrap.ClipsDescendants = true
-	thumbWrap.Parent = btn
-	corner(thumbWrap, spec.thumbCorner)
-
-	local thumb = Instance.new("ImageLabel")
-	thumb.Name = "Image"
-	thumb.Size = UDim2.fromScale(1, 1)
-	thumb.BackgroundTransparency = 1
-	thumb.ScaleType = Enum.ScaleType.Crop
-	thumb.Parent = thumbWrap
-
-	local nameLbl = Instance.new("TextLabel")
-	nameLbl.Name = "Title"
-	nameLbl.LayoutOrder = 2
-	nameLbl.Size = UDim2.new(1, 0, 0, spec.nameH)
-	nameLbl.BackgroundTransparency = 1
-	nameLbl.TextWrapped = false
-	nameLbl.TextTruncate = Enum.TextTruncate.AtEnd
-	nameLbl.TextYAlignment = Enum.TextYAlignment.Center
-	nameLbl.TextXAlignment = Enum.TextXAlignment.Center
-	nameLbl.Parent = btn
-
-	return btn, thumbWrap, thumb, nameLbl
+	bindLayout(mount, parent, deps)
+	return mount
 end
 
-local function addStateLayer(btn: TextButton, spec: GridSpec, corner: (Instance, number) -> UICorner, reg: (Instance, string) -> ()): Frame
-	local state = Instance.new("Frame")
-	state.Name = "State"
-	state.Size = UDim2.fromScale(1, 1)
-	state.BackgroundTransparency = 1
-	state.BorderSizePixel = 0
-	state.ZIndex = 2
-	state.Parent = btn
-	corner(state, spec.cardCorner)
-	reg(state, "BackgroundColor3", "fg")
-	return state
+-- Section shell: optional title + scroll grid inside a vertical holder.
+local function buildSection(
+	holderParent: Instance,
+	deps: GridDeps,
+	opts: {
+		title: string?,
+		maxHeight: number?,
+	}
+): (Frame, GridMount)
+	local holder = Instance.new("Frame")
+	holder.Name = "HubGridSection"
+	holder.Size = UDim2.new(1, 0, 0, 0)
+	holder.AutomaticSize = Enum.AutomaticSize.Y
+	holder.BackgroundTransparency = 1
+	holder.Parent = holderParent
+
+	local list = Instance.new("UIListLayout")
+	list.Padding = UDim.new(0, 6)
+	list.SortOrder = Enum.SortOrder.LayoutOrder
+	list.Parent = holder
+
+	local order = 0
+	if opts.title and opts.title ~= "" then
+		order += 1
+		local header = Instance.new("TextLabel")
+		header.Name = "Header"
+		header.LayoutOrder = order
+		header.Size = UDim2.new(1, 0, 0, 0)
+		header.AutomaticSize = Enum.AutomaticSize.Y
+		header.BackgroundTransparency = 1
+		header.Text = opts.title
+		header.TextXAlignment = Enum.TextXAlignment.Left
+		header.TextWrapped = true
+		header.Parent = holder
+		deps.reg(header, "TextColor3", "out")
+	end
+
+	local gridHost = Instance.new("Frame")
+	gridHost.Name = "GridHost"
+	gridHost.LayoutOrder = order + 1
+	gridHost.Size = UDim2.new(1, 0, 0, 0)
+	gridHost.AutomaticSize = Enum.AutomaticSize.Y
+	gridHost.BackgroundTransparency = 1
+	gridHost.Parent = holder
+
+	local mount = buildScroll(gridHost, deps, opts.maxHeight)
+	return holder, mount
 end
 
 return {
-	scrollPad = DEFAULTS.scrollPad,
-	cellGap = DEFAULTS.cellGap,
-	scriptsCell = G.ScriptsCell or { 106, 118 },
-	toolsCell = G.ToolsCell or { 110, 120 },
-	iconsCell = G.IconsCell or { 76, 70 },
-	badgeCell = G.BadgeCell or { 64, 78 },
-	badgeIcon = G.BadgeIcon or 40,
-	badgeCols = G.BadgeCols or 4,
-	inset = DEFAULTS.inset,
-	nameH = DEFAULTS.nameH,
-	specForCell = specForCell,
+	spec = SPEC,
 	thumbHeight = thumbHeight,
-	createGridHost = createGridHost,
+	columnCount = columnCount,
 	createCard = createCard,
-	addStateLayer = addStateLayer,
+	buildScroll = buildScroll,
+	buildInline = buildInline,
+	buildSection = buildSection,
+	-- Legacy aliases (icons / old imports)
+	specForCell = function(_cell: { number }?): GridSpec
+		return SPEC
+	end,
+	scriptsCell = SPEC.cellW and { SPEC.cellW, SPEC.cellH } or { 96, 104 },
+	toolsCell = SPEC.cellW and { SPEC.cellW, SPEC.cellH } or { 96, 104 },
+	iconsCell = SPEC.cellW and { SPEC.cellW, SPEC.cellH } or { 96, 104 },
+	badgeCell = SPEC.cellW and { SPEC.cellW, SPEC.cellH } or { 96, 104 },
+	badgeIcon = SPEC.badgeIcon,
+	badgeCols = G.BadgeCols or 4,
+	scrollPad = SPEC.scrollPad,
+	cellGap = SPEC.cellGap,
 }

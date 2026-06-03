@@ -19,6 +19,7 @@ return function(ctx)
 	local textSize = ctx.textSize
 	local HubGrid = ctx.hubGrid
 
+	local gridDeps = { corner = corner, reg = reg }
 	local activeSessions: { any } = {}
 
 	local function formatThumb(url: string): string
@@ -111,43 +112,14 @@ return function(ctx)
 	function lib:PopulateScriptsHub(entries: { GameEntry }?)
 		local list = entries or Registry.load()
 		local recognized = Registry.findForCurrentGame(list)
-		local spec = HubGrid.specForCell(HubGrid.scriptsCell)
-
-		local holder = Instance.new("Frame")
-		holder.Name = "ScriptsHub"
-		holder.Size = UDim2.new(1, 0, 0, 0)
-		holder.AutomaticSize = Enum.AutomaticSize.Y
-		holder.BackgroundTransparency = 1
-		holder.Parent = beginCardRow(nil, true)
-
-		local header = Instance.new("TextLabel")
-		header.Size = UDim2.new(1, 0, 0, 0)
-		header.AutomaticSize = Enum.AutomaticSize.Y
-		header.BackgroundTransparency = 1
-		header.Text = if recognized
+		local title = if recognized
 			then ("Recognised: " .. recognized.name .. " — pick a script or launch yours")
 			else "Scripts hub — select a game"
-		header.FontFace = fontWeight(Enum.FontWeight.Medium)
-		header.TextSize = textSize("sm")
-		header.TextXAlignment = Enum.TextXAlignment.Left
-		header.TextWrapped = true
-		header.Parent = holder
-		reg(header, "TextColor3", "out")
 
-		local gridHost = Instance.new("Frame")
-		gridHost.Size = UDim2.new(1, 0, 0, 0)
-		gridHost.AutomaticSize = Enum.AutomaticSize.Y
-		gridHost.BackgroundTransparency = 1
-		gridHost.Parent = holder
-
-		local layout = Instance.new("UIListLayout")
-		layout.Padding = UDim.new(0, 8)
-		layout.SortOrder = Enum.SortOrder.LayoutOrder
-		layout.Parent = holder
-		header.LayoutOrder = 0
-		gridHost.LayoutOrder = 1
-
-		local grid = HubGrid.createGridHost(gridHost, spec, 400, corner, reg)
+		local _, mount = HubGrid.buildSection(beginCardRow(nil, true), gridDeps, {
+			title = title,
+			maxHeight = HubGrid.spec.maxViewport,
+		})
 
 		local sorted = table.clone(list)
 		table.sort(sorted, function(a, b)
@@ -161,58 +133,56 @@ return function(ctx)
 
 		for order, entry in sorted do
 			local isCurrent = Registry.entryMatchesCurrent(entry)
-			local btn, _thumbWrap, thumb, nameLbl = HubGrid.createCard(grid.inner, spec, order, corner)
-			btn.Name = entry.id
-			reg(btn, "BackgroundColor3", "inact")
+			local card = mount.addCard(order)
+			card.root.Name = entry.id
+			reg(card.root, "BackgroundColor3", "inact")
 
 			local stroke = Instance.new("UIStroke")
 			stroke.Thickness = if isCurrent then 2 else 1
 			stroke.Transparency = if isCurrent then 0.1 else 0.55
-			stroke.Parent = btn
+			stroke.Parent = card.root
 			if isCurrent then
 				stroke.Color = curTheme.pri
 			else
 				reg(stroke, "Color", "out")
 			end
 
-			local state = HubGrid.addStateLayer(btn, spec, corner, reg)
-
-			thumb.Image = formatThumb(entry.thumbnail)
-			nameLbl.Text = entry.name
-			nameLbl.FontFace = m3Font
-			nameLbl.TextSize = textSize("sm")
-			reg(nameLbl, "TextColor3", "fg")
+			card.image.Image = formatThumb(entry.thumbnail)
+			card.title.Text = entry.name
+			card.title.FontFace = m3Font
+			card.title.TextSize = textSize("sm")
+			reg(card.title, "TextColor3", "fg")
 
 			if isCurrent then
 				local badge = Instance.new("TextLabel")
-				badge.Size = UDim2.new(0, 64, 0, 16)
-				badge.Position = UDim2.new(0, 4, 0, 4)
+				badge.Size = UDim2.fromOffset(64, 16)
+				badge.Position = UDim2.fromOffset(4, 4)
 				badge.BackgroundTransparency = 0
 				badge.Text = "This game"
 				badge.FontFace = fontWeight(Enum.FontWeight.Bold)
 				badge.TextSize = textSize("sm")
-				badge.ZIndex = 4
-				badge.Parent = thumb.Parent
+				badge.ZIndex = 5
+				badge.Parent = card.thumb
 				corner(badge, 6)
 				reg(badge, "BackgroundColor3", "pri")
 				reg(badge, "TextColor3", "onpri")
 			end
 
-			btn.MouseEnter:Connect(function()
-				tween(state, "BackgroundTransparency", 0.92, 0.12)
+			card.root.MouseEnter:Connect(function()
+				tween(card.state, "BackgroundTransparency", 0.92, 0.12)
 				playFeedback("hover")
 			end)
-			btn.MouseLeave:Connect(function()
-				tween(state, "BackgroundTransparency", 1, 0.12)
+			card.root.MouseLeave:Connect(function()
+				tween(card.state, "BackgroundTransparency", 1, 0.12)
 			end)
-			btn.MouseButton1Click:Connect(function()
-				ripple(btn, curTheme.pri)
+			card.root.MouseButton1Click:Connect(function()
+				ripple(card.root, curTheme.pri)
 				playFeedback("selection")
 				launchEntry(entry)
 			end)
 
 			if tooltip then
-				tooltip.attach(btn, function()
+				tooltip.attach(card.root, function()
 					return buildScriptTooltip(entry)
 				end, { delay = 0.35 })
 			end
@@ -228,6 +198,6 @@ return function(ctx)
 			end)
 		end
 
-		grid.setCount(#sorted)
+		task.defer(mount.sync)
 	end
 end
