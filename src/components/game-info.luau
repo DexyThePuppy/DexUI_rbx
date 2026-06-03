@@ -225,22 +225,22 @@ return function(ctx)
 		local carouselSection = makeSection(1)
 
 		local ASPECT_16_9 = 9 / 16
-		local CENTER_W = 320
-		local CENTER_H = math.floor(CENTER_W * ASPECT_16_9 + 0.5)
-		local SIDE_W = 200
-		local SIDE_H = math.floor(SIDE_W * ASPECT_16_9 + 0.5)
 		local SIDE_GAP = 14
+		local SLOT_RADIUS = 12
+		local carouselCenterW = 320
+		local carouselCenterH = math.floor(carouselCenterW * ASPECT_16_9 + 0.5)
+		local carouselSideW = 200
+		local carouselSideH = math.floor(carouselSideW * ASPECT_16_9 + 0.5)
 
 		local carouselShell = Instance.new("Frame")
 		carouselShell.LayoutOrder = 0
-		carouselShell.Size = UDim2.new(1, 0, 0, CENTER_H + 24)
+		carouselShell.Size = UDim2.new(1, 0, 0, carouselCenterH + 24)
 		carouselShell.BorderSizePixel = 0
 		carouselShell.ClipsDescendants = true
 		carouselShell.Parent = carouselSection
 		corner(carouselShell, 14)
 		reg(carouselShell, "BackgroundColor3", "bg")
 		local AUTO_SEC = 7
-		local FADE_SEC = 0.18
 
 		local carouselTrack = Instance.new("Frame")
 		carouselTrack.Name = "Track"
@@ -268,16 +268,17 @@ return function(ctx)
 			slot.Text = ""
 			slot.AutoButtonColor = false
 			slot.BorderSizePixel = 0
+			slot.ClipsDescendants = true
 			slot.Visible = false
 			slot.Parent = carouselTrack
-			corner(slot, 10)
+			corner(slot, SLOT_RADIUS)
 			reg(slot, "BackgroundColor3", "inact")
 
 			local img = Instance.new("ImageLabel")
 			img.Name = "Image"
 			img.Size = UDim2.fromScale(1, 1)
 			img.BackgroundTransparency = 1
-			img.ScaleType = Enum.ScaleType.Fit
+			img.ScaleType = Enum.ScaleType.Crop
 			img.Active = false
 			img.Selectable = false
 			img.Parent = slot
@@ -898,21 +899,61 @@ return function(ctx)
 		local function layoutSlotPositions()
 			local trackW = math.max(carouselTrack.AbsoluteSize.X, 1)
 			local trackH = math.max(carouselTrack.AbsoluteSize.Y, 1)
+			local usableW = math.max(trackW - 56, 180)
+
+			local centerW = math.floor(usableW * 0.46)
+			centerW = math.clamp(centerW, 180, 420)
+			local sideW = math.floor((usableW - centerW - SIDE_GAP * 2) * 0.5)
+			sideW = math.clamp(sideW, 96, 240)
+			centerW = math.max(160, usableW - sideW * 2 - SIDE_GAP * 2)
+
+			carouselCenterW = centerW
+			carouselCenterH = math.floor(centerW * ASPECT_16_9 + 0.5)
+			carouselSideW = sideW
+			carouselSideH = math.floor(sideW * ASPECT_16_9 + 0.5)
+
+			local shellH = carouselCenterH + 24
+			if math.abs(carouselShell.Size.Y.Offset - shellH) > 1 then
+				carouselShell.Size = UDim2.new(1, 0, 0, shellH)
+			end
+
 			local midX = trackW * 0.5
 			local midY = trackH * 0.5
-			local step = CENTER_W * 0.5 + SIDE_GAP + SIDE_W * 0.5
+			local step = carouselCenterW * 0.5 + SIDE_GAP + carouselSideW * 0.5
 
-			slotCenter.Size = UDim2.fromOffset(CENTER_W, CENTER_H)
+			slotCenter.Size = UDim2.fromOffset(carouselCenterW, carouselCenterH)
 			slotCenter.Position = UDim2.fromOffset(midX, midY)
 			slotCenter.ZIndex = 3
 
-			slotLeft.Size = UDim2.fromOffset(SIDE_W, SIDE_H)
+			slotLeft.Size = UDim2.fromOffset(carouselSideW, carouselSideH)
 			slotLeft.Position = UDim2.fromOffset(midX - step, midY)
 			slotLeft.ZIndex = 2
 
-			slotRight.Size = UDim2.fromOffset(SIDE_W, SIDE_H)
+			slotRight.Size = UDim2.fromOffset(carouselSideW, carouselSideH)
 			slotRight.Position = UDim2.fromOffset(midX + step, midY)
 			slotRight.ZIndex = 2
+		end
+
+		local carouselLayoutQueued = false
+		local function refreshCarouselLayout()
+			if #slideUris == 0 then
+				return
+			end
+			applySlots(slideIndex)
+		end
+
+		local function scheduleCarouselLayout()
+			if carouselLayoutQueued then
+				return
+			end
+			carouselLayoutQueued = true
+			task.defer(function()
+				carouselLayoutQueued = false
+				game:GetService("RunService").RenderStepped:Wait()
+				if carouselTrack.Parent and carouselTrack.AbsoluteSize.X > 1 then
+					refreshCarouselLayout()
+				end
+			end)
 		end
 
 		local function refreshDots(active: number)
@@ -922,7 +963,7 @@ return function(ctx)
 		end
 
 		-- Three fixed slots always show prev / active / next (infinite loop, no flying slides).
-		local function applySlots(active: number, fadeCenter: boolean?)
+		local function applySlots(active: number)
 			local count = #slideUris
 			emptyLbl.Visible = count == 0
 			if count == 0 then
@@ -954,23 +995,7 @@ return function(ctx)
 
 			setSlotImage(slotLeft, slideUris[prevIdx], 0.35)
 			setSlotImage(slotRight, slideUris[nextIdx], 0.35)
-
-			local centerImg = slotImage(slotCenter)
-			if fadeCenter and centerImg then
-				tween(centerImg, "ImageTransparency", 1, FADE_SEC)
-				task.delay(FADE_SEC, function()
-					if not slotCenter.Parent then
-						return
-					end
-					setSlotImage(slotCenter, slideUris[active], 1)
-					local img = slotImage(slotCenter)
-					if img then
-						tween(img, "ImageTransparency", 0, FADE_SEC)
-					end
-				end)
-			else
-				setSlotImage(slotCenter, slideUris[active], 0)
-			end
+			setSlotImage(slotCenter, slideUris[active], 0)
 		end
 
 		local function goToSlide(index: number)
@@ -982,7 +1007,7 @@ return function(ctx)
 			if nextIndex == slideIndex then
 				return
 			end
-			applySlots(nextIndex, true)
+			applySlots(nextIndex)
 			lastAutoAt = os.clock()
 		end
 
@@ -1068,12 +1093,7 @@ return function(ctx)
 				end)
 			end
 
-			task.defer(function()
-				game:GetService("RunService").RenderStepped:Wait()
-				if #slideUris > 0 then
-					applySlots(1, false)
-				end
-			end)
+			scheduleCarouselLayout()
 
 			if multi then
 				carouselConn = onHeartbeat(function()
@@ -1105,6 +1125,30 @@ return function(ctx)
 			playFeedback("light")
 			goToSlide(slideIndex + 1)
 		end)
+
+		carouselTrack:GetPropertyChangedSignal("AbsoluteSize"):Connect(scheduleCarouselLayout)
+		carouselShell:GetPropertyChangedSignal("AbsoluteSize"):Connect(scheduleCarouselLayout)
+
+		local tabScroll: Instance? = holder
+		while tabScroll and not tabScroll:IsA("ScrollingFrame") do
+			tabScroll = tabScroll.Parent
+		end
+		if tabScroll then
+			tabScroll:GetPropertyChangedSignal("Visible"):Connect(function()
+				if tabScroll.Visible then
+					scheduleCarouselLayout()
+				end
+			end)
+			tabScroll:GetPropertyChangedSignal("AbsoluteSize"):Connect(scheduleCarouselLayout)
+		end
+
+		local winNode: Instance? = holder
+		while winNode and winNode.Name ~= "Window" do
+			winNode = winNode.Parent
+		end
+		if winNode then
+			winNode:GetPropertyChangedSignal("AbsoluteSize"):Connect(scheduleCarouselLayout)
+		end
 
 		task.spawn(function()
 			local ok, meta = pcall(GameMetadata.fetchCurrentGameMetadata)
