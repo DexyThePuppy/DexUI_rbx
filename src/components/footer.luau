@@ -232,15 +232,22 @@ return function(ctx)
 		end
 	end
 
-	local function addTopSquarePatch(surface: Frame, anchor: Vector2, pos: UDim2, bgTransparency: number)
-		-- UICorner is uniform; square overlays on the top edge keep it flush with content above.
+	local function addCornerPatch(
+		surface: Frame,
+		name: string,
+		anchor: Vector2,
+		pos: UDim2,
+		bgTransparency: number,
+		z: number
+	)
+		-- UICorner is uniform; square overlays square off edges that should stay sharp.
 		local patch = Instance.new("Frame")
-		patch.Name = "TopCornerSquare"
+		patch.Name = name
 		patch.Size = UDim2.fromOffset(winCorner + 2, winCorner + 2)
 		patch.AnchorPoint = anchor
 		patch.Position = pos
 		patch.BorderSizePixel = 0
-		patch.ZIndex = 72
+		patch.ZIndex = z
 		patch.Parent = surface
 		reg(patch, "BackgroundColor3", "inact")
 		patch.BackgroundTransparency = bgTransparency
@@ -295,8 +302,8 @@ return function(ctx)
 		reg(bar, "BackgroundColor3", "inact")
 		bar.BackgroundTransparency = bgTransparency
 		corner(bar, winCorner)
-		addTopSquarePatch(bar, Vector2.new(0, 0), UDim2.new(0, 0, 0, 0), bgTransparency)
-		addTopSquarePatch(bar, Vector2.new(1, 0), UDim2.new(1, 0, 0, 0), bgTransparency)
+		addCornerPatch(bar, "TopCornerSquare", Vector2.new(0, 0), UDim2.new(0, 0, 0, 0), bgTransparency, 72)
+		addCornerPatch(bar, "TopCornerSquare", Vector2.new(1, 0), UDim2.new(1, 0, 0, 0), bgTransparency, 72)
 		footerBar = bar
 
 		if runtimeConfig.ShowTopDivider ~= false then

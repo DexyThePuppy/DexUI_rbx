@@ -43,7 +43,7 @@ return function(ctx)
 
 		local layout = Instance.new("UIListLayout")
 		layout.SortOrder = Enum.SortOrder.LayoutOrder
-		layout.Padding = UDim.new(0, 6)
+		layout.Padding = UDim.new(0, 4)
 		layout.Parent = holder
 
 		local searchFrame = Instance.new("Frame")
@@ -108,21 +108,21 @@ return function(ctx)
 		gridScroll.Parent = gridHost
 
 		local gridPad = Instance.new("UIPadding")
-		gridPad.PaddingTop = UDim.new(0, 6)
-		gridPad.PaddingBottom = UDim.new(0, 6)
-		gridPad.PaddingLeft = UDim.new(0, 6)
-		gridPad.PaddingRight = UDim.new(0, 6)
+		gridPad.PaddingTop = UDim.new(0, 4)
+		gridPad.PaddingBottom = UDim.new(0, 4)
+		gridPad.PaddingLeft = UDim.new(0, 4)
+		gridPad.PaddingRight = UDim.new(0, 4)
 		gridPad.Parent = gridScroll
 
 		local gridInner = Instance.new("Frame")
-		gridInner.Size = UDim2.new(1, -12, 0, 0)
+		gridInner.Size = UDim2.new(1, -8, 0, 0)
 		gridInner.AutomaticSize = Enum.AutomaticSize.Y
 		gridInner.BackgroundTransparency = 1
 		gridInner.Parent = gridScroll
 
 		local gridLayout = Instance.new("UIGridLayout")
-		gridLayout.CellSize = UDim2.fromOffset(84, 76)
-		gridLayout.CellPadding = UDim2.fromOffset(5, 5)
+		gridLayout.CellSize = UDim2.fromOffset(72, 64)
+		gridLayout.CellPadding = UDim2.fromOffset(3, 3)
 		gridLayout.SortOrder = Enum.SortOrder.LayoutOrder
 		gridLayout.Parent = gridInner
 
@@ -178,7 +178,7 @@ return function(ctx)
 			btn.AutoButtonColor = false
 			btn.ClipsDescendants = true
 			btn.Parent = gridInner
-			corner(btn, 14)
+			corner(btn, 8)
 			reg(btn, "BackgroundColor3", "inact")
 
 			-- M3 state layer for hover/press feedback.
@@ -188,13 +188,13 @@ return function(ctx)
 			state.BorderSizePixel = 0
 			state.ZIndex = 2
 			state.Parent = btn
-			corner(state, 14)
+			corner(state, 8)
 			reg(state, "BackgroundColor3", "fg")
 
 			local iconImg = Instance.new("ImageLabel")
-			iconImg.Size = UDim2.fromOffset(36, 36)
+			iconImg.Size = UDim2.fromOffset(32, 32)
 			iconImg.AnchorPoint = Vector2.new(0.5, 0)
-			iconImg.Position = UDim2.new(0.5, 0, 0, 8)
+			iconImg.Position = UDim2.new(0.5, 0, 0, 5)
 			iconImg.BackgroundTransparency = 1
 			iconImg.Image = "rbxassetid://" .. tostring(icon.id)
 			iconImg.ScaleType = Enum.ScaleType.Fit
@@ -203,9 +203,9 @@ return function(ctx)
 			reg(iconImg, "ImageColor3", "fg")
 
 			local nameLbl = Instance.new("TextLabel")
-			nameLbl.Size = UDim2.new(1, -8, 0, 22)
+			nameLbl.Size = UDim2.new(1, -6, 0, 18)
 			nameLbl.AnchorPoint = Vector2.new(0.5, 1)
-			nameLbl.Position = UDim2.new(0.5, 0, 1, -4)
+			nameLbl.Position = UDim2.new(0.5, 0, 1, -3)
 			nameLbl.BackgroundTransparency = 1
 			nameLbl.Text = icon.name:gsub("_", " ")
 			nameLbl.FontFace = m3Font

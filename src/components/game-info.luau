@@ -171,7 +171,7 @@ return function(ctx)
 			row.Parent = parent
 			local rowLayout = Instance.new("UIListLayout")
 			rowLayout.FillDirection = Enum.FillDirection.Horizontal
-			rowLayout.Padding = UDim.new(0, 4)
+			rowLayout.Padding = UDim.new(0, 3)
 			rowLayout.SortOrder = Enum.SortOrder.LayoutOrder
 			rowLayout.Wraps = true
 			rowLayout.Parent = row
@@ -199,8 +199,8 @@ return function(ctx)
 			corner(badge, 5)
 
 			local pad = Instance.new("UIPadding")
-			pad.PaddingLeft = UDim.new(0, 5)
-			pad.PaddingRight = UDim.new(0, 5)
+			pad.PaddingLeft = UDim.new(0, 4)
+			pad.PaddingRight = UDim.new(0, 4)
 			pad.Parent = badge
 
 			local lbl = Instance.new("TextLabel")
@@ -458,11 +458,11 @@ return function(ctx)
 			extraBadgeRow.Visible = extraBadgeRow:FindFirstChild("Badge") ~= nil
 		end
 
-		local BADGE_COLS = 4
-		local BADGE_CELL_W = 72
-		local BADGE_CELL_H = 86
-		local BADGE_ICON = 44
-		local BADGE_CELL_GAP = 4
+		local BADGE_COLS = 5
+		local BADGE_CELL_W = 60
+		local BADGE_CELL_H = 74
+		local BADGE_ICON = 38
+		local BADGE_CELL_GAP = 3
 		local CLAIMED_GREEN = Color3.fromRGB(56, 170, 92)
 
 		local badgesSection = makeSection(3)
@@ -470,20 +470,20 @@ return function(ctx)
 		do
 			local badgesPad = badgesSection:FindFirstChildOfClass("UIPadding")
 			if badgesPad then
-				badgesPad.PaddingTop = UDim.new(0, 8)
-				badgesPad.PaddingBottom = UDim.new(0, 8)
-				badgesPad.PaddingLeft = UDim.new(0, 8)
-				badgesPad.PaddingRight = UDim.new(0, 8)
+				badgesPad.PaddingTop = UDim.new(0, 6)
+				badgesPad.PaddingBottom = UDim.new(0, 6)
+				badgesPad.PaddingLeft = UDim.new(0, 6)
+				badgesPad.PaddingRight = UDim.new(0, 6)
 			end
 			local badgesList = badgesSection:FindFirstChildOfClass("UIListLayout")
 			if badgesList then
-				badgesList.Padding = UDim.new(0, 6)
+				badgesList.Padding = UDim.new(0, 4)
 			end
 		end
 
 		local badgesHeading = Instance.new("TextLabel")
 		badgesHeading.LayoutOrder = 0
-		badgesHeading.Size = UDim2.new(1, 0, 0, 20)
+		badgesHeading.Size = UDim2.new(1, 0, 0, 18)
 		badgesHeading.BackgroundTransparency = 1
 		badgesHeading.Text = "Badges"
 		badgesHeading.FontFace = fontWeight(Enum.FontWeight.Medium)
@@ -573,13 +573,13 @@ return function(ctx)
 				cell.BackgroundTransparency = if badge.claimed then 0.35 else 0.55
 				cell.BorderSizePixel = 0
 				cell.Parent = badgeGrid
-				corner(cell, 10)
+				corner(cell, 8)
 				reg(cell, "BackgroundColor3", "bg")
 
 				local icon = Instance.new("ImageLabel")
 				icon.Name = "Icon"
 				icon.Size = UDim2.fromOffset(BADGE_ICON, BADGE_ICON)
-				icon.Position = UDim2.new(0.5, 0, 0, 4)
+				icon.Position = UDim2.new(0.5, 0, 0, 3)
 				icon.AnchorPoint = Vector2.new(0.5, 0)
 				icon.BackgroundTransparency = 1
 				icon.ScaleType = Enum.ScaleType.Fit
@@ -612,8 +612,8 @@ return function(ctx)
 
 				local nameLbl = Instance.new("TextLabel")
 				nameLbl.Name = "Name"
-				nameLbl.Size = UDim2.new(1, -6, 0, 28)
-				nameLbl.Position = UDim2.new(0, 3, 1, -30)
+				nameLbl.Size = UDim2.new(1, -4, 0, 24)
+				nameLbl.Position = UDim2.new(0, 2, 1, -26)
 				nameLbl.BackgroundTransparency = 1
 				nameLbl.Text = badge.name
 				nameLbl.FontFace = m3Font

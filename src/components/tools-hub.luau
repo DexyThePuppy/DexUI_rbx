@@ -93,42 +93,46 @@ return function(ctx)
 		gridHost.BackgroundTransparency = 1
 		gridHost.Parent = holder
 
+		local CARD_W, CARD_H = 112, 120
+		local GAP, INSET = 4, 4
+
 		local layout = Instance.new("UIListLayout")
-		layout.Padding = UDim.new(0, 6)
+		layout.Padding = UDim.new(0, 4)
 		layout.SortOrder = Enum.SortOrder.LayoutOrder
 		layout.Parent = holder
 		header.LayoutOrder = 0
 		gridHost.LayoutOrder = 1
 
-		local cols = math.max(2, math.min(4, math.ceil(math.sqrt(#list))))
-		local rows = math.max(1, math.ceil(#list / cols))
+		local estCols = math.max(1, math.floor(360 / (CARD_W + GAP)))
+		local rows = math.max(1, math.ceil(#list / estCols))
 		local gridScroll = Instance.new("ScrollingFrame")
-		gridScroll.Size = UDim2.new(1, 0, 0, math.min(420, 64 + rows * 152))
+		gridScroll.Size = UDim2.new(1, 0, 0, math.min(360, 36 + rows * (CARD_H + GAP)))
 		gridScroll.BackgroundTransparency = 1
 		gridScroll.BorderSizePixel = 0
 		gridScroll.ScrollBarThickness = 4
 		gridScroll.CanvasSize = UDim2.new(0, 0, 0, 0)
 		gridScroll.AutomaticCanvasSize = Enum.AutomaticSize.Y
 		gridScroll.Parent = gridHost
-		corner(gridScroll, 12)
+		corner(gridScroll, 8)
 		reg(gridScroll, "BackgroundColor3", "bg")
 
 		local gridPad = Instance.new("UIPadding")
-		gridPad.PaddingTop = UDim.new(0, 6)
-		gridPad.PaddingBottom = UDim.new(0, 6)
-		gridPad.PaddingLeft = UDim.new(0, 6)
-		gridPad.PaddingRight = UDim.new(0, 6)
+		gridPad.PaddingTop = UDim.new(0, GAP)
+		gridPad.PaddingBottom = UDim.new(0, GAP)
+		gridPad.PaddingLeft = UDim.new(0, GAP)
+		gridPad.PaddingRight = UDim.new(0, GAP)
 		gridPad.Parent = gridScroll
 
 		local gridInner = Instance.new("Frame")
-		gridInner.Size = UDim2.new(1, -12, 0, 0)
+		gridInner.Size = UDim2.new(1, -(GAP * 2), 0, 0)
 		gridInner.AutomaticSize = Enum.AutomaticSize.Y
 		gridInner.BackgroundTransparency = 1
 		gridInner.Parent = gridScroll
 
-		local gridLayout = Instance.new("UIGridLayout")
-		gridLayout.CellSize = UDim2.fromOffset(136, 152)
-		gridLayout.CellPadding = UDim2.fromOffset(6, 6)
+		local gridLayout = Instance.new("UIListLayout")
+		gridLayout.FillDirection = Enum.FillDirection.Horizontal
+		gridLayout.Wraps = true
+		gridLayout.Padding = UDim.new(0, GAP)
 		gridLayout.SortOrder = Enum.SortOrder.LayoutOrder
 		gridLayout.Parent = gridInner
 
@@ -144,9 +148,10 @@ return function(ctx)
 			btn.BackgroundTransparency = 0
 			btn.Text = ""
 			btn.AutoButtonColor = false
+			btn.Size = UDim2.fromOffset(CARD_W, CARD_H)
 			btn.ClipsDescendants = true
 			btn.Parent = gridInner
-			corner(btn, 14)
+			corner(btn, 10)
 			reg(btn, "BackgroundColor3", "inact")
 
 			local stroke = Instance.new("UIStroke")
@@ -161,13 +166,13 @@ return function(ctx)
 			state.BorderSizePixel = 0
 			state.ZIndex = 2
 			state.Parent = btn
-			corner(state, 14)
+			corner(state, 10)
 			reg(state, "BackgroundColor3", "fg")
 
 			local thumb = Instance.new("ImageLabel")
 			thumb.Name = "Thumbnail"
-			thumb.Size = UDim2.new(1, -12, 0, 88)
-			thumb.Position = UDim2.new(0, 6, 0, 6)
+			thumb.Size = UDim2.new(1, -(INSET * 2), 0, 76)
+			thumb.Position = UDim2.new(0, INSET, 0, INSET)
 			thumb.BackgroundTransparency = 1
 			thumb.Image = formatThumb(entry.thumbnail)
 			thumb.ScaleType = Enum.ScaleType.Crop
@@ -180,12 +185,12 @@ return function(ctx)
 			thumb.Active = false
 			thumb.Selectable = false
 			thumb.Parent = btn
-			corner(thumb, 10)
+			corner(thumb, 8)
 
 			local nameLbl = Instance.new("TextLabel")
-			nameLbl.Size = UDim2.new(1, -10, 0, 40)
+			nameLbl.Size = UDim2.new(1, -8, 0, 24)
 			nameLbl.AnchorPoint = Vector2.new(0.5, 1)
-			nameLbl.Position = UDim2.new(0.5, 0, 1, -6)
+			nameLbl.Position = UDim2.new(0.5, 0, 1, -INSET)
 			nameLbl.BackgroundTransparency = 1
 			nameLbl.Text = entry.name
 			nameLbl.FontFace = fontWeight(Enum.FontWeight.Medium)
@@ -201,7 +206,7 @@ return function(ctx)
 
 			local extBadge = Instance.new("TextLabel")
 			extBadge.Size = UDim2.new(0, 56, 0, 18)
-			extBadge.Position = UDim2.new(1, -6, 0, 6)
+			extBadge.Position = UDim2.new(1, -INSET, 0, INSET)
 			extBadge.AnchorPoint = Vector2.new(1, 0)
 			extBadge.BackgroundTransparency = 0
 			extBadge.Text = "External"

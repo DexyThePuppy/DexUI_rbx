@@ -96,15 +96,20 @@ return function(deps: any)
 		cover.Parent = clip
 		corner(cover, WIN_RADIUS - 3)
 		reg(cover, "BackgroundColor3", "bg")
+		-- Bottom corners sit over the footer; an opaque bg mask reads as a square artifact.
+		if ay == 1 then
+			cover.BackgroundTransparency = 1
+		end
 		return accent
 	end
 
 	-- Corner hover: the curved corner border is the full accent tint, while the two adjacent
 	-- edges only glow faintly (EDGE_DIM) so the corner itself reads as the focal point.
+	-- Bottom corners skip the arc mask (footer covers that zone); edge bars still highlight.
 	local glowTL = { { makeCornerArc(0, 0), 0 }, { topBar, EDGE_DIM }, { leftBar, EDGE_DIM } }
 	local glowTR = { { makeCornerArc(1, 0), 0 }, { topBar, EDGE_DIM }, { rightBar, EDGE_DIM } }
-	local glowBL = { { makeCornerArc(0, 1), 0 }, { bottomBar, EDGE_DIM }, { leftBar, EDGE_DIM } }
-	local glowBR = { { makeCornerArc(1, 1), 0 }, { bottomBar, EDGE_DIM }, { rightBar, EDGE_DIM } }
+	local glowBL = { { bottomBar, 0 }, { leftBar, EDGE_DIM } }
+	local glowBR = { { bottomBar, 0 }, { rightBar, EDGE_DIM } }
 
 	-- Forward-declared so resize handlers (registered below) see the same locals as pin setup.
 	local pinned = false
