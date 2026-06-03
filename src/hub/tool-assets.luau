@@ -6,6 +6,7 @@ local assetUriCache: { [string]: string } = {}
 
 local ASSET_FILES: { [string]: string } = {
 	dexplusplus = "assets/tools/dexplusplus.png",
+	cobalt = "assets/tools/cobalt.png",
 }
 
 local SEARCH_PREFIXES = {

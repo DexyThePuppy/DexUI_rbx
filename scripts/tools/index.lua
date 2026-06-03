@@ -14,7 +14,7 @@ return {
 		id = "cobalt",
 		name = "Cobalt",
 		description = "Remote spy — monitor and intercept incoming/outgoing network traffic with replay and blocking.",
-		thumbnail = "rbxassetid://6026671208",
+		thumbnail = "asset:cobalt",
 		url = "https://github.com/notpoiu/cobalt/releases/latest/download/Cobalt.luau",
 		repo = "https://github.com/notpoiu/cobalt",
 	},
