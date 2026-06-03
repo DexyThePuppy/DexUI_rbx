@@ -15,6 +15,7 @@ return function(ctx)
 	local fontWeight = ctx.fontWeight
 	local onHeartbeat = ctx.onHeartbeat
 	local playFeedback = ctx.playFeedback
+	local trySetClipboard = ctx.trySetClipboard
 	local MEDIA_PAGE_SIZE, MEDIA_PAGE_COUNT = ctx.MEDIA_PAGE_SIZE, ctx.MEDIA_PAGE_COUNT
 	local ContentProvider = Services.ContentProvider or game:GetService("ContentProvider")
 	local Players = game:GetService("Players")
@@ -65,7 +66,7 @@ return function(ctx)
 		holder.Parent = beginCardRow(nil, true)
 
 		local layout = Instance.new("UIListLayout")
-		layout.Padding = UDim.new(0, 12)
+		layout.Padding = UDim.new(0, 16)
 		layout.SortOrder = Enum.SortOrder.LayoutOrder
 		layout.Parent = holder
 
@@ -75,8 +76,18 @@ return function(ctx)
 			section.LayoutOrder = layoutOrder
 			section.Size = UDim2.new(1, 0, 0, 0)
 			section.AutomaticSize = Enum.AutomaticSize.Y
-			section.BackgroundTransparency = 1
+			section.BorderSizePixel = 0
 			section.Parent = holder
+			corner(section, 12)
+			reg(section, "BackgroundColor3", "inact")
+
+			local sectionPad = Instance.new("UIPadding")
+			sectionPad.PaddingTop = UDim.new(0, 12)
+			sectionPad.PaddingBottom = UDim.new(0, 12)
+			sectionPad.PaddingLeft = UDim.new(0, 12)
+			sectionPad.PaddingRight = UDim.new(0, 12)
+			sectionPad.Parent = section
+
 			local sectionLayout = Instance.new("UIListLayout")
 			sectionLayout.Padding = UDim.new(0, 8)
 			sectionLayout.SortOrder = Enum.SortOrder.LayoutOrder
@@ -84,16 +95,21 @@ return function(ctx)
 			return section
 		end
 
-		local function makeDivider(layoutOrder: number): Frame
-			local div = Instance.new("Frame")
-			div.Name = "Divider"
-			div.LayoutOrder = layoutOrder
-			div.Size = UDim2.new(1, 0, 0, 1)
-			div.BorderSizePixel = 0
-			div.BackgroundTransparency = 0.65
-			div.Parent = holder
-			reg(div, "BackgroundColor3", "out")
-			return div
+		local function notifyCopied(text: string, subtitle: string?)
+			if trySetClipboard(text) then
+				lib:Notify({
+					Title = "Copied",
+					Content = subtitle or text,
+					Duration = 2,
+				})
+				playFeedback("selection")
+			else
+				lib:Notify({
+					Title = "Copy",
+					Content = text,
+					Duration = 5,
+				})
+			end
 		end
 
 		-- Header: title (left) + rejoin (right), then meta line
@@ -170,8 +186,10 @@ return function(ctx)
 		end
 
 		local function addInfoBadge(row: Frame, label: string, bg: Color3?, fg: Color3?)
-			local badge = Instance.new("Frame")
+			local badge = Instance.new("TextButton")
 			badge.Name = "Badge"
+			badge.Text = ""
+			badge.AutoButtonColor = false
 			badge.Size = UDim2.fromOffset(0, 22)
 			badge.AutomaticSize = Enum.AutomaticSize.X
 			badge.BackgroundColor3 = bg or curTheme.bg
@@ -192,7 +210,13 @@ return function(ctx)
 			lbl.FontFace = fontWeight(Enum.FontWeight.Medium)
 			lbl.TextSize = 11
 			lbl.TextColor3 = fg or curTheme.out
+			lbl.Active = false
+			lbl.Selectable = false
 			lbl.Parent = badge
+
+			badge.MouseButton1Click:Connect(function()
+				notifyCopied(label)
+			end)
 		end
 
 		local metaBadgeRow = makeBadgeRow(headerSection, 1, "MetaBadges")
@@ -200,19 +224,21 @@ return function(ctx)
 		-- Carousel
 		local carouselSection = makeSection(1)
 
+		local ASPECT_16_9 = 9 / 16
+		local CENTER_W = 320
+		local CENTER_H = math.floor(CENTER_W * ASPECT_16_9 + 0.5)
+		local SIDE_W = 200
+		local SIDE_H = math.floor(SIDE_W * ASPECT_16_9 + 0.5)
+		local SIDE_GAP = 14
+
 		local carouselShell = Instance.new("Frame")
 		carouselShell.LayoutOrder = 0
-		carouselShell.Size = UDim2.new(1, 0, 0, 200)
+		carouselShell.Size = UDim2.new(1, 0, 0, CENTER_H + 24)
 		carouselShell.BorderSizePixel = 0
 		carouselShell.ClipsDescendants = true
 		carouselShell.Parent = carouselSection
 		corner(carouselShell, 14)
-		reg(carouselShell, "BackgroundColor3", "inact")
-
-		local CAROUSEL_H = 184
-		local CENTER_W = 332
-		local SIDE_W = 248
-		local SIDE_GAP = 14
+		reg(carouselShell, "BackgroundColor3", "bg")
 		local AUTO_SEC = 7
 		local FADE_SEC = 0.18
 
@@ -235,17 +261,39 @@ return function(ctx)
 		emptyLbl.ZIndex = 2
 		emptyLbl.Parent = carouselTrack
 
-		local function makeCarouselSlot(name: string): ImageLabel
-			local slot = Instance.new("ImageLabel")
+		local function makeCarouselSlot(name: string): TextButton
+			local slot = Instance.new("TextButton")
 			slot.Name = name
 			slot.AnchorPoint = Vector2.new(0.5, 0.5)
-			slot.BackgroundTransparency = 1
-			slot.ScaleType = Enum.ScaleType.Crop
+			slot.Text = ""
+			slot.AutoButtonColor = false
+			slot.BorderSizePixel = 0
 			slot.Visible = false
 			slot.Parent = carouselTrack
 			corner(slot, 10)
-			reg(slot, "BackgroundColor3", "bg")
+			reg(slot, "BackgroundColor3", "inact")
+
+			local img = Instance.new("ImageLabel")
+			img.Name = "Image"
+			img.Size = UDim2.fromScale(1, 1)
+			img.BackgroundTransparency = 1
+			img.ScaleType = Enum.ScaleType.Fit
+			img.Active = false
+			img.Selectable = false
+			img.Parent = slot
 			return slot
+		end
+
+		local function slotImage(slot: TextButton): ImageLabel?
+			return slot:FindFirstChild("Image") :: ImageLabel?
+		end
+
+		local function setSlotImage(slot: TextButton, uri: string, transparency: number)
+			local img = slotImage(slot)
+			if img then
+				img.Image = uri
+				img.ImageTransparency = transparency
+			end
 		end
 
 		local slotLeft = makeCarouselSlot("Left")
@@ -264,10 +312,8 @@ return function(ctx)
 		dotsLayout.Padding = UDim.new(0, 6)
 		dotsLayout.Parent = dots
 
-		makeDivider(2)
-
 		-- Description
-		local descSection = makeSection(3)
+		local descSection = makeSection(2)
 
 		local VIP_BADGE_RED = Color3.fromRGB(210, 48, 48)
 		local VIP_BADGE_ON = Color3.fromRGB(255, 255, 255)
@@ -406,15 +452,13 @@ return function(ctx)
 			extraBadgeRow.Visible = extraBadgeRow:FindFirstChild("Badge") ~= nil
 		end
 
-		makeDivider(4)
-
 		local BADGE_COLS = 4
 		local BADGE_CELL_W = 84
 		local BADGE_CELL_H = 100
 		local BADGE_ICON = 52
 		local CLAIMED_GREEN = Color3.fromRGB(56, 170, 92)
 
-		local badgesSection = makeSection(5)
+		local badgesSection = makeSection(3)
 		badgesSection.Visible = false
 
 		local badgesHeading = Instance.new("TextLabel")
@@ -555,10 +599,8 @@ return function(ctx)
 			badgeGrid.Size = UDim2.new(1, 0, 0, rows * (BADGE_CELL_H + 6) - 6)
 		end
 
-		makeDivider(6)
-
 		-- Public servers (sorted low → high, paged like Media tab)
-		local serversSection = makeSection(7)
+		local serversSection = makeSection(4)
 
 		local serversHeading = Instance.new("TextLabel")
 		serversHeading.LayoutOrder = 0
@@ -815,7 +857,7 @@ return function(ctx)
 
 		local slideIndex = 1
 		local lastAutoAt = os.clock()
-		local dotFrames: { Frame } = {}
+		local dotFrames: { TextButton } = {}
 		local carouselConn: RBXScriptConnection? = nil
 		local slideUris: { string } = {}
 
@@ -860,15 +902,15 @@ return function(ctx)
 			local midY = trackH * 0.5
 			local step = CENTER_W * 0.5 + SIDE_GAP + SIDE_W * 0.5
 
-			slotCenter.Size = UDim2.fromOffset(CENTER_W, CAROUSEL_H - 16)
+			slotCenter.Size = UDim2.fromOffset(CENTER_W, CENTER_H)
 			slotCenter.Position = UDim2.fromOffset(midX, midY)
 			slotCenter.ZIndex = 3
 
-			slotLeft.Size = UDim2.fromOffset(SIDE_W, CAROUSEL_H - 28)
+			slotLeft.Size = UDim2.fromOffset(SIDE_W, SIDE_H)
 			slotLeft.Position = UDim2.fromOffset(midX - step, midY)
 			slotLeft.ZIndex = 2
 
-			slotRight.Size = UDim2.fromOffset(SIDE_W, CAROUSEL_H - 28)
+			slotRight.Size = UDim2.fromOffset(SIDE_W, SIDE_H)
 			slotRight.Position = UDim2.fromOffset(midX + step, midY)
 			slotRight.ZIndex = 2
 		end
@@ -899,8 +941,7 @@ return function(ctx)
 				slotLeft.Visible = false
 				slotRight.Visible = false
 				slotCenter.Visible = true
-				slotCenter.Image = slideUris[1]
-				slotCenter.ImageTransparency = 0
+				setSlotImage(slotCenter, slideUris[1], 0)
 				return
 			end
 
@@ -911,23 +952,24 @@ return function(ctx)
 			local prevIdx = wrapIndex(active - 1, count)
 			local nextIdx = wrapIndex(active + 1, count)
 
-			slotLeft.Image = slideUris[prevIdx]
-			slotLeft.ImageTransparency = 0.35
-			slotRight.Image = slideUris[nextIdx]
-			slotRight.ImageTransparency = 0.35
+			setSlotImage(slotLeft, slideUris[prevIdx], 0.35)
+			setSlotImage(slotRight, slideUris[nextIdx], 0.35)
 
-			if fadeCenter then
-				tween(slotCenter, "ImageTransparency", 1, FADE_SEC)
+			local centerImg = slotImage(slotCenter)
+			if fadeCenter and centerImg then
+				tween(centerImg, "ImageTransparency", 1, FADE_SEC)
 				task.delay(FADE_SEC, function()
 					if not slotCenter.Parent then
 						return
 					end
-					slotCenter.Image = slideUris[active]
-					tween(slotCenter, "ImageTransparency", 0, FADE_SEC)
+					setSlotImage(slotCenter, slideUris[active], 1)
+					local img = slotImage(slotCenter)
+					if img then
+						tween(img, "ImageTransparency", 0, FADE_SEC)
+					end
 				end)
 			else
-				slotCenter.Image = slideUris[active]
-				slotCenter.ImageTransparency = 0
+				setSlotImage(slotCenter, slideUris[active], 0)
 			end
 		end
 
@@ -968,7 +1010,7 @@ return function(ctx)
 		local function rebuildCarousel(images: { string })
 			table.clear(slideUris)
 			for _, ch in dots:GetChildren() do
-				if ch:IsA("Frame") then
+				if ch:IsA("TextButton") and ch.Name ~= "UIListLayout" then
 					ch:Destroy()
 				end
 			end
@@ -990,13 +1032,19 @@ return function(ctx)
 
 			local count = #slideUris
 			for i = 1, count do
-				local dot = Instance.new("Frame")
+				local dot = Instance.new("TextButton")
+				dot.Text = ""
+				dot.AutoButtonColor = false
 				dot.Size = UDim2.fromOffset(8, 8)
 				dot.BorderSizePixel = 0
 				dot.LayoutOrder = i
 				dot.Parent = dots
 				corner(dot, 999)
 				reg(dot, "BackgroundColor3", if i == 1 then "pri" else "out")
+				dot.MouseButton1Click:Connect(function()
+					playFeedback("light")
+					goToSlide(i)
+				end)
 				table.insert(dotFrames, dot)
 			end
 
@@ -1008,7 +1056,13 @@ return function(ctx)
 			lastAutoAt = os.clock()
 
 			if count > 0 then
-				local preload: { Instance } = { slotLeft, slotCenter, slotRight }
+				local preload: { Instance } = {}
+				for _, slot in { slotLeft, slotCenter, slotRight } do
+					local img = slotImage(slot)
+					if img then
+						table.insert(preload, img)
+					end
+				end
 				pcall(function()
 					ContentProvider:PreloadAsync(preload)
 				end)
@@ -1035,6 +1089,19 @@ return function(ctx)
 			goToSlide(slideIndex - 1)
 		end)
 		nextBtn.MouseButton1Click:Connect(function()
+			playFeedback("light")
+			goToSlide(slideIndex + 1)
+		end)
+
+		slotLeft.MouseButton1Click:Connect(function()
+			playFeedback("light")
+			goToSlide(slideIndex - 1)
+		end)
+		slotCenter.MouseButton1Click:Connect(function()
+			playFeedback("light")
+			goToSlide(slideIndex)
+		end)
+		slotRight.MouseButton1Click:Connect(function()
 			playFeedback("light")
 			goToSlide(slideIndex + 1)
 		end)
