@@ -9,10 +9,10 @@ return {
 
 	-- MUI/M3-style type scale: fixed tiers + per-role weights (see core/typography.luau).
 	-- WeightAdjustment: Android-style +N on each role (0 = off).
-	-- Family: Poppins (cloud id). Executors auto-download local TTFs (see core/fonts.luau).
+	-- Family: Roblox built-in Roboto (real per-weight masters). Executors auto-download TTFs.
 	-- ChromeWeight: "regular" for tabs/small UI (crisp); "medium" for slightly heavier chrome.
 	Typography = {
-		Family = "rbxassetid://11702779409",
+		Family = "rbxasset://fonts/families/Roboto.json",
 		ChromeWeight = "regular",
 		-- false = cloud only; true = force local TTFs; nil = auto (local when executor has writefile)
 		Small = 12, -- caption / helper

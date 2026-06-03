@@ -11,16 +11,15 @@ local TYPO = Config.Typography or {}
 local NumericWeight = Typography.NumericWeight
 local numericToFontWeight = Typography.numericToFontWeight
 
-local POPPINS_CLOUD_ID = 11702779409
-local BUILTIN_FAMILY = TYPO.Family or ("rbxassetid://" .. POPPINS_CLOUD_ID)
+local BUILTIN_FAMILY = TYPO.Family or "rbxasset://fonts/families/Roboto.json"
 
-local GLYPH_BASE = "https://github.com/google/fonts/raw/main/ofl/poppins"
+local GLYPH_BASE = "https://github.com/google/fonts/raw/main/apache/roboto/static"
 local GLYPH_FILES = {
-	regular = { file = "Poppins-Regular.ttf", url = GLYPH_BASE .. "/Poppins-Regular.ttf" },
-	medium = { file = "Poppins-Medium.ttf", url = GLYPH_BASE .. "/Poppins-Medium.ttf" },
-	bold = { file = "Poppins-Bold.ttf", url = GLYPH_BASE .. "/Poppins-Bold.ttf" },
-	extrabold = { file = "Poppins-ExtraBold.ttf", url = GLYPH_BASE .. "/Poppins-ExtraBold.ttf" },
-	black = { file = "Poppins-Black.ttf", url = GLYPH_BASE .. "/Poppins-Black.ttf" },
+	regular = { file = "Roboto-Regular.ttf", url = GLYPH_BASE .. "/Roboto-Regular.ttf" },
+	medium = { file = "Roboto-Medium.ttf", url = GLYPH_BASE .. "/Roboto-Medium.ttf" },
+	bold = { file = "Roboto-Bold.ttf", url = GLYPH_BASE .. "/Roboto-Bold.ttf" },
+	extrabold = { file = "Roboto-Black.ttf", url = GLYPH_BASE .. "/Roboto-Black.ttf" },
+	black = { file = "Roboto-Black.ttf", url = GLYPH_BASE .. "/Roboto-Black.ttf" },
 }
 
 -- Standard OpenType weights stored in family JSON (not the Android-adjusted role targets).
@@ -88,7 +87,7 @@ local function loadCustomFamilyUri(): string?
 	end
 
 	local folderName = "DexUI Font Assets"
-	local jsonName = "dexui-poppins.json"
+	local jsonName = "dexui-roboto.json"
 	if not isfolder(folderName) then
 		makefolder(folderName)
 	end
@@ -115,7 +114,7 @@ local function loadCustomFamilyUri(): string?
 	end
 
 	local fontJson = {
-		name = "DexUI_Poppins",
+		name = "DexUI_Roboto",
 		faces = faces,
 	}
 
