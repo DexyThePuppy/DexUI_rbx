@@ -19,6 +19,8 @@ export type GridSpec = {
 	badgeIcon: number,
 	thumbScale: Enum.ScaleType?,
 	thumbFillBackground: boolean?,
+	thumbSquare: boolean?,
+	thumbPad: number?,
 }
 
 export type CardParts = {
@@ -113,8 +115,16 @@ local function createCard(
 	order: number,
 	deps: GridDeps
 ): CardParts
-	local thumbH = thumbHeight(spec)
 	local inset = spec.inset
+	local innerW = spec.cellW - inset * 2
+	local maxThumbH = thumbHeight(spec)
+	local thumbW = innerW
+	local thumbH = maxThumbH
+	if spec.thumbSquare then
+		local side = math.min(innerW, maxThumbH)
+		thumbW = side
+		thumbH = side
+	end
 
 	local btn = Instance.new("TextButton")
 	btn.Name = "Card"
@@ -127,10 +137,11 @@ local function createCard(
 	deps.corner(btn, spec.cardCorner)
 
 	-- CanvasGroup + UICorner actually clips the image to a round rect (Frame/ClipsDescendants does not).
+	local thumbX = if spec.thumbSquare then inset + math.floor((innerW - thumbW) / 2) else inset
 	local thumb = Instance.new("CanvasGroup")
 	thumb.Name = "Thumb"
-	thumb.Position = UDim2.fromOffset(inset, inset)
-	thumb.Size = UDim2.new(1, -inset * 2, 0, thumbH)
+	thumb.Position = UDim2.fromOffset(thumbX, inset)
+	thumb.Size = UDim2.fromOffset(thumbW, thumbH)
 	thumb.BackgroundTransparency = 1
 	thumb.BorderSizePixel = 0
 	thumb.GroupTransparency = 0
@@ -138,20 +149,28 @@ local function createCard(
 	thumb.Parent = btn
 	deps.corner(thumb, spec.thumbCorner)
 
-	local image = Instance.new("ImageLabel")
-	image.Name = "Image"
-	image.Size = UDim2.fromScale(1, 1)
-	image.AnchorPoint = Vector2.new(0.5, 0.5)
-	image.Position = UDim2.fromScale(0.5, 0.5)
-	image.BackgroundTransparency = 1
-	image.ScaleType = spec.thumbScale or Enum.ScaleType.Crop
-	image.ZIndex = 2
-	image.Parent = thumb
-
 	if spec.thumbFillBackground then
 		thumb.BackgroundTransparency = 0
 		deps.reg(thumb, "BackgroundColor3", "bg")
 	end
+
+	local thumbPad = spec.thumbPad or 0
+	if thumbPad > 0 then
+		local pad = Instance.new("UIPadding")
+		pad.PaddingTop = UDim.new(0, thumbPad)
+		pad.PaddingBottom = UDim.new(0, thumbPad)
+		pad.PaddingLeft = UDim.new(0, thumbPad)
+		pad.PaddingRight = UDim.new(0, thumbPad)
+		pad.Parent = thumb
+	end
+
+	local image = Instance.new("ImageLabel")
+	image.Name = "Image"
+	image.Size = UDim2.fromScale(1, 1)
+	image.BackgroundTransparency = 1
+	image.ScaleType = spec.thumbScale or Enum.ScaleType.Crop
+	image.ZIndex = 2
+	image.Parent = thumb
 
 	local title = Instance.new("TextLabel")
 	title.Name = "Title"
@@ -247,6 +266,8 @@ local function buildInline(parent: Instance, deps: GridDeps): GridMount
 	local spec = table.clone(SPEC) :: GridSpec
 	spec.thumbScale = Enum.ScaleType.Fit
 	spec.thumbFillBackground = true
+	spec.thumbSquare = true
+	spec.thumbPad = 4
 
 	local layout = Instance.new("UIGridLayout")
 	layout.Name = "HubGridLayout"
