@@ -1,9 +1,11 @@
 --[[
-  DexUI Script SDK — session, helpers, optional module pipeline.
+  DexUI Script SDK — run any hub game script from a manifest + module pipeline.
 
-  manifest.helpers     — helper packs under scripts/helpers/ (default includes "util")
-  manifest.prefixes    — game modules for manifest.pipeline
-  manifest.pipeline    — return function(ctx) modules loaded in order
+  Game folder layout:
+    scripts/<entry>.lua               — manifest + SDK.run + UI/loop wiring
+    scripts/games/<id>/<module>.lua   — return function(ctx) ... end (logic only)
+
+  See scripts/games/_template/ for a minimal starter.
 ]]
 
 local SDK_PREFIXES = {
@@ -29,7 +31,6 @@ local makeLoader = loadFrom(SDK_PREFIXES, "loader")
 local createSession = loadFrom(SDK_PREFIXES, "session")
 local attachLoop = loadFrom(SDK_PREFIXES, "loop")
 local attachDexui = loadFrom(SDK_PREFIXES, "dexui")
-local attachHelpers = loadFrom(SDK_PREFIXES, "helpers")
 
 return function(manifest, DexUI)
 	if type(manifest) == "function" then
@@ -39,33 +40,27 @@ return function(manifest, DexUI)
 		error("[sdk] manifest must be a table", 0)
 	end
 
+	local modulePrefixes = manifest.prefixes or manifest.modulePrefixes
+	if not modulePrefixes then
+		error("[sdk] manifest.prefixes required (folders that hold game modules)", 0)
+	end
+
+	local loadGame = makeLoader(modulePrefixes)
 	local ctx = createSession(manifest, DexUI)
 	attachLoop(ctx)
 	attachDexui(ctx)
-	attachHelpers(ctx, manifest)
 
-	local modulePrefixes = manifest.prefixes or manifest.modulePrefixes
-	if modulePrefixes then
-		ctx.loadModule = makeLoader(modulePrefixes)
-	end
+	local pipeline = manifest.pipeline or { "main" }
+	local abortAfter = manifest.abortAfter or {}
 
-	local pipeline = manifest.pipeline
-	if pipeline and #pipeline > 0 then
-		local modulePrefixes = manifest.prefixes or manifest.modulePrefixes
-		if not modulePrefixes then
-			error("[sdk] manifest.prefixes required when pipeline is set", 0)
+	for _, moduleName in pipeline do
+		local init = loadGame(moduleName)
+		if type(init) == "function" then
+			init(ctx)
 		end
-		local loadGame = makeLoader(modulePrefixes)
-		local abortAfter = manifest.abortAfter or {}
-		for _, moduleName in pipeline do
-			local init = loadGame(moduleName)
-			if type(init) == "function" then
-				init(ctx)
-			end
-			for _, gate in abortAfter do
-				if gate == moduleName and not ctx.isAlive() then
-					return ctx
-				end
+		for _, gate in abortAfter do
+			if gate == moduleName and not ctx.isAlive() then
+				return ctx
 			end
 		end
 	end

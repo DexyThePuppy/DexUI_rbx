@@ -2,26 +2,46 @@
   [UPD] Fabrik-Tycoon — DexUI auto farmer
   Place: 15197136141
 
-  Hub entry (this file): manifest + SDK bootstrap only.
-  scripts/sdk/              Session, loops, helper loader, module pipeline
-  scripts/helpers/          Optional packs (util = generic; fabrik/api = tycoon API)
-  scripts/games/fabrik-tycoon/  Game modules (init, farm, ads, ui, runtime)
+  scripts/sdk/                    Universal session, loops, DexUI helpers
+  scripts/fabrik/                   Shared Fabrik helpers (format, tycoon API, Other module)
+  scripts/games/fabrik-tycoon/      This game's modules (game, farm, ads, ui)
+  scripts/fabrik-tycoon.lua         Hub entry: manifest + SDK + startup / loop wiring
 ]]
 
-local PATHS = { "scripts/", "DexUI/scripts/" }
+local DexUI = (getgenv and getgenv().DexUI) or nil
+if not DexUI then
+	error("[fabrik-tycoon] DexUI not found. Launch from the DexUI scripts hub.")
+end
 
-local function loadFile(name)
-	for _, prefix in PATHS do
-		local path = prefix .. name
+if not (readfile and isfile and loadstring) then
+	error("[fabrik-tycoon] Executor must support readfile / isfile / loadstring.")
+end
+
+local SDK_PREFIXES = { "scripts/sdk/", "DexUI/scripts/sdk/" }
+local MODULE_PREFIXES = {
+	"scripts/games/fabrik-tycoon/",
+	"DexUI/scripts/games/fabrik-tycoon/",
+}
+
+local function loadFrom(prefixes: { string }, name: string)
+	for _, prefix in prefixes do
+		local path = prefix .. name .. ".lua"
 		if isfile(path) then
 			local chunk, err = loadstring(readfile(path), "@" .. path)
 			if not chunk then
-				error("[fabrik-tycoon] " .. path .. ": " .. tostring(err), 0)
+				error("[fabrik-tycoon] compile " .. path .. ": " .. tostring(err), 0)
 			end
 			return chunk()
 		end
 	end
-	error("[fabrik-tycoon] missing " .. name, 0)
+	error("[fabrik-tycoon] missing: " .. name, 0)
+end
+
+local function loadModule(name: string, ctx)
+	local init = loadFrom(MODULE_PREFIXES, name)
+	if type(init) == "function" then
+		init(ctx)
+	end
 end
 
 local manifest = {
@@ -32,14 +52,10 @@ local manifest = {
 	placeId = 15197136141,
 	placeIds = { 15197136141 },
 
-	helpers = { "util", "fabrik/api" },
+	prefixes = MODULE_PREFIXES,
 
-	prefixes = {
-		"scripts/games/fabrik-tycoon/",
-		"DexUI/scripts/games/fabrik-tycoon/",
-	},
-	pipeline = { "init", "farm", "ads", "ui", "runtime" },
-	abortAfter = { "init" },
+	pipeline = { "game", "farm", "ads" },
+	abortAfter = { "game" },
 
 	legacyGuis = { "M3_FabrikFarm", "M3_FabrikFarmHistory" },
 	genv = {
@@ -49,11 +65,13 @@ local manifest = {
 		stats = "__FabrikFarmStats",
 		phase = "__FabrikFarmPhase",
 	},
+
 	shutdown = {
 		title = "Fabrik Farm",
 		message = "Unloaded — farm stopped",
 		logMessage = "Unloaded — farm loops stopped, UI removed",
 	},
+
 	notifDuration = 4.2,
 	notifyStyle = {
 		Life = 4.2,
@@ -61,9 +79,11 @@ local manifest = {
 		TextStroke = { Gradient = "rainbow", Thickness = 3.5 },
 		StackPosition = UDim2.new(1, -16, 0.58, 0),
 	},
+
 	ctxExtend = {
 		upgradeIds = { "OreLimit", "OreValue", "DropperSpeed", "ConveyorSpeed", "WalkSpeed", "ShinyOresChance" },
 	},
+
 	config = {
 		Enabled = false,
 		AutoCollect = false,
@@ -80,6 +100,7 @@ local manifest = {
 		CollectMin = 50,
 		RebirthInterval = 8,
 	},
+
 	stats = {
 		collects = 0,
 		buttons = 0,
@@ -90,6 +111,7 @@ local manifest = {
 		errors = 0,
 		cycles = 0,
 	},
+
 	timers = {
 		lastRebirthAt = 0,
 		lastManualDropAt = 0,
@@ -101,14 +123,17 @@ local manifest = {
 		incomeSampleAt = 0,
 		incomeSampleTotal = 0,
 	},
+
 	caches = {
 		rebirth = { bought = 0, needed = 0, canRebirth = false },
 	},
+
 	widgets = {
 		status = nil,
 		progress = nil,
 		stats = nil,
 	},
+
 	game = {
 		incomePerSec = 0,
 		gameCashLabel = nil,
@@ -116,8 +141,90 @@ local manifest = {
 	},
 }
 
-local runEntry = loadFile("sdk/entry.lua")
-local ctx = runEntry(manifest, (getgenv and getgenv().DexUI) or nil)
+local SDK = loadFrom(SDK_PREFIXES, "run")
+local ctx = SDK(manifest, DexUI)
 if not ctx.isAlive() then
 	return
 end
+
+loadModule("ui", ctx)
+
+local Config = ctx.config
+local stats = ctx.stats
+
+ctx.loop.runSteps({
+	{ name = "initSyncConfig", run = function()
+		ctx.log.verbose = Config.VerboseLogging
+	end },
+	{ name = "initRebirthProgress", run = function()
+		ctx.progress.update(true)
+	end },
+	{ name = "initStatus", run = ctx.status.update },
+	{ name = "hookGameCash", run = ctx.game.hookCashHud },
+})
+
+task.spawn(function()
+	for _ = 1, 20 do
+		if ctx.game.gameCashHooked then
+			break
+		end
+		ctx.game.hookCashHud()
+		task.wait(1)
+	end
+end)
+
+ctx.startupReady = true
+ctx.log.info("startup complete — ad hiding gated behind toggle")
+
+ctx.runStep("startAdCleaner", ctx.ads.start)
+
+ctx.runStep("consumeServerError", function()
+	local RS = ctx.rs
+	local serverErr = RS:FindFirstChild("Events") and RS.Events:FindFirstChild("ServerError")
+	if serverErr and serverErr:IsA("RemoteEvent") then
+		ctx.track(serverErr.OnClientEvent:Connect(function(msg)
+			if ctx.log.verbose then
+				ctx.log.debug("ServerError: " .. tostring(msg))
+			end
+		end))
+	end
+end)
+
+ctx.loop.warnWrongPlace()
+
+if not ctx.findPath then
+	ctx.log.warn("Rebirth findPath unavailable — auto rebirth progress may be wrong")
+end
+
+ctx.log.setPhase("ready")
+ctx.log.info("Loaded (DexUI) — all toggles default OFF | " .. ctx.status.line())
+
+ctx.loop.startHeartbeat({
+	masterKey = "Enabled",
+	delayKey = "LoopDelay",
+	tick = ctx.farm.safeOnce,
+})
+
+ctx.loop.startWatchdog({
+	masterKey = "Enabled",
+	onTick = function()
+		ctx.log.verbose = Config.VerboseLogging
+		ctx.status.update()
+	end,
+	logLine = function()
+		return string.format(
+			"[%s] %s | btn:%d drop:%d gem:%d col:%d reb:%d err:%d | %.2fs | phase:%s | %s",
+			ctx.logTag,
+			ctx.status.line(),
+			stats.buttons,
+			stats.manualDrops,
+			stats.upgrades,
+			stats.collects,
+			stats.rebirths,
+			stats.errors,
+			Config.LoopDelay,
+			ctx.log.phase,
+			stats.lastMsg ~= "" and stats.lastMsg or "—"
+		)
+	end,
+})

@@ -1,3 +1,4 @@
+-- Fabrik-Tycoon DexUI window (scripts/sdk/dexui.lua helpers).
 return function(ctx)
 	local Config = ctx.config
 	local stats = ctx.stats
@@ -112,7 +113,7 @@ return function(ctx)
 	end)
 	ui:AddButton("Print diagnostics", function()
 		local diag = string.format(
-			"phase %s Â· alive %s Â· cycles %d Â· errors %d Â· last %.1fs Â· %s",
+			"phase %s · alive %s · cycles %d · errors %d · last %.1fs · %s",
 			ctx.log.phase,
 			tostring(ctx.isAlive()),
 			stats.cycles,
@@ -134,7 +135,7 @@ return function(ctx)
 
 	ui:AddDivider()
 	ui:AddSection("Danger")
-	ui:AddButton("Quit â€” stop farm & unload", unloadScript)
+	ui:AddButton("Quit — stop farm & unload", unloadScript)
 
 	ctx.dexui.addAboutTab(ui)
 
@@ -144,3 +145,4 @@ return function(ctx)
 		Content = "Loaded — enable Master auto farm when ready.",
 		Duration = 3,
 	})
+end
