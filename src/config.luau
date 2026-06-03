@@ -13,8 +13,8 @@ return {
 	-- ChromeWeight: "regular" for tabs/small UI (crisp); "medium" for slightly heavier chrome.
 	Typography = {
 		Family = "rbxasset://fonts/families/Roboto.json",
-		ChromeWeight = "regular",
-		-- false = cloud only; true = force local TTFs; nil = auto (local when executor has writefile)
+		ChromeWeight = "regular", -- tabs: regular | medium | bold | emphasis
+		-- false = built-in Roboto masters only; true = force legacy TTF download; nil = auto
 		Small = 12, -- caption / helper
 		Medium = 14, -- body (MUI default)
 		Large = 22, -- section titles (M3 Title Large)

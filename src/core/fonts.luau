@@ -13,16 +13,8 @@ local numericToFontWeight = Typography.numericToFontWeight
 
 local BUILTIN_FAMILY = TYPO.Family or "rbxasset://fonts/families/Roboto.json"
 
-local GLYPH_BASE = "https://github.com/google/fonts/raw/main/apache/roboto/static"
-local GLYPH_FILES = {
-	regular = { file = "Roboto-Regular.ttf", url = GLYPH_BASE .. "/Roboto-Regular.ttf" },
-	medium = { file = "Roboto-Medium.ttf", url = GLYPH_BASE .. "/Roboto-Medium.ttf" },
-	bold = { file = "Roboto-Bold.ttf", url = GLYPH_BASE .. "/Roboto-Bold.ttf" },
-	extrabold = { file = "Roboto-Black.ttf", url = GLYPH_BASE .. "/Roboto-Black.ttf" },
-	black = { file = "Roboto-Black.ttf", url = GLYPH_BASE .. "/Roboto-Black.ttf" },
-}
-
--- Standard OpenType weights stored in family JSON (not the Android-adjusted role targets).
+-- Full weight ladder (same tiers as Poppins setup). Built-in Roboto ships every master.
+local GLYPH_SLOTS = { "regular", "medium", "bold", "extrabold", "black" }
 local SLOT_WEIGHT = {
 	regular = 400,
 	medium = 500,
@@ -30,6 +22,20 @@ local SLOT_WEIGHT = {
 	extrabold = 800,
 	black = 900,
 }
+
+-- Legacy static TTFs (optional forced download). Google Fonts now ships Roboto as VF only.
+local GLYPH_BASE = "https://github.com/google/fonts/raw/main/apache/roboto/static"
+local GLYPH_FILES = {
+	regular = { file = "Roboto-Regular.ttf", url = GLYPH_BASE .. "/Roboto-Regular.ttf" },
+	medium = { file = "Roboto-Medium.ttf", url = GLYPH_BASE .. "/Roboto-Medium.ttf" },
+	bold = { file = "Roboto-Bold.ttf", url = GLYPH_BASE .. "/Roboto-Bold.ttf" },
+	extrabold = { file = "Roboto-Bold.ttf", url = GLYPH_BASE .. "/Roboto-Bold.ttf" },
+	black = { file = "Roboto-Black.ttf", url = GLYPH_BASE .. "/Roboto-Black.ttf" },
+}
+
+local function isBuiltinFamily(uri: string): boolean
+	return string.sub(uri, 1, 13) == "rbxasset://"
+end
 
 local function parseCloudFamilyId(uri: string): number?
 	local id = string.match(uri, "^rbxassetid://(%d+)$")
@@ -40,15 +46,18 @@ local function hasExecutorFilesystem(): boolean
 	return isfolder and makefolder and isfile and writefile and getcustomasset
 end
 
--- Cloud fonts (rbxassetid) often fail or look synthetic in executors; default to local TTFs there.
+-- Prefer rbxasset:// families (Roboto.json): real Bold / ExtraBold / Heavy masters in-client.
 local function wantCustomFamily(): boolean
-	if TYPO.UseCustomFamilyFiles == false then
+	if not hasExecutorFilesystem() then
 		return false
 	end
 	if TYPO.UseCustomFamilyFiles == true then
-		return hasExecutorFilesystem()
+		return true
 	end
-	return hasExecutorFilesystem()
+	if TYPO.UseCustomFamilyFiles == false then
+		return false
+	end
+	return not isBuiltinFamily(BUILTIN_FAMILY)
 end
 
 local function glyphSlot(numeric: number): string
@@ -93,7 +102,8 @@ local function loadCustomFamilyUri(): string?
 	end
 
 	local assets: { [string]: string } = {}
-	for slot, spec in pairs(GLYPH_FILES) do
+	for _, slot in GLYPH_SLOTS do
+		local spec = GLYPH_FILES[slot]
 		local assetId = ensureGlyph(folderName, spec)
 		if not assetId then
 			return nil
@@ -102,11 +112,9 @@ local function loadCustomFamilyUri(): string?
 	end
 
 	local faces = {}
-	local roleOrder = { "body", "emphasis", "title", "display" }
-	for _, role in roleOrder do
-		local slot = glyphSlot(NumericWeight[role])
+	for _, slot in GLYPH_SLOTS do
 		table.insert(faces, {
-			name = string.upper(string.sub(role, 1, 1)) .. string.sub(role, 2),
+			name = string.upper(string.sub(slot, 1, 1)) .. string.sub(slot, 2),
 			weight = SLOT_WEIGHT[slot],
 			style = "normal",
 			assetId = assets[slot],
@@ -146,17 +154,29 @@ local function fontRole(role: "body" | "emphasis" | "title" | "display"): Font
 	return fontFromNumeric(NumericWeight[role])
 end
 
--- Tabs / dense chrome: Regular at fixed TextSize (Bold faces look broken when cloud font fails).
-local chromeWeight = TYPO.ChromeWeight
-local fontChrome = if chromeWeight == "medium"
-	then makeFont(Enum.FontWeight.Medium)
-	else makeFont(Enum.FontWeight.Regular)
-
+-- Android +300 targets: body 700, emphasis 800, title/display 900 (see typography.luau).
 local fontBody = fontRole("body")
 local fontEmphasis = fontRole("emphasis")
 local fontTitle = fontRole("title")
 local fontDisplay = fontRole("display")
-local m3Font = fontChrome
+
+-- Tabs: lighter chrome; everything else via m3Font uses bold body.
+local chromeWeight = TYPO.ChromeWeight
+local function resolveChromeFont(): Font
+	if chromeWeight == "medium" then
+		return makeFont(Enum.FontWeight.Medium)
+	end
+	if chromeWeight == "bold" then
+		return makeFont(Enum.FontWeight.Bold)
+	end
+	if chromeWeight == "emphasis" then
+		return fontEmphasis
+	end
+	return makeFont(Enum.FontWeight.Regular)
+end
+local fontChrome = resolveChromeFont()
+
+local m3Font = fontBody
 local fontLarge = fontTitle
 
 return {
