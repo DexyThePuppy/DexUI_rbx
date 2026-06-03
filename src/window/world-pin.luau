@@ -33,7 +33,8 @@ return function(deps: any)
 	local mouse = deps.mouse
 	local INTRO_BRAND = deps.INTRO_BRAND
 	local fontWeight = deps.fontWeight
-	-- Accent highlights: only the hovered edge OR corner lights up (never the whole frame).
+	-- Above footer (≈68–72) so bottom/side resize highlights stay visible; handles stay at 200.
+	local RESIZE_GLOW_Z = 85
 	local function glowBar(size: UDim2, pos: UDim2, anchor: Vector2): Frame
 		local bar = Instance.new("Frame")
 		bar.Size = size
@@ -41,7 +42,7 @@ return function(deps: any)
 		bar.AnchorPoint = anchor
 		bar.BackgroundTransparency = 1
 		bar.BorderSizePixel = 0
-		bar.ZIndex = 60
+		bar.ZIndex = RESIZE_GLOW_Z
 		bar.Parent = win
 		corner(bar, 999)
 		reg(bar, "BackgroundColor3", "pri")
@@ -71,7 +72,7 @@ return function(deps: any)
 		clip.Position = UDim2.new(ax, 0, ay, 0)
 		clip.BackgroundTransparency = 1
 		clip.ClipsDescendants = true
-		clip.ZIndex = 60
+		clip.ZIndex = RESIZE_GLOW_Z
 		clip.Parent = win
 
 		local d = 2 * WIN_RADIUS
@@ -81,7 +82,7 @@ return function(deps: any)
 		accent.Position = UDim2.new(ax, 0, ay, 0)
 		accent.BackgroundTransparency = 1
 		accent.BorderSizePixel = 0
-		accent.ZIndex = 60
+		accent.ZIndex = RESIZE_GLOW_Z
 		accent.Parent = clip
 		corner(accent, WIN_RADIUS)
 		reg(accent, "BackgroundColor3", "pri")
@@ -91,7 +92,7 @@ return function(deps: any)
 		cover.AnchorPoint = Vector2.new(ax, ay)
 		cover.Position = UDim2.new(ax, ax == 0 and 3 or -3, ay, ay == 0 and 3 or -3)
 		cover.BorderSizePixel = 0
-		cover.ZIndex = 61
+		cover.ZIndex = RESIZE_GLOW_Z + 1
 		cover.Parent = clip
 		corner(cover, WIN_RADIUS - 3)
 		reg(cover, "BackgroundColor3", "bg")
