@@ -15,7 +15,10 @@ return function(ctx)
 	local fontWeight = ctx.fontWeight
 	local onHeartbeat = ctx.onHeartbeat
 	local playFeedback = ctx.playFeedback
+	local MEDIA_PAGE_SIZE, MEDIA_PAGE_COUNT = ctx.MEDIA_PAGE_SIZE, ctx.MEDIA_PAGE_COUNT
 	local ContentProvider = Services.ContentProvider or game:GetService("ContentProvider")
+	local Players = game:GetService("Players")
+	local TeleportService = game:GetService("TeleportService")
 
 	local function formatImage(uri: string): string
 		if string.find(uri, "rbxassetid://", 1, true)
@@ -56,13 +59,50 @@ return function(ctx)
 		holder.Parent = beginCardRow(nil, true)
 
 		local layout = Instance.new("UIListLayout")
-		layout.Padding = UDim.new(0, 14)
+		layout.Padding = UDim.new(0, 12)
 		layout.SortOrder = Enum.SortOrder.LayoutOrder
 		layout.Parent = holder
 
+		local function makeSection(layoutOrder: number): Frame
+			local section = Instance.new("Frame")
+			section.Name = "Section"
+			section.LayoutOrder = layoutOrder
+			section.Size = UDim2.new(1, 0, 0, 0)
+			section.AutomaticSize = Enum.AutomaticSize.Y
+			section.BackgroundTransparency = 1
+			section.Parent = holder
+			local sectionLayout = Instance.new("UIListLayout")
+			sectionLayout.Padding = UDim.new(0, 8)
+			sectionLayout.SortOrder = Enum.SortOrder.LayoutOrder
+			sectionLayout.Parent = section
+			return section
+		end
+
+		local function makeDivider(layoutOrder: number): Frame
+			local div = Instance.new("Frame")
+			div.Name = "Divider"
+			div.LayoutOrder = layoutOrder
+			div.Size = UDim2.new(1, 0, 0, 1)
+			div.BorderSizePixel = 0
+			div.BackgroundTransparency = 0.65
+			div.Parent = holder
+			reg(div, "BackgroundColor3", "out")
+			return div
+		end
+
+		-- Header: title (left) + rejoin (right), then meta line
+		local headerSection = makeSection(0)
+
+		local headerRow = Instance.new("Frame")
+		headerRow.LayoutOrder = 0
+		headerRow.Size = UDim2.new(1, 0, 0, 0)
+		headerRow.AutomaticSize = Enum.AutomaticSize.Y
+		headerRow.BackgroundTransparency = 1
+		headerRow.Parent = headerSection
+
 		local titleLbl = Instance.new("TextLabel")
-		titleLbl.LayoutOrder = 0
-		titleLbl.Size = UDim2.new(1, 0, 0, 0)
+		titleLbl.Name = "Title"
+		titleLbl.Size = UDim2.new(1, -96, 0, 0)
 		titleLbl.AutomaticSize = Enum.AutomaticSize.Y
 		titleLbl.BackgroundTransparency = 1
 		titleLbl.Text = "Loading experience…"
@@ -70,8 +110,33 @@ return function(ctx)
 		titleLbl.TextSize = 22
 		titleLbl.TextXAlignment = Enum.TextXAlignment.Left
 		titleLbl.TextWrapped = true
-		titleLbl.Parent = holder
+		titleLbl.Parent = headerRow
 		reg(titleLbl, "TextColor3", "fg")
+
+		local rejoinBtn = Instance.new("TextButton")
+		rejoinBtn.Name = "Rejoin"
+		rejoinBtn.Size = UDim2.fromOffset(88, 32)
+		rejoinBtn.AnchorPoint = Vector2.new(1, 0)
+		rejoinBtn.Position = UDim2.new(1, 0, 0, 0)
+		rejoinBtn.Text = "Rejoin"
+		rejoinBtn.FontFace = fontWeight(Enum.FontWeight.Medium)
+		rejoinBtn.TextSize = 13
+		rejoinBtn.AutoButtonColor = false
+		rejoinBtn.Parent = headerRow
+		corner(rejoinBtn, 10)
+		reg(rejoinBtn, "BackgroundColor3", "pri")
+		reg(rejoinBtn, "TextColor3", "onpri")
+
+		rejoinBtn.MouseButton1Click:Connect(function()
+			playFeedback("light")
+			local player = Players.LocalPlayer
+			if not player then
+				return
+			end
+			pcall(function()
+				TeleportService:TeleportToPlaceInstance(game.PlaceId, game.JobId, player)
+			end)
+		end)
 
 		local metaLbl = Instance.new("TextLabel")
 		metaLbl.LayoutOrder = 1
@@ -83,15 +148,18 @@ return function(ctx)
 		metaLbl.TextSize = 12
 		metaLbl.TextXAlignment = Enum.TextXAlignment.Left
 		metaLbl.TextWrapped = true
-		metaLbl.Parent = holder
+		metaLbl.Parent = headerSection
 		reg(metaLbl, "TextColor3", "out")
 
+		-- Carousel
+		local carouselSection = makeSection(1)
+
 		local carouselShell = Instance.new("Frame")
-		carouselShell.LayoutOrder = 2
+		carouselShell.LayoutOrder = 0
 		carouselShell.Size = UDim2.new(1, 0, 0, 200)
 		carouselShell.BorderSizePixel = 0
 		carouselShell.ClipsDescendants = true
-		carouselShell.Parent = holder
+		carouselShell.Parent = carouselSection
 		corner(carouselShell, 14)
 		reg(carouselShell, "BackgroundColor3", "inact")
 
@@ -122,10 +190,10 @@ return function(ctx)
 		emptyLbl.Parent = carouselTrack
 
 		local dots = Instance.new("Frame")
-		dots.LayoutOrder = 3
+		dots.LayoutOrder = 1
 		dots.Size = UDim2.new(1, 0, 0, 8)
 		dots.BackgroundTransparency = 1
-		dots.Parent = holder
+		dots.Parent = carouselSection
 
 		local dotsLayout = Instance.new("UIListLayout")
 		dotsLayout.FillDirection = Enum.FillDirection.Horizontal
@@ -133,8 +201,13 @@ return function(ctx)
 		dotsLayout.Padding = UDim.new(0, 6)
 		dotsLayout.Parent = dots
 
+		makeDivider(2)
+
+		-- Description
+		local descSection = makeSection(3)
+
 		local bodyLbl = Instance.new("TextLabel")
-		bodyLbl.LayoutOrder = 4
+		bodyLbl.LayoutOrder = 0
 		bodyLbl.Size = UDim2.new(1, 0, 0, 0)
 		bodyLbl.AutomaticSize = Enum.AutomaticSize.Y
 		bodyLbl.BackgroundTransparency = 1
@@ -144,11 +217,11 @@ return function(ctx)
 		bodyLbl.TextXAlignment = Enum.TextXAlignment.Left
 		bodyLbl.TextWrapped = true
 		bodyLbl.LineHeight = 1.15
-		bodyLbl.Parent = holder
+		bodyLbl.Parent = descSection
 		reg(bodyLbl, "TextColor3", "fg")
 
 		local extraLbl = Instance.new("TextLabel")
-		extraLbl.LayoutOrder = 5
+		extraLbl.LayoutOrder = 1
 		extraLbl.Size = UDim2.new(1, 0, 0, 0)
 		extraLbl.AutomaticSize = Enum.AutomaticSize.Y
 		extraLbl.BackgroundTransparency = 1
@@ -157,8 +230,253 @@ return function(ctx)
 		extraLbl.TextSize = 11
 		extraLbl.TextXAlignment = Enum.TextXAlignment.Left
 		extraLbl.TextWrapped = true
-		extraLbl.Parent = holder
+		extraLbl.Parent = descSection
 		reg(extraLbl, "TextColor3", "out")
+
+		makeDivider(4)
+
+		-- Private servers (sorted low → high, paged like Media tab)
+		local serversSection = makeSection(5)
+
+		local serversHeading = Instance.new("TextLabel")
+		serversHeading.LayoutOrder = 0
+		serversHeading.Size = UDim2.new(1, 0, 0, 20)
+		serversHeading.BackgroundTransparency = 1
+		serversHeading.Text = "Private servers"
+		serversHeading.FontFace = fontWeight(Enum.FontWeight.Medium)
+		serversHeading.TextSize = 14
+		serversHeading.TextXAlignment = Enum.TextXAlignment.Left
+		serversHeading.Parent = serversSection
+		reg(serversHeading, "TextColor3", "pri")
+
+		local serversStatusLbl = Instance.new("TextLabel")
+		serversStatusLbl.LayoutOrder = 1
+		serversStatusLbl.Size = UDim2.new(1, 0, 0, 0)
+		serversStatusLbl.AutomaticSize = Enum.AutomaticSize.Y
+		serversStatusLbl.BackgroundTransparency = 1
+		serversStatusLbl.Text = "Loading private servers…"
+		serversStatusLbl.FontFace = m3Font
+		serversStatusLbl.TextSize = 11
+		serversStatusLbl.TextXAlignment = Enum.TextXAlignment.Left
+		serversStatusLbl.TextWrapped = true
+		serversStatusLbl.Parent = serversSection
+		reg(serversStatusLbl, "TextColor3", "out")
+
+		local serversList = Instance.new("Frame")
+		serversList.Name = "ServerList"
+		serversList.LayoutOrder = 2
+		serversList.Size = UDim2.new(1, 0, 0, MEDIA_PAGE_SIZE * 52)
+		serversList.BackgroundTransparency = 1
+		serversList.Parent = serversSection
+
+		local serversListLayout = Instance.new("UIListLayout")
+		serversListLayout.SortOrder = Enum.SortOrder.LayoutOrder
+		serversListLayout.Padding = UDim.new(0, 6)
+		serversListLayout.Parent = serversList
+
+		local privateServers: { any } = {}
+		local serverPageIndex = 0
+		local serverRowBtns: { Frame } = {}
+
+		local function serverPageCount(): number
+			if #privateServers == 0 then
+				return 0
+			end
+			return math.ceil(#privateServers / MEDIA_PAGE_SIZE)
+		end
+
+		for i = 1, MEDIA_PAGE_SIZE do
+			local row = Instance.new("Frame")
+			row.Name = "ServerRow" .. i
+			row.LayoutOrder = i
+			row.Size = UDim2.new(1, 0, 0, 46)
+			row.BackgroundTransparency = 0.4
+			row.Visible = false
+			row.Parent = serversList
+			corner(row, 10)
+			reg(row, "BackgroundColor3", "bg")
+
+			local rowTitle = Instance.new("TextLabel")
+			rowTitle.Name = "Title"
+			rowTitle.Size = UDim2.new(1, -100, 0, 20)
+			rowTitle.Position = UDim2.new(0, 12, 0, 4)
+			rowTitle.BackgroundTransparency = 1
+			rowTitle.Text = ""
+			rowTitle.FontFace = fontWeight(Enum.FontWeight.Medium)
+			rowTitle.TextSize = 14
+			rowTitle.TextXAlignment = Enum.TextXAlignment.Left
+			rowTitle.TextTruncate = Enum.TextTruncate.AtEnd
+			rowTitle.Parent = row
+			reg(rowTitle, "TextColor3", "fg")
+
+			local rowSub = Instance.new("TextLabel")
+			rowSub.Name = "Subtitle"
+			rowSub.Size = UDim2.new(1, -100, 0, 16)
+			rowSub.Position = UDim2.new(0, 12, 0, 24)
+			rowSub.BackgroundTransparency = 1
+			rowSub.Text = ""
+			rowSub.FontFace = m3Font
+			rowSub.TextSize = 11
+			rowSub.TextXAlignment = Enum.TextXAlignment.Left
+			rowSub.TextTruncate = Enum.TextTruncate.AtEnd
+			rowSub.Parent = row
+			reg(rowSub, "TextColor3", "out")
+
+			local joinBtn = Instance.new("TextButton")
+			joinBtn.Name = "Join"
+			joinBtn.Size = UDim2.fromOffset(72, 30)
+			joinBtn.AnchorPoint = Vector2.new(1, 0.5)
+			joinBtn.Position = UDim2.new(1, -10, 0.5, 0)
+			joinBtn.Text = "Join"
+			joinBtn.FontFace = fontWeight(Enum.FontWeight.Medium)
+			joinBtn.TextSize = 12
+			joinBtn.AutoButtonColor = false
+			joinBtn.Parent = row
+			corner(joinBtn, 8)
+			reg(joinBtn, "BackgroundColor3", "pri")
+			reg(joinBtn, "TextColor3", "onpri")
+
+			local slot = i
+			joinBtn.MouseButton1Click:Connect(function()
+				local srv = privateServers[serverPageIndex * MEDIA_PAGE_SIZE + slot]
+				if not srv then
+					return
+				end
+				playFeedback("light")
+				local player = Players.LocalPlayer
+				if not player then
+					return
+				end
+				serversStatusLbl.Text = "Joining " .. srv.name .. "…"
+				pcall(function()
+					TeleportService:TeleportToPrivateServer(game.PlaceId, srv.accessCode, { player })
+				end)
+			end)
+
+			serverRowBtns[i] = row
+		end
+
+		local pagerRow = Instance.new("Frame")
+		pagerRow.LayoutOrder = 3
+		pagerRow.Size = UDim2.new(1, 0, 0, 36)
+		pagerRow.BackgroundTransparency = 1
+		pagerRow.Parent = serversSection
+
+		local pagerLayout = Instance.new("UIListLayout")
+		pagerLayout.FillDirection = Enum.FillDirection.Horizontal
+		pagerLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
+		pagerLayout.Padding = UDim.new(0, 6)
+		pagerLayout.Parent = pagerRow
+
+		local pageBtns: { TextButton } = {}
+
+		local function refreshPagerHighlight()
+			local pages = serverPageCount()
+			for idx, btn in pageBtns do
+				local pageNum = idx - 1
+				btn.Visible = pageNum < pages
+				if not btn.Visible then
+					continue
+				end
+				local active = pageNum == serverPageIndex
+				if active then
+					btn.BackgroundColor3 = curTheme.pri
+					btn.TextColor3 = curTheme.onpri
+				else
+					btn.BackgroundColor3 = curTheme.inact
+					btn.TextColor3 = curTheme.fg
+				end
+			end
+		end
+
+		local function renderPrivateServers()
+			local pages = serverPageCount()
+			if pages > 0 and serverPageIndex >= pages then
+				serverPageIndex = pages - 1
+			end
+			local startIdx = serverPageIndex * MEDIA_PAGE_SIZE + 1
+			for i = 1, MEDIA_PAGE_SIZE do
+				local srv = privateServers[startIdx + i - 1]
+				local row = serverRowBtns[i]
+				if srv then
+					row.Visible = true
+					local title = row:FindFirstChild("Title") :: TextLabel
+					local sub = row:FindFirstChild("Subtitle") :: TextLabel
+					title.Text = srv.name
+					if srv.maxPlayers > 0 then
+						sub.Text = string.format("%d / %d players", srv.playing, srv.maxPlayers)
+					else
+						sub.Text = string.format("%d players", srv.playing)
+					end
+				else
+					row.Visible = false
+				end
+			end
+			refreshPagerHighlight()
+		end
+
+		for pageNum = 0, MEDIA_PAGE_COUNT - 1 do
+			local btn = Instance.new("TextButton")
+			btn.Name = "Page" .. pageNum
+			btn.Size = UDim2.fromOffset(28, 28)
+			btn.Text = tostring(pageNum)
+			btn.FontFace = fontWeight(Enum.FontWeight.Medium)
+			btn.TextSize = 13
+			btn.AutoButtonColor = false
+			btn.Visible = false
+			btn.Parent = pagerRow
+			corner(btn, 999)
+			reg(btn, "BackgroundColor3", "inact")
+			reg(btn, "TextColor3", "fg")
+			pageBtns[pageNum + 1] = btn
+
+			btn.MouseButton1Click:Connect(function()
+				if pageNum < serverPageCount() then
+					serverPageIndex = pageNum
+					renderPrivateServers()
+					local pages = serverPageCount()
+					serversStatusLbl.Text = string.format(
+						"%d server(s) · players low → high · page %d / %d",
+						#privateServers,
+						serverPageIndex + 1,
+						math.max(1, pages)
+					)
+					playFeedback("light")
+				end
+			end)
+		end
+
+		local pageNextBtn = Instance.new("TextButton")
+		pageNextBtn.Name = "PageNext"
+		pageNextBtn.Size = UDim2.fromOffset(28, 28)
+		pageNextBtn.Text = ">"
+		pageNextBtn.FontFace = fontWeight(Enum.FontWeight.Medium)
+		pageNextBtn.TextSize = 13
+		pageNextBtn.AutoButtonColor = false
+		pageNextBtn.Parent = pagerRow
+		corner(pageNextBtn, 999)
+		reg(pageNextBtn, "BackgroundColor3", "inact")
+		reg(pageNextBtn, "TextColor3", "fg")
+
+		pageNextBtn.MouseButton1Click:Connect(function()
+			local pages = serverPageCount()
+			if pages == 0 then
+				return
+			end
+			if serverPageIndex < pages - 1 then
+				serverPageIndex += 1
+				renderPrivateServers()
+				serversStatusLbl.Text = string.format(
+					"%d server(s) · players low → high · page %d / %d",
+					#privateServers,
+					serverPageIndex + 1,
+					pages
+				)
+				playFeedback("light")
+			else
+				serversStatusLbl.Text = "No more pages."
+			end
+		end)
 
 		local slideIndex = 1
 		local lastAutoAt = os.clock()
@@ -393,6 +711,7 @@ return function(ctx)
 			if not ok or type(meta) ~= "table" or not holder.Parent then
 				titleLbl.Text = "Current experience"
 				bodyLbl.Text = "Could not load game metadata. Check HttpService / executor request support."
+				serversStatusLbl.Text = "Private servers unavailable."
 				return
 			end
 
@@ -453,6 +772,26 @@ return function(ctx)
 				extraLbl.Text = string.format(
 					"Website link uses root place id (e.g. roblox.com/games/%d/…)",
 					meta.rootPlaceId
+				)
+			end
+
+			local listPlaceId = meta.rootPlaceId or meta.placeId
+			local servers, serversErr = GameMetadata.fetchPrivateServers(listPlaceId)
+			privateServers = servers
+			serverPageIndex = 0
+			renderPrivateServers()
+
+			local pages = serverPageCount()
+			if #privateServers == 0 then
+				serversStatusLbl.Text = serversErr or "No private servers found for this experience."
+				pagerRow.Visible = false
+			else
+				pagerRow.Visible = pages > 1
+				serversStatusLbl.Text = string.format(
+					"%d server(s) · players low → high · page %d / %d",
+					#privateServers,
+					1,
+					math.max(1, pages)
 				)
 			end
 		end)

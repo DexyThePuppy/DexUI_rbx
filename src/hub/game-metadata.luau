@@ -21,6 +21,13 @@ export type GameMetadata = {
 	images: { string },
 }
 
+export type PrivateServerEntry = {
+	name: string,
+	playing: number,
+	maxPlayers: number,
+	accessCode: string,
+}
+
 local CDN_CACHE_FOLDER = "DexUI/thumbnails"
 local cdnAssetCache: { [string]: string } = {}
 
@@ -235,6 +242,64 @@ local function fetchLoadableThumbnailUris(universeId: number, iconAssetId: numbe
 	return uris
 end
 
+local MAX_PRIVATE_SERVER_PAGES = 8
+
+local function fetchPrivateServers(placeId: number): ({ PrivateServerEntry }, string?)
+	local entries: { PrivateServerEntry } = {}
+	local cursor: string? = nil
+
+	for _ = 1, MAX_PRIVATE_SERVER_PAGES do
+		local url = string.format("https://games.roblox.com/v1/games/%d/private-servers?limit=50", placeId)
+		if cursor then
+			url ..= "&exclusiveStartKeyCursor=" .. HttpService:UrlEncode(cursor)
+		end
+
+		local data = httpGetJson(url)
+		if type(data) ~= "table" then
+			if #entries == 0 then
+				return {}, "Could not load private servers (HTTP failed or guest — cookie auth may be required)."
+			end
+			break
+		end
+
+		if type(data.errors) == "table" and #data.errors > 0 and #entries == 0 then
+			local msg = if type(data.errors[1].message) == "string" then data.errors[1].message else "Private servers unavailable."
+			return {}, msg
+		end
+
+		if type(data.data) == "table" then
+			for _, row in data.data do
+				if type(row) == "table" then
+					local code = if type(row.accessCode) == "string" then row.accessCode else row.joinCode
+					local active = row.active
+					if type(code) == "string" and code ~= "" and (active == nil or active == true) then
+						table.insert(entries, {
+							name = if type(row.name) == "string" and row.name ~= "" then row.name else "Private server",
+							playing = if type(row.playing) == "number" then row.playing else 0,
+							maxPlayers = if type(row.maxPlayers) == "number" then row.maxPlayers else 0,
+							accessCode = code,
+						})
+					end
+				end
+			end
+		end
+
+		cursor = if type(data.nextPageCursor) == "string" and data.nextPageCursor ~= "" then data.nextPageCursor else nil
+		if not cursor then
+			break
+		end
+	end
+
+	table.sort(entries, function(a, b)
+		if a.playing ~= b.playing then
+			return a.playing < b.playing
+		end
+		return a.name < b.name
+	end)
+
+	return entries, nil
+end
+
 local function fetchCurrentGameMetadata(): GameMetadata
 	local placeId = game.PlaceId
 	local universeId = game.GameId
@@ -287,5 +352,6 @@ end
 
 return {
 	fetchCurrentGameMetadata = fetchCurrentGameMetadata,
+	fetchPrivateServers = fetchPrivateServers,
 	placeThumb = placeThumb,
 }
