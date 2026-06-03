@@ -146,6 +146,26 @@ return function(deps: Deps)
 		Sound.playFeedback(pattern)
 	end
 
+	function lib:SetNotificationSoundAssetId(id: number)
+		Sound.setNotificationSoundAssetId(id)
+	end
+
+	function lib:GetNotificationSoundAssetId(): number
+		return Sound.getNotificationSoundAssetId()
+	end
+
+	function lib:SetNotificationRandomPitch(enabled: boolean)
+		Sound.setNotificationRandomPitch(enabled)
+	end
+
+	function lib:IsNotificationRandomPitch(): boolean
+		return Sound.isNotificationRandomPitch()
+	end
+
+	function lib:PreviewNotificationSound()
+		Sound.previewNotificationSound()
+	end
+
 	--//---------------------- SEARCH INDEX ----------------------\\--
 	-- Flat index of every named element so the title-bar search can find them.
 	type SearchEntry = { name: string, tabIndex: number, container: Instance, instance: GuiObject }
@@ -438,6 +458,8 @@ return function(deps: Deps)
 		-- sound
 		playFeedback = Sound.playFeedback,
 		playSliderTick = Sound.playSliderTick,
+		playNotificationSound = Sound.playNotificationSound,
+		previewNotificationSound = Sound.previewNotificationSound,
 
 		-- config passthroughs
 		MEDIA_PAGE_SIZE = Config.MediaPageSize,

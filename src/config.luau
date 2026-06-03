@@ -42,4 +42,14 @@ return {
 		TextStroke = { Color = "pri", Thickness = 3.5, Transparency = 0, Gradient = "rainbow" },
 		Rainbow = { HueStep = 0.06, FillHueSpan = 0.045, FillStops = 6 },
 	},
+
+	-- Notification toast sound (Creator Store asset by default).
+	NotificationSound = {
+		AssetId = 121045990444676,
+		Volume = 0.65,
+		RandomPitch = true,
+		PitchMin = 0.92,
+		PitchMax = 1.08,
+		Pitch = 1,
+	},
 }

@@ -3,20 +3,21 @@
 -- model Apple's UIFeedbackGenerator as sequences of taps: each tap has a
 -- duration (ms), an intensity (0-1) and an optional pre-delay (ms).
 --
--- Crucially, the web-haptics demo does NOT play a tonal note per tap. It plays a
--- ~4ms burst of WHITE NOISE through a bandpass filter (playClick), where the
--- click is shaped ONLY by intensity:
---     gain  = 0.5 * intensity
---     freq  = 2000 + 2000*intensity  (Hz, +/-15% jitter)
--- That broadband noise reads as a soft "tap/click", whereas a pitched tone reads
--- as a squeaky beep. So we use a percussive (non-tonal) click sample and shape it
--- by intensity the same way; duration/delay only drive the rhythm of multi-tap
--- notifications (matching their vibration timeline), never the timbre.
+-- Notification toasts use a separate Roblox audio asset (configurable in Settings).
 
 local Services = require("../services")
+local Config = require("../config")
 local SoundService = Services.SoundService
 
 local FEEDBACK_BASE = "rbxasset://sounds/switch.wav" -- short broadband click, not a tone
+
+local soundCfg = Config.NotificationSound or {}
+local notificationSoundId: number = soundCfg.AssetId or 121045990444676
+local notificationVolume: number = soundCfg.Volume or 0.65
+local notificationRandomPitch: boolean = if soundCfg.RandomPitch ~= nil then soundCfg.RandomPitch else true
+local notificationPitch: number = soundCfg.Pitch or 1
+local notificationPitchMin: number = soundCfg.PitchMin or 0.92
+local notificationPitchMax: number = soundCfg.PitchMax or 1.08
 
 type Tap = { duration: number, intensity: number, delay: number? }
 type FeedbackSpec = { taps: { Tap }, gap: number? }
@@ -159,11 +160,121 @@ local function getMasterVolume(): number
 	return masterVolume
 end
 
+local function normalizeAssetId(raw: string | number): number?
+	if typeof(raw) == "number" then
+		return if raw > 0 then math.floor(raw) else nil
+	end
+	local digits = string.match(tostring(raw), "(%d+)")
+	local id = digits and tonumber(digits)
+	if id and id > 0 then
+		return id
+	end
+	return nil
+end
+
+local function resolveNotificationPlaybackSpeed(): number
+	if notificationRandomPitch then
+		local lo = math.min(notificationPitchMin, notificationPitchMax)
+		local hi = math.max(notificationPitchMin, notificationPitchMax)
+		return lo + math.random() * (hi - lo)
+	end
+	return math.clamp(notificationPitch, 0.1, 3)
+end
+
+local function spawnSound(soundId: string, volume: number, playbackSpeed: number)
+	local sound = Instance.new("Sound")
+	sound.SoundId = soundId
+	sound.Volume = math.clamp(volume, 0, 1)
+	sound.PlaybackSpeed = playbackSpeed
+	sound.Parent = SoundService
+	sound:Play()
+	sound.Ended:Once(function()
+		sound:Destroy()
+	end)
+	task.delay(8, function()
+		if sound and sound.Parent then
+			sound:Destroy()
+		end
+	end)
+end
+
+local function playNotificationSound()
+	if not soundsEnabled then
+		return
+	end
+	if not notificationSoundId or notificationSoundId <= 0 then
+		return
+	end
+	spawnSound(
+		"rbxassetid://" .. tostring(notificationSoundId),
+		notificationVolume * masterVolume,
+		resolveNotificationPlaybackSpeed()
+	)
+end
+
+local function previewNotificationSound()
+	if not notificationSoundId or notificationSoundId <= 0 then
+		return
+	end
+	spawnSound(
+		"rbxassetid://" .. tostring(notificationSoundId),
+		notificationVolume * masterVolume,
+		resolveNotificationPlaybackSpeed()
+	)
+end
+
+local function getNotificationSoundAssetId(): number
+	return notificationSoundId
+end
+
+local function setNotificationSoundAssetId(id: number)
+	local normalized = normalizeAssetId(id)
+	if normalized then
+		notificationSoundId = normalized
+	end
+end
+
+local function isNotificationRandomPitch(): boolean
+	return notificationRandomPitch
+end
+
+local function setNotificationRandomPitch(enabled: boolean)
+	notificationRandomPitch = enabled and true or false
+end
+
+local function getNotificationPitch(): number
+	return notificationPitch
+end
+
+local function setNotificationPitch(pitch: number)
+	notificationPitch = math.clamp(pitch, 0.1, 3)
+end
+
+local function getNotificationPitchRange(): (number, number)
+	return notificationPitchMin, notificationPitchMax
+end
+
+local function setNotificationPitchRange(minPitch: number, maxPitch: number)
+	notificationPitchMin = math.clamp(minPitch, 0.1, 3)
+	notificationPitchMax = math.clamp(maxPitch, 0.1, 3)
+end
+
 return {
 	playFeedback = playFeedback,
 	playSliderTick = playSliderTick,
+	playNotificationSound = playNotificationSound,
+	previewNotificationSound = previewNotificationSound,
 	setSoundsEnabled = setSoundsEnabled,
 	isSoundsEnabled = isSoundsEnabled,
 	setMasterVolume = setMasterVolume,
 	getMasterVolume = getMasterVolume,
+	normalizeAssetId = normalizeAssetId,
+	getNotificationSoundAssetId = getNotificationSoundAssetId,
+	setNotificationSoundAssetId = setNotificationSoundAssetId,
+	isNotificationRandomPitch = isNotificationRandomPitch,
+	setNotificationRandomPitch = setNotificationRandomPitch,
+	getNotificationPitch = getNotificationPitch,
+	setNotificationPitch = setNotificationPitch,
+	getNotificationPitchRange = getNotificationPitchRange,
+	setNotificationPitchRange = setNotificationPitchRange,
 }

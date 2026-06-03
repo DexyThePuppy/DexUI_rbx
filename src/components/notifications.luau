@@ -106,6 +106,7 @@ return function(ctx)
 	local corner = ctx.corner
 	local fontWeight = ctx.fontWeight
 	local playFeedback = ctx.playFeedback
+	local playNotificationSound = ctx.playNotificationSound
 	local onHeartbeat = ctx.onHeartbeat
 	local TweenService = ctx.TweenService
 	local gui = ctx.gui
@@ -620,7 +621,7 @@ return function(ctx)
 	end
 
 	function lib:Notify(opts: { Title: string?, Content: string?, Duration: number?, Style: NotificationStyle? })
-		playFeedback("selection")
+		playNotificationSound()
 		pushNotif(formatNotifText(opts), opts.Duration, opts.Style)
 	end
 end

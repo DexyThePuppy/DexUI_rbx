@@ -60,6 +60,11 @@ export type Window = {
 	SetReloadCallback: (self: Window, callback: () -> ()) -> (),
 	SetSoundsEnabled: (self: Window, enabled: boolean) -> (),
 	SetSoundVolume: (self: Window, scale: number) -> (),
+	SetNotificationSoundAssetId: (self: Window, id: number) -> (),
+	GetNotificationSoundAssetId: (self: Window) -> number,
+	SetNotificationRandomPitch: (self: Window, enabled: boolean) -> (),
+	IsNotificationRandomPitch: (self: Window) -> boolean,
+	PreviewNotificationSound: (self: Window) -> (),
 	PlayFeedback: (self: Window, pattern: string) -> (),
 }
 
@@ -1017,9 +1022,91 @@ local function makeUI(titleText: string?): Window
 		tween(soundThm, "BackgroundColor3", Sound.isSoundsEnabled() and theme.onpri or theme.out, dur)
 	end)
 
+	buildOverlayGroup(settingsScroll, 4, function()
+		local content = beginCardRow(56, false)
+
+		local lbl = Instance.new("TextLabel")
+		lbl.Size = UDim2.new(1, -108, 0, 20)
+		lbl.BackgroundTransparency = 1
+		lbl.Text = "Notification Sound ID"
+		lbl.FontFace = m3Font
+		lbl.TextSize = 11
+		lbl.TextXAlignment = Enum.TextXAlignment.Left
+		lbl.ZIndex = 2
+		lbl.Parent = content
+		reg(lbl, "TextColor3", "out")
+
+		local idBox = Instance.new("TextBox")
+		idBox.Size = UDim2.new(1, -108, 0, 24)
+		idBox.Position = UDim2.new(0, 0, 0, 26)
+		idBox.BackgroundTransparency = 1
+		idBox.Text = tostring(Sound.getNotificationSoundAssetId())
+		idBox.PlaceholderText = "Roblox asset ID"
+		idBox.FontFace = m3Font
+		idBox.TextSize = 15
+		idBox.TextXAlignment = Enum.TextXAlignment.Left
+		idBox.ClearTextOnFocus = false
+		idBox.ZIndex = 2
+		idBox.Parent = content
+		reg(idBox, "TextColor3", "fg")
+		reg(idBox, "PlaceholderColor3", "out")
+
+		local playBtn = Instance.new("TextButton")
+		playBtn.Name = "Preview"
+		playBtn.Size = UDim2.new(0, 40, 0, 40)
+		playBtn.AnchorPoint = Vector2.new(1, 0.5)
+		playBtn.Position = UDim2.new(1, 0, 0.5, 0)
+		playBtn.AutoButtonColor = false
+		playBtn.Text = ""
+		playBtn.ZIndex = 3
+		playBtn.Parent = content
+		reg(playBtn, "BackgroundColor3", "pri")
+		corner(playBtn, 999)
+
+		local playIcon = Instance.new("ImageLabel")
+		playIcon.Size = UDim2.new(0, 18, 0, 18)
+		playIcon.AnchorPoint = Vector2.new(0.5, 0.5)
+		playIcon.Position = UDim2.new(0.5, 1, 0.5, 0)
+		playIcon.BackgroundTransparency = 1
+		playIcon.Image = "rbxassetid://6026663699"
+		playIcon.ZIndex = 4
+		playIcon.Parent = playBtn
+		reg(playIcon, "ImageColor3", "onpri")
+
+		playBtn.MouseEnter:Connect(function()
+			tween(playBtn, "BackgroundColor3", curTheme.fg, 0.15)
+		end)
+		playBtn.MouseLeave:Connect(function()
+			tween(playBtn, "BackgroundColor3", curTheme.pri, 0.15)
+		end)
+		playBtn.MouseButton1Click:Connect(function()
+			local id = Sound.normalizeAssetId(idBox.Text)
+			if id then
+				Sound.setNotificationSoundAssetId(id)
+				idBox.Text = tostring(id)
+			end
+			ripple(playBtn, curTheme.onpri)
+			Sound.previewNotificationSound()
+		end)
+
+		idBox.FocusLost:Connect(function()
+			local id = Sound.normalizeAssetId(idBox.Text)
+			if id then
+				Sound.setNotificationSoundAssetId(id)
+				idBox.Text = tostring(id)
+			else
+				idBox.Text = tostring(Sound.getNotificationSoundAssetId())
+			end
+		end)
+
+		lib:AddSwitch("Random Notification Pitch", Sound.isNotificationRandomPitch(), function(on)
+			Sound.setNotificationRandomPitch(on)
+		end, "Vary playback speed on each toast")
+	end)
+
 	--//-------------- INTERFACE ACTIONS ----------------\\--
 
-	addOverlayHeading(settingsScroll, "Interface", 4)
+	addOverlayHeading(settingsScroll, "Interface", 5)
 
 	local function addSettingsAction(label: string, destructive: boolean?, onClick: () -> ())
 		local content = beginCardRow(44, false)
@@ -1062,7 +1149,7 @@ local function makeUI(titleText: string?): Window
 		end)
 	end
 
-	buildOverlayGroup(settingsScroll, 5, function()
+	buildOverlayGroup(settingsScroll, 6, function()
 		addSettingsAction("Reload UI", false, function()
 			hideOverlay(settingsOverlay)
 			lib:Reload()
