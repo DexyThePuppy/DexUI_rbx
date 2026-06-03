@@ -178,26 +178,21 @@ local function findForCurrentGame(entries: { GameEntry }?): GameEntry?
 end
 
 local function getLivePlaceContext(): { placeId: number, universeId: number, name: string?, description: string? }
-	local placeId = currentPlaceId()
-	local universeId = currentUniverseId()
-	local name: string? = nil
-	local description: string? = nil
-	local ok, info = pcall(function()
-		return game:GetService("MarketplaceService"):GetProductInfo(placeId, Enum.InfoType.Product)
-	end)
-	if ok and type(info) == "table" then
-		if type(info.Name) == "string" then
-			name = info.Name
-		end
-		if type(info.Description) == "string" and info.Description ~= "" then
-			description = info.Description
-		end
+	local GameMetadata = require("./game-metadata")
+	local ok, meta = pcall(GameMetadata.fetchCurrentGameMetadata)
+	if ok and type(meta) == "table" then
+		return {
+			placeId = meta.placeId,
+			universeId = meta.universeId,
+			name = meta.name,
+			description = meta.description,
+		}
 	end
 	return {
-		placeId = placeId,
-		universeId = universeId,
-		name = name,
-		description = description,
+		placeId = currentPlaceId(),
+		universeId = currentUniverseId(),
+		name = nil,
+		description = nil,
 	}
 end
 
