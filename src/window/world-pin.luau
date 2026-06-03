@@ -1,6 +1,8 @@
 --!nonstrict
 -- Window resize, 3D world-pin, and title-bar drag (split out of window.luau for Luau register limits).
 
+local Config = require("../config")
+
 type Palette = { bg: Color3, fg: Color3, pri: Color3, onpri: Color3, inact: Color3, out: Color3 }
 
 return function(deps: any)
@@ -108,7 +110,8 @@ return function(deps: any)
 	-- Forward-declared so resize handlers (registered below) see the same locals as pin setup.
 	local pinned = false
 	local worldPanelRotation = CFrame.identity
-	local WORLD_PIXELS_PER_STUD = 50
+	local WP = Config.WorldPin or {}
+	local WORLD_PIXELS_PER_STUD = WP.PixelsPerStud or 128
 	local pinViewDepth = 20
 	local anchorPart: Part
 	local keepUpright: AlignOrientation

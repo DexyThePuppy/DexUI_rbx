@@ -65,6 +65,11 @@ return {
 	IntroSound = "rbxassetid://118754269860019",
 	IntroBrand = "DexUI",
 
+	-- 3D world-pin panel (SurfaceGui). Higher PixelsPerStud = sharper text (more GPU).
+	WorldPin = {
+		PixelsPerStud = 128,
+	},
+
 	-- Media browser (Creator Store)
 	MediaPageSize = 5,
 	MediaPageCount = 6,
