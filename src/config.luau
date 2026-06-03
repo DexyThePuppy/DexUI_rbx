@@ -8,10 +8,12 @@ return {
 	Version = "1.0.0",
 
 	-- MUI/M3-style type scale: fixed tiers + per-role weights (see core/typography.luau).
+	-- WeightAdjustment mirrors Android accessibility Bold text (+300, clamped 1–1000).
 	Typography = {
 		Small = 12, -- caption / helper
 		Medium = 14, -- body (MUI default)
 		Large = 22, -- section titles (M3 Title Large)
+		WeightAdjustment = 300,
 		Weight = {
 			Body = 400,
 			Emphasis = 500, -- buttons, chips, row titles

@@ -44,14 +44,14 @@ local function loadM3Font(): Font
 	return Font.new(getcustomasset(jsonPath))
 end
 
-local m3Font: Font = loadM3Font()
+local m3Family: Font = loadM3Font()
 
 local function fontFromNumeric(weight: number): Font
-	return Font.new(m3Font.Family, numericToFontWeight(weight), Enum.FontStyle.Normal)
+	return Font.new(m3Family.Family, numericToFontWeight(weight), Enum.FontStyle.Normal)
 end
 
 local function fontWeight(weight: Enum.FontWeight): Font
-	return Font.new(m3Font.Family, weight, Enum.FontStyle.Normal)
+	return Font.new(m3Family.Family, weight, Enum.FontStyle.Normal)
 end
 
 local function fontRole(role: "body" | "emphasis" | "title" | "display"): Font
@@ -62,6 +62,9 @@ local fontBody = fontRole("body")
 local fontEmphasis = fontRole("emphasis")
 local fontTitle = fontRole("title")
 local fontDisplay = fontRole("display")
+
+-- Default label/body face (Android applies weight adjustment to all text).
+local m3Font = fontBody
 
 -- Back-compat alias for section / paragraph headings.
 local fontLarge = fontTitle
