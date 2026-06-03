@@ -1,10 +1,9 @@
 --[[
   DexUI Script SDK — session + loop + dexui from a manifest table.
 
-  Single-file game scripts (e.g. fabrik-tycoon.lua) pass manifest only.
-  Multi-module games may set manifest.prefixes + manifest.pipeline.
+  Use sdk/bootstrap.lua for helpers + pipeline + ui + onReady.
+  This module only builds ctx; bootstrap runs helpers/pipeline on top.
 ]]
-
 local SDK_PREFIXES = {
 	"scripts/sdk/",
 	"DexUI/scripts/sdk/",
