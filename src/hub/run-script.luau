@@ -1,5 +1,6 @@
 --!nonstrict
--- Executes a standalone hub script from the scripts/ folder.
+-- Executes a standalone hub script from the executor workspace (scripts/*.lua via readfile).
+-- Not bundled into dist/demo.lua; not fetched from GitHub.
 
 local SCRIPT_PREFIXES = {
 	"scripts/",

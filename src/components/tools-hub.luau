@@ -4,7 +4,6 @@
 local ToolsRegistry = require("../hub/tools-registry")
 local ToolAssets = require("../hub/tool-assets")
 local runTool = require("../hub/run-tool")
-local Grid = require("../hub/grid-layout")
 
 export type ToolEntry = ToolsRegistry.ToolEntry
 
@@ -18,8 +17,12 @@ return function(ctx)
 	local playFeedback = ctx.playFeedback
 	local fontWeight = ctx.fontWeight
 	local tooltip = ctx.tooltip
-	local textSize = ctx.textSize
 	local trySetClipboard = ctx.trySetClipboard
+	local textSize = ctx.textSize
+
+	local GRID_PAD = 6
+	local CELL_W, CELL_H = 128, 148
+	local CELL_GAP = 6
 
 	local launching: { [string]: boolean } = {}
 
@@ -96,7 +99,7 @@ return function(ctx)
 		gridHost.Parent = holder
 
 		local layout = Instance.new("UIListLayout")
-		layout.Padding = UDim.new(0, 6)
+		layout.Padding = UDim.new(0, 10)
 		layout.SortOrder = Enum.SortOrder.LayoutOrder
 		layout.Parent = holder
 		header.LayoutOrder = 0
@@ -105,9 +108,7 @@ return function(ctx)
 		local cols = math.max(2, math.min(4, math.ceil(math.sqrt(#list))))
 		local rows = math.max(1, math.ceil(#list / cols))
 		local gridScroll = Instance.new("ScrollingFrame")
-		local cellH = Grid.TOOL_CELL.Y.Offset
-		local rowStride = cellH + Grid.CELL_GAP
-		gridScroll.Size = UDim2.new(1, 0, 0, math.min(400, 48 + rows * rowStride))
+		gridScroll.Size = UDim2.new(1, 0, 0, math.min(400, 52 + rows * (CELL_H + CELL_GAP)))
 		gridScroll.BackgroundTransparency = 1
 		gridScroll.BorderSizePixel = 0
 		gridScroll.ScrollBarThickness = 4
@@ -118,21 +119,21 @@ return function(ctx)
 		reg(gridScroll, "BackgroundColor3", "bg")
 
 		local gridPad = Instance.new("UIPadding")
-		gridPad.PaddingTop = UDim.new(0, Grid.SCROLL_PAD)
-		gridPad.PaddingBottom = UDim.new(0, Grid.SCROLL_PAD)
-		gridPad.PaddingLeft = UDim.new(0, Grid.SCROLL_PAD)
-		gridPad.PaddingRight = UDim.new(0, Grid.SCROLL_PAD)
+		gridPad.PaddingTop = UDim.new(0, GRID_PAD)
+		gridPad.PaddingBottom = UDim.new(0, GRID_PAD)
+		gridPad.PaddingLeft = UDim.new(0, GRID_PAD)
+		gridPad.PaddingRight = UDim.new(0, GRID_PAD)
 		gridPad.Parent = gridScroll
 
 		local gridInner = Instance.new("Frame")
-		gridInner.Size = UDim2.new(1, -(Grid.SCROLL_PAD * 2), 0, 0)
+		gridInner.Size = UDim2.new(1, -(GRID_PAD * 2), 0, 0)
 		gridInner.AutomaticSize = Enum.AutomaticSize.Y
 		gridInner.BackgroundTransparency = 1
 		gridInner.Parent = gridScroll
 
 		local gridLayout = Instance.new("UIGridLayout")
-		gridLayout.CellSize = Grid.TOOL_CELL
-		gridLayout.CellPadding = UDim2.fromOffset(Grid.CELL_GAP, Grid.CELL_GAP)
+		gridLayout.CellSize = UDim2.fromOffset(CELL_W, CELL_H)
+		gridLayout.CellPadding = UDim2.fromOffset(CELL_GAP, CELL_GAP)
 		gridLayout.SortOrder = Enum.SortOrder.LayoutOrder
 		gridLayout.Parent = gridInner
 
@@ -170,9 +171,8 @@ return function(ctx)
 
 			local thumb = Instance.new("ImageLabel")
 			thumb.Name = "Thumbnail"
-			local inset = Grid.THUMB_INSET
-			thumb.Size = UDim2.new(1, -inset * 2, 0, 76)
-			thumb.Position = UDim2.new(0, inset, 0, inset)
+			thumb.Size = UDim2.new(1, -12, 0, 80)
+			thumb.Position = UDim2.new(0, 6, 0, 6)
 			thumb.BackgroundTransparency = 1
 			thumb.Image = formatThumb(entry.thumbnail)
 			thumb.ScaleType = Enum.ScaleType.Crop
@@ -188,9 +188,9 @@ return function(ctx)
 			corner(thumb, 10)
 
 			local nameLbl = Instance.new("TextLabel")
-			nameLbl.Size = UDim2.new(1, -inset * 2, 0, 36)
+			nameLbl.Size = UDim2.new(1, -10, 0, 38)
 			nameLbl.AnchorPoint = Vector2.new(0.5, 1)
-			nameLbl.Position = UDim2.new(0.5, 0, 1, -inset)
+			nameLbl.Position = UDim2.new(0.5, 0, 1, -6)
 			nameLbl.BackgroundTransparency = 1
 			nameLbl.Text = entry.name
 			nameLbl.FontFace = fontWeight(Enum.FontWeight.Medium)
@@ -206,7 +206,7 @@ return function(ctx)
 
 			local extBadge = Instance.new("TextLabel")
 			extBadge.Size = UDim2.new(0, 52, 0, 16)
-			extBadge.Position = UDim2.new(1, -inset, 0, inset)
+			extBadge.Position = UDim2.new(1, -6, 0, 6)
 			extBadge.AnchorPoint = Vector2.new(1, 0)
 			extBadge.BackgroundTransparency = 0
 			extBadge.Text = "External"

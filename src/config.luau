@@ -2,35 +2,17 @@
 -- Brand + constant configuration for DexUI.
 
 return {
-	-- Universal typography: sm / md / lg only (minimum readable small = 12).
+	-- Branding
+	Brand = "DexUI",
+	GuiName = "DexUI",
+	Version = "1.0.0",
+
+	-- Universal UI text scale (only these three sizes are used across DexUI).
 	Typography = {
 		Small = 12,
 		Medium = 14,
 		Large = 18,
 	},
-
-	-- Compact hub grids (scripts, tools, icons, game-info badges).
-	HubGrid = {
-		ScrollPadding = 6,
-		CellGap = 6,
-		ThumbInset = 6,
-		ScriptCellW = 108,
-		ScriptCellH = 124,
-		ToolCellW = 112,
-		ToolCellH = 128,
-		IconCellW = 76,
-		IconCellH = 70,
-		BadgeCellW = 70,
-		BadgeCellH = 78,
-		BadgeIcon = 44,
-		BadgeGap = 4,
-		BadgeCols = 4,
-	},
-
-	-- Branding
-	Brand = "DexUI",
-	GuiName = "DexUI",
-	Version = "1.0.0",
 
 	-- Intro
 	IntroSound = "rbxassetid://118754269860019",
@@ -92,7 +74,6 @@ return {
 		BackgroundTransparency = 0.35,
 		ShowTopDivider = true,
 		PaddingX = 14,
-		TextSize = 12,
 		Layout = "split",
 		Clock = {
 			Enabled = true,

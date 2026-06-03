@@ -3,7 +3,6 @@
 
 local Registry = require("../hub/registry")
 local GameMetadata = require("../hub/game-metadata")
-local Grid = require("../hub/grid-layout")
 local Services = require("../services")
 
 return function(ctx)
@@ -11,6 +10,7 @@ return function(ctx)
 	local curTheme = ctx.theme
 	local reg = ctx.reg
 	local tween, corner = ctx.tween, ctx.corner
+	local textSize = ctx.textSize
 	local m3Font = ctx.m3Font
 	local beginCardRow = ctx.beginCardRow
 	local fontWeight = ctx.fontWeight
@@ -18,7 +18,6 @@ return function(ctx)
 	local playFeedback = ctx.playFeedback
 	local trySetClipboard = ctx.trySetClipboard
 	local tooltip = ctx.tooltip
-	local textSize = ctx.textSize
 	local MEDIA_PAGE_SIZE, MEDIA_PAGE_COUNT = ctx.MEDIA_PAGE_SIZE, ctx.MEDIA_PAGE_COUNT
 	local ContentProvider = Services.ContentProvider or game:GetService("ContentProvider")
 	local Players = game:GetService("Players")
@@ -460,11 +459,11 @@ return function(ctx)
 			extraBadgeRow.Visible = extraBadgeRow:FindFirstChild("Badge") ~= nil
 		end
 
-		local BADGE_COLS = Grid.BADGE_COLS
-		local BADGE_CELL_W = Grid.BADGE_CELL_W
-		local BADGE_CELL_H = Grid.BADGE_CELL_H
-		local BADGE_ICON = Grid.BADGE_ICON
-		local BADGE_GAP = Grid.BADGE_GAP
+		local BADGE_COLS = 4
+		local BADGE_CELL_W = 72
+		local BADGE_CELL_H = 84
+		local BADGE_ICON = 44
+		local BADGE_GAP = 4
 		local CLAIMED_GREEN = Color3.fromRGB(56, 170, 92)
 
 		local badgesSection = makeSection(3)
@@ -601,8 +600,8 @@ return function(ctx)
 
 				local nameLbl = Instance.new("TextLabel")
 				nameLbl.Name = "Name"
-				nameLbl.Size = UDim2.new(1, -6, 0, 28)
-				nameLbl.Position = UDim2.new(0, 3, 1, -30)
+				nameLbl.Size = UDim2.new(1, -8, 0, 32)
+				nameLbl.Position = UDim2.new(0, 4, 1, -28)
 				nameLbl.BackgroundTransparency = 1
 				nameLbl.Text = badge.name
 				nameLbl.FontFace = m3Font

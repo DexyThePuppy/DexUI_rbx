@@ -1,9 +1,9 @@
 --!nonstrict
--- Scripts hub grid: game thumbnails from scripts/index.lua, launches standalone scripts.
+-- Scripts hub grid: entries from scripts/index.lua (workspace readfile), runs local .lua files.
+-- Script sources are not downloaded from GitHub; stage scripts/ beside dist or use build.ps1 -Stage.
 
 local Registry = require("../hub/registry")
 local runScript = require("../hub/run-script")
-local Grid = require("../hub/grid-layout")
 
 export type GameEntry = Registry.GameEntry
 
@@ -18,6 +18,10 @@ return function(ctx)
 	local fontWeight = ctx.fontWeight
 	local tooltip = ctx.tooltip
 	local textSize = ctx.textSize
+
+	local GRID_PAD = 6
+	local CELL_W, CELL_H = 118, 136
+	local CELL_GAP = 6
 
 	local activeSessions: { any } = {}
 
@@ -139,16 +143,14 @@ return function(ctx)
 		gridHost.Parent = holder
 
 		local layout = Instance.new("UIListLayout")
-		layout.Padding = UDim.new(0, 6)
+		layout.Padding = UDim.new(0, 10)
 		layout.SortOrder = Enum.SortOrder.LayoutOrder
 		layout.Parent = holder
 		header.LayoutOrder = 0
 		gridHost.LayoutOrder = 1
 
 		local gridScroll = Instance.new("ScrollingFrame")
-		local cellH = Grid.SCRIPT_CELL.Y.Offset
-		local rowStride = cellH + Grid.CELL_GAP
-		gridScroll.Size = UDim2.new(1, 0, 0, math.min(380, 48 + math.ceil(#list / 3) * rowStride))
+		gridScroll.Size = UDim2.new(1, 0, 0, math.min(380, 52 + math.ceil(#list / 3) * (CELL_H + CELL_GAP)))
 		gridScroll.BackgroundTransparency = 1
 		gridScroll.BorderSizePixel = 0
 		gridScroll.ScrollBarThickness = 4
@@ -159,21 +161,21 @@ return function(ctx)
 		reg(gridScroll, "BackgroundColor3", "bg")
 
 		local gridPad = Instance.new("UIPadding")
-		gridPad.PaddingTop = UDim.new(0, Grid.SCROLL_PAD)
-		gridPad.PaddingBottom = UDim.new(0, Grid.SCROLL_PAD)
-		gridPad.PaddingLeft = UDim.new(0, Grid.SCROLL_PAD)
-		gridPad.PaddingRight = UDim.new(0, Grid.SCROLL_PAD)
+		gridPad.PaddingTop = UDim.new(0, GRID_PAD)
+		gridPad.PaddingBottom = UDim.new(0, GRID_PAD)
+		gridPad.PaddingLeft = UDim.new(0, GRID_PAD)
+		gridPad.PaddingRight = UDim.new(0, GRID_PAD)
 		gridPad.Parent = gridScroll
 
 		local gridInner = Instance.new("Frame")
-		gridInner.Size = UDim2.new(1, -(Grid.SCROLL_PAD * 2), 0, 0)
+		gridInner.Size = UDim2.new(1, -(GRID_PAD * 2), 0, 0)
 		gridInner.AutomaticSize = Enum.AutomaticSize.Y
 		gridInner.BackgroundTransparency = 1
 		gridInner.Parent = gridScroll
 
 		local gridLayout = Instance.new("UIGridLayout")
-		gridLayout.CellSize = Grid.SCRIPT_CELL
-		gridLayout.CellPadding = UDim2.fromOffset(Grid.CELL_GAP, Grid.CELL_GAP)
+		gridLayout.CellSize = UDim2.fromOffset(CELL_W, CELL_H)
+		gridLayout.CellPadding = UDim2.fromOffset(CELL_GAP, CELL_GAP)
 		gridLayout.SortOrder = Enum.SortOrder.LayoutOrder
 		gridLayout.Parent = gridInner
 
@@ -220,9 +222,8 @@ return function(ctx)
 			reg(state, "BackgroundColor3", "fg")
 
 			local thumb = Instance.new("ImageLabel")
-			local inset = Grid.THUMB_INSET
-			thumb.Size = UDim2.new(1, -inset * 2, 0, 72)
-			thumb.Position = UDim2.new(0, inset, 0, inset)
+			thumb.Size = UDim2.new(1, -12, 0, 72)
+			thumb.Position = UDim2.new(0, 6, 0, 6)
 			thumb.BackgroundTransparency = 1
 			thumb.Image = formatThumb(entry.thumbnail)
 			thumb.ScaleType = Enum.ScaleType.Crop
@@ -231,9 +232,9 @@ return function(ctx)
 			corner(thumb, 10)
 
 			local nameLbl = Instance.new("TextLabel")
-			nameLbl.Size = UDim2.new(1, -inset * 2, 0, 36)
+			nameLbl.Size = UDim2.new(1, -10, 0, 36)
 			nameLbl.AnchorPoint = Vector2.new(0.5, 1)
-			nameLbl.Position = UDim2.new(0.5, 0, 1, -inset)
+			nameLbl.Position = UDim2.new(0.5, 0, 1, -6)
 			nameLbl.BackgroundTransparency = 1
 			nameLbl.Text = entry.name
 			nameLbl.FontFace = m3Font
@@ -248,7 +249,7 @@ return function(ctx)
 			if isCurrent then
 				local badge = Instance.new("TextLabel")
 				badge.Size = UDim2.new(0, 68, 0, 16)
-				badge.Position = UDim2.new(0, inset, 0, inset)
+				badge.Position = UDim2.new(0, 6, 0, 6)
 				badge.BackgroundTransparency = 0
 				badge.Text = "This game"
 				badge.FontFace = fontWeight(Enum.FontWeight.Bold)

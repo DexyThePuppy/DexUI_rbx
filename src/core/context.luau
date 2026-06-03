@@ -38,6 +38,7 @@ return function(deps: Deps)
 
 	local tween = Util.tween
 	local corner = Util.corner
+	local textSize = Util.textSize
 	local fontWeight = Fonts.fontWeight
 	local m3Font = Fonts.m3Font
 
@@ -376,8 +377,6 @@ return function(deps: Deps)
 	end
 
 	-- Shared title + optional subtitle stack used by switch / keybind / colorpicker.
-	local textSize = Util.textSize
-
 	local function fillLabelColumn(col: Instance, txt: string, sub: string?): TextLabel
 		local hasSub = sub ~= nil and sub ~= ""
 		local l = Instance.new("TextLabel")

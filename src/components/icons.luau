@@ -29,7 +29,10 @@ return function(ctx)
 	local win, gui = ctx.win, ctx.gui
 	local tooltip = ctx.tooltip
 	local textSize = ctx.textSize
-	local Grid = require("../hub/grid-layout")
+
+	local GRID_PAD = 6
+	local CELL_W, CELL_H = 82, 74
+	local CELL_GAP = 5
 	type Palette = { bg: Color3, fg: Color3, pri: Color3, onpri: Color3, inact: Color3, out: Color3 }
 	type Callback = (...any) -> ()
 	type MediaHit = { id: number, title: string, subtitle: string? }
@@ -45,7 +48,7 @@ return function(ctx)
 
 		local layout = Instance.new("UIListLayout")
 		layout.SortOrder = Enum.SortOrder.LayoutOrder
-		layout.Padding = UDim.new(0, 6)
+		layout.Padding = UDim.new(0, 10)
 		layout.Parent = holder
 
 		local searchFrame = Instance.new("Frame")
@@ -110,21 +113,21 @@ return function(ctx)
 		gridScroll.Parent = gridHost
 
 		local gridPad = Instance.new("UIPadding")
-		gridPad.PaddingTop = UDim.new(0, Grid.SCROLL_PAD)
-		gridPad.PaddingBottom = UDim.new(0, Grid.SCROLL_PAD)
-		gridPad.PaddingLeft = UDim.new(0, Grid.SCROLL_PAD)
-		gridPad.PaddingRight = UDim.new(0, Grid.SCROLL_PAD)
+		gridPad.PaddingTop = UDim.new(0, GRID_PAD)
+		gridPad.PaddingBottom = UDim.new(0, GRID_PAD)
+		gridPad.PaddingLeft = UDim.new(0, GRID_PAD)
+		gridPad.PaddingRight = UDim.new(0, GRID_PAD)
 		gridPad.Parent = gridScroll
 
 		local gridInner = Instance.new("Frame")
-		gridInner.Size = UDim2.new(1, -(Grid.SCROLL_PAD * 2), 0, 0)
+		gridInner.Size = UDim2.new(1, -(GRID_PAD * 2), 0, 0)
 		gridInner.AutomaticSize = Enum.AutomaticSize.Y
 		gridInner.BackgroundTransparency = 1
 		gridInner.Parent = gridScroll
 
 		local gridLayout = Instance.new("UIGridLayout")
-		gridLayout.CellSize = Grid.ICON_CELL
-		gridLayout.CellPadding = UDim2.fromOffset(Grid.CELL_GAP, Grid.CELL_GAP)
+		gridLayout.CellSize = UDim2.fromOffset(CELL_W, CELL_H)
+		gridLayout.CellPadding = UDim2.fromOffset(CELL_GAP, CELL_GAP)
 		gridLayout.SortOrder = Enum.SortOrder.LayoutOrder
 		gridLayout.Parent = gridInner
 

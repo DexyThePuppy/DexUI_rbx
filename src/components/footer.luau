@@ -181,7 +181,7 @@ return function(ctx)
 		lbl.AutomaticSize = Enum.AutomaticSize.XY
 		lbl.BackgroundTransparency = 1
 		lbl.FontFace = m3Font
-		lbl.TextSize = runtimeConfig.TextSize or textSize("sm")
+		lbl.TextSize = if runtimeConfig.TextSize then textSize(runtimeConfig.TextSize) else textSize("sm")
 		lbl.TextXAlignment = Enum.TextXAlignment.Left
 		lbl.Text = resolveSegmentText(seg)
 		lbl.Parent = parent

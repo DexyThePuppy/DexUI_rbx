@@ -1,7 +1,5 @@
 --!nonstrict
--- Loads scripts/index.lua from the executor workspace (readfile) and resolves the current game.
--- Script bodies are NOT fetched from GitHub; run-script reads local scripts/*.lua files.
--- dist/demo.lua only bundles DexUI — use build.ps1 -Stage or copy scripts/ into the workspace.
+-- Loads scripts/index.lua from the executor workspace and resolves the current game.
 
 local INDEX_PATHS = {
 	"scripts/index.lua",
