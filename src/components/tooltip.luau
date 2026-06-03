@@ -53,9 +53,9 @@ export type TooltipController = {
 }
 
 return function(ctx)
-	local textSize = ctx.textSize
 	local reg = ctx.reg
 	local corner = ctx.corner
+	local textSize = ctx.textSize
 	local m3Font = ctx.m3Font
 	local fontWeight = ctx.fontWeight
 	local popupLayer = ctx.popupLayer
@@ -152,7 +152,7 @@ return function(ctx)
 		end
 	end
 
-	local function addTextBlock(order: number, text: string, tier: string | number, token: string, wrapped: boolean?)
+	local function addTextBlock(order: number, text: string, size: number, token: string, wrapped: boolean?)
 		local lbl = Instance.new("TextLabel")
 		lbl.Name = "Block"
 		lbl.LayoutOrder = order
@@ -161,7 +161,7 @@ return function(ctx)
 		lbl.BackgroundTransparency = 1
 		lbl.Text = text
 		lbl.FontFace = if token == "fg" then fontWeight(Enum.FontWeight.Medium) else m3Font
-		lbl.TextSize = textSize(tier)
+		lbl.TextSize = size
 		lbl.TextXAlignment = Enum.TextXAlignment.Left
 		lbl.TextYAlignment = Enum.TextYAlignment.Top
 		lbl.TextWrapped = wrapped == true
@@ -176,9 +176,9 @@ return function(ctx)
 		for _, block in content.blocks do
 			order += 1
 			if block.kind == "text" then
-				addTextBlock(order, block.text, "sm", if block.muted then "out" else "fg", true)
+				addTextBlock(order, block.text, textSize("sm"), if block.muted then "out" else "fg", true)
 			elseif block.kind == "title" then
-				addTextBlock(order, block.text, "lg", "fg", false)
+				addTextBlock(order, block.text, textSize("md"), "fg", false)
 			elseif block.kind == "divider" then
 				local div = Instance.new("Frame")
 				div.Name = "Divider"

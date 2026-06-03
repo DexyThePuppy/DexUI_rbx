@@ -1,7 +1,6 @@
 --!nonstrict
 -- DexUI icons component. Attached onto the window's lib via the shared ctx.
 return function(ctx)
-	local textSize = ctx.textSize
 		local lib = ctx.lib
 	local curTheme = ctx.theme
 	local reg, regDynamic = ctx.reg, ctx.regDynamic
@@ -29,6 +28,8 @@ return function(ctx)
 	local popupLayer = ctx.popupLayer
 	local win, gui = ctx.win, ctx.gui
 	local tooltip = ctx.tooltip
+	local textSize = ctx.textSize
+	local Grid = require("../hub/grid-layout")
 	type Palette = { bg: Color3, fg: Color3, pri: Color3, onpri: Color3, inact: Color3, out: Color3 }
 	type Callback = (...any) -> ()
 	type MediaHit = { id: number, title: string, subtitle: string? }
@@ -44,7 +45,7 @@ return function(ctx)
 
 		local layout = Instance.new("UIListLayout")
 		layout.SortOrder = Enum.SortOrder.LayoutOrder
-		layout.Padding = UDim.new(0, 4)
+		layout.Padding = UDim.new(0, 6)
 		layout.Parent = holder
 
 		local searchFrame = Instance.new("Frame")
@@ -109,21 +110,21 @@ return function(ctx)
 		gridScroll.Parent = gridHost
 
 		local gridPad = Instance.new("UIPadding")
-		gridPad.PaddingTop = UDim.new(0, 4)
-		gridPad.PaddingBottom = UDim.new(0, 4)
-		gridPad.PaddingLeft = UDim.new(0, 4)
-		gridPad.PaddingRight = UDim.new(0, 4)
+		gridPad.PaddingTop = UDim.new(0, Grid.SCROLL_PAD)
+		gridPad.PaddingBottom = UDim.new(0, Grid.SCROLL_PAD)
+		gridPad.PaddingLeft = UDim.new(0, Grid.SCROLL_PAD)
+		gridPad.PaddingRight = UDim.new(0, Grid.SCROLL_PAD)
 		gridPad.Parent = gridScroll
 
 		local gridInner = Instance.new("Frame")
-		gridInner.Size = UDim2.new(1, -8, 0, 0)
+		gridInner.Size = UDim2.new(1, -(Grid.SCROLL_PAD * 2), 0, 0)
 		gridInner.AutomaticSize = Enum.AutomaticSize.Y
 		gridInner.BackgroundTransparency = 1
 		gridInner.Parent = gridScroll
 
 		local gridLayout = Instance.new("UIGridLayout")
-		gridLayout.CellSize = UDim2.fromOffset(72, 64)
-		gridLayout.CellPadding = UDim2.fromOffset(3, 3)
+		gridLayout.CellSize = Grid.ICON_CELL
+		gridLayout.CellPadding = UDim2.fromOffset(Grid.CELL_GAP, Grid.CELL_GAP)
 		gridLayout.SortOrder = Enum.SortOrder.LayoutOrder
 		gridLayout.Parent = gridInner
 
@@ -179,7 +180,7 @@ return function(ctx)
 			btn.AutoButtonColor = false
 			btn.ClipsDescendants = true
 			btn.Parent = gridInner
-			corner(btn, 8)
+			corner(btn, 14)
 			reg(btn, "BackgroundColor3", "inact")
 
 			-- M3 state layer for hover/press feedback.
@@ -189,13 +190,13 @@ return function(ctx)
 			state.BorderSizePixel = 0
 			state.ZIndex = 2
 			state.Parent = btn
-			corner(state, 8)
+			corner(state, 14)
 			reg(state, "BackgroundColor3", "fg")
 
 			local iconImg = Instance.new("ImageLabel")
-			iconImg.Size = UDim2.fromOffset(32, 32)
+			iconImg.Size = UDim2.fromOffset(34, 34)
 			iconImg.AnchorPoint = Vector2.new(0.5, 0)
-			iconImg.Position = UDim2.new(0.5, 0, 0, 5)
+			iconImg.Position = UDim2.new(0.5, 0, 0, 8)
 			iconImg.BackgroundTransparency = 1
 			iconImg.Image = "rbxassetid://" .. tostring(icon.id)
 			iconImg.ScaleType = Enum.ScaleType.Fit
@@ -204,9 +205,9 @@ return function(ctx)
 			reg(iconImg, "ImageColor3", "fg")
 
 			local nameLbl = Instance.new("TextLabel")
-			nameLbl.Size = UDim2.new(1, -6, 0, 20)
+			nameLbl.Size = UDim2.new(1, -8, 0, 22)
 			nameLbl.AnchorPoint = Vector2.new(0.5, 1)
-			nameLbl.Position = UDim2.new(0.5, 0, 1, -3)
+			nameLbl.Position = UDim2.new(0.5, 0, 1, -4)
 			nameLbl.BackgroundTransparency = 1
 			nameLbl.Text = icon.name:gsub("_", " ")
 			nameLbl.FontFace = m3Font

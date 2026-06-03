@@ -3,11 +3,11 @@
 
 local Registry = require("../hub/registry")
 local runScript = require("../hub/run-script")
+local Grid = require("../hub/grid-layout")
 
 export type GameEntry = Registry.GameEntry
 
 return function(ctx)
-	local textSize = ctx.textSize
 	local lib = ctx.lib
 	local curTheme = ctx.theme
 	local reg, regDynamic = ctx.reg, ctx.regDynamic
@@ -17,6 +17,7 @@ return function(ctx)
 	local playFeedback = ctx.playFeedback
 	local fontWeight = ctx.fontWeight
 	local tooltip = ctx.tooltip
+	local textSize = ctx.textSize
 
 	local activeSessions: { any } = {}
 
@@ -125,7 +126,7 @@ return function(ctx)
 			then ("Recognised: " .. recognized.name .. " — pick a script or launch yours")
 			else "Scripts hub — select a game"
 		header.FontFace = fontWeight(Enum.FontWeight.Medium)
-		header.TextSize = textSize("md")
+		header.TextSize = textSize("sm")
 		header.TextXAlignment = Enum.TextXAlignment.Left
 		header.TextWrapped = true
 		header.Parent = holder
@@ -137,46 +138,42 @@ return function(ctx)
 		gridHost.BackgroundTransparency = 1
 		gridHost.Parent = holder
 
-		local CARD_W, CARD_H = 108, 118
-		local GAP, INSET = 4, 4
-
 		local layout = Instance.new("UIListLayout")
-		layout.Padding = UDim.new(0, 4)
+		layout.Padding = UDim.new(0, 6)
 		layout.SortOrder = Enum.SortOrder.LayoutOrder
 		layout.Parent = holder
 		header.LayoutOrder = 0
 		gridHost.LayoutOrder = 1
 
-		local estCols = math.max(1, math.floor(360 / (CARD_W + GAP)))
-		local rows = math.max(1, math.ceil(#list / estCols))
 		local gridScroll = Instance.new("ScrollingFrame")
-		gridScroll.Size = UDim2.new(1, 0, 0, math.min(360, 36 + rows * (CARD_H + GAP)))
+		local cellH = Grid.SCRIPT_CELL.Y.Offset
+		local rowStride = cellH + Grid.CELL_GAP
+		gridScroll.Size = UDim2.new(1, 0, 0, math.min(380, 48 + math.ceil(#list / 3) * rowStride))
 		gridScroll.BackgroundTransparency = 1
 		gridScroll.BorderSizePixel = 0
 		gridScroll.ScrollBarThickness = 4
 		gridScroll.CanvasSize = UDim2.new(0, 0, 0, 0)
 		gridScroll.AutomaticCanvasSize = Enum.AutomaticSize.Y
 		gridScroll.Parent = gridHost
-		corner(gridScroll, 8)
+		corner(gridScroll, 12)
 		reg(gridScroll, "BackgroundColor3", "bg")
 
 		local gridPad = Instance.new("UIPadding")
-		gridPad.PaddingTop = UDim.new(0, GAP)
-		gridPad.PaddingBottom = UDim.new(0, GAP)
-		gridPad.PaddingLeft = UDim.new(0, GAP)
-		gridPad.PaddingRight = UDim.new(0, GAP)
+		gridPad.PaddingTop = UDim.new(0, Grid.SCROLL_PAD)
+		gridPad.PaddingBottom = UDim.new(0, Grid.SCROLL_PAD)
+		gridPad.PaddingLeft = UDim.new(0, Grid.SCROLL_PAD)
+		gridPad.PaddingRight = UDim.new(0, Grid.SCROLL_PAD)
 		gridPad.Parent = gridScroll
 
 		local gridInner = Instance.new("Frame")
-		gridInner.Size = UDim2.new(1, -(GAP * 2), 0, 0)
+		gridInner.Size = UDim2.new(1, -(Grid.SCROLL_PAD * 2), 0, 0)
 		gridInner.AutomaticSize = Enum.AutomaticSize.Y
 		gridInner.BackgroundTransparency = 1
 		gridInner.Parent = gridScroll
 
-		local gridLayout = Instance.new("UIListLayout")
-		gridLayout.FillDirection = Enum.FillDirection.Horizontal
-		gridLayout.Wraps = true
-		gridLayout.Padding = UDim.new(0, GAP)
+		local gridLayout = Instance.new("UIGridLayout")
+		gridLayout.CellSize = Grid.SCRIPT_CELL
+		gridLayout.CellPadding = UDim2.fromOffset(Grid.CELL_GAP, Grid.CELL_GAP)
 		gridLayout.SortOrder = Enum.SortOrder.LayoutOrder
 		gridLayout.Parent = gridInner
 
@@ -198,10 +195,9 @@ return function(ctx)
 			btn.BackgroundTransparency = 0
 			btn.Text = ""
 			btn.AutoButtonColor = false
-			btn.Size = UDim2.fromOffset(CARD_W, CARD_H)
 			btn.ClipsDescendants = true
 			btn.Parent = gridInner
-			corner(btn, 10)
+			corner(btn, 14)
 			reg(btn, "BackgroundColor3", "inact")
 
 			local stroke = Instance.new("UIStroke")
@@ -220,23 +216,24 @@ return function(ctx)
 			state.BorderSizePixel = 0
 			state.ZIndex = 2
 			state.Parent = btn
-			corner(state, 10)
+			corner(state, 14)
 			reg(state, "BackgroundColor3", "fg")
 
 			local thumb = Instance.new("ImageLabel")
-			thumb.Size = UDim2.new(1, -(INSET * 2), 0, 72)
-			thumb.Position = UDim2.new(0, INSET, 0, INSET)
+			local inset = Grid.THUMB_INSET
+			thumb.Size = UDim2.new(1, -inset * 2, 0, 72)
+			thumb.Position = UDim2.new(0, inset, 0, inset)
 			thumb.BackgroundTransparency = 1
 			thumb.Image = formatThumb(entry.thumbnail)
 			thumb.ScaleType = Enum.ScaleType.Crop
 			thumb.ZIndex = 3
 			thumb.Parent = btn
-			corner(thumb, 8)
+			corner(thumb, 10)
 
 			local nameLbl = Instance.new("TextLabel")
-			nameLbl.Size = UDim2.new(1, -8, 0, 26)
+			nameLbl.Size = UDim2.new(1, -inset * 2, 0, 36)
 			nameLbl.AnchorPoint = Vector2.new(0.5, 1)
-			nameLbl.Position = UDim2.new(0.5, 0, 1, -INSET)
+			nameLbl.Position = UDim2.new(0.5, 0, 1, -inset)
 			nameLbl.BackgroundTransparency = 1
 			nameLbl.Text = entry.name
 			nameLbl.FontFace = m3Font
@@ -250,8 +247,8 @@ return function(ctx)
 
 			if isCurrent then
 				local badge = Instance.new("TextLabel")
-				badge.Size = UDim2.new(0, 72, 0, 18)
-				badge.Position = UDim2.new(0, INSET, 0, INSET)
+				badge.Size = UDim2.new(0, 68, 0, 16)
+				badge.Position = UDim2.new(0, inset, 0, inset)
 				badge.BackgroundTransparency = 0
 				badge.Text = "This game"
 				badge.FontFace = fontWeight(Enum.FontWeight.Bold)

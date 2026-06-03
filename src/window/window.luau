@@ -556,13 +556,13 @@ local function makeUI(titleText: string?, options: MakeUIOptions?): Window
 		c.CanvasSize = UDim2.new(0, 0, 0, 0)
 		c.AutomaticCanvasSize = Enum.AutomaticSize.Y
 		local pad = Instance.new("UIPadding")
-		pad.PaddingLeft = UDim.new(0, 20)
-		pad.PaddingRight = UDim.new(0, 20)
-		pad.PaddingBottom = UDim.new(0, 24)
-		pad.PaddingTop = UDim.new(0, 16)
+		pad.PaddingLeft = UDim.new(0, 16)
+		pad.PaddingRight = UDim.new(0, 16)
+		pad.PaddingBottom = UDim.new(0, 16)
+		pad.PaddingTop = UDim.new(0, 12)
 		pad.Parent = c
 		local layout = Instance.new("UIListLayout")
-		layout.Padding = UDim.new(0, 16)
+		layout.Padding = UDim.new(0, 12)
 		layout.SortOrder = Enum.SortOrder.LayoutOrder
 		layout.Parent = c
 	end
@@ -1054,7 +1054,7 @@ local function makeUI(titleText: string?, options: MakeUIOptions?): Window
 		h.BackgroundTransparency = 1
 		h.Text = text
 		h.FontFace = fontWeight(Enum.FontWeight.Medium)
-		h.TextSize = textSize("md")
+		h.TextSize = textSize("sm")
 		h.TextXAlignment = Enum.TextXAlignment.Left
 		h.LayoutOrder = order
 		h.ZIndex = 81

@@ -30,8 +30,7 @@ export type FooterConfig = {
 	BackgroundTransparency: number?,
 	ShowTopDivider: boolean?,
 	PaddingX: number?,
-	TextTier: ("sm" | "md" | "lg")?,
-	TextSize: (number | string)?, -- legacy: tier name or pixel value, mapped via textSize()
+	TextSize: number?,
 	Layout: ("row" | "split")?,
 	Clock: FooterClockConfig?,
 	Version: FooterVersionConfig?,
@@ -62,12 +61,12 @@ local function deepMerge(into: { any }, from: { any }?)
 end
 
 return function(ctx)
-	local textSize = ctx.textSize
 	local lib = ctx.lib
 	local Config = ctx.config
 	local curTheme = ctx.theme
 	local reg = ctx.reg
 	local corner = ctx.corner
+	local textSize = ctx.textSize
 	local m3Font = ctx.m3Font
 	local winCorner = if type(ctx.WindowCornerRadius) == "number" then ctx.WindowCornerRadius else 16
 
@@ -182,7 +181,7 @@ return function(ctx)
 		lbl.AutomaticSize = Enum.AutomaticSize.XY
 		lbl.BackgroundTransparency = 1
 		lbl.FontFace = m3Font
-		lbl.TextSize = textSize(runtimeConfig.TextTier or runtimeConfig.TextSize or "sm")
+		lbl.TextSize = runtimeConfig.TextSize or textSize("sm")
 		lbl.TextXAlignment = Enum.TextXAlignment.Left
 		lbl.Text = resolveSegmentText(seg)
 		lbl.Parent = parent
@@ -234,22 +233,15 @@ return function(ctx)
 		end
 	end
 
-	local function addCornerPatch(
-		surface: Frame,
-		name: string,
-		anchor: Vector2,
-		pos: UDim2,
-		bgTransparency: number,
-		z: number
-	)
-		-- UICorner is uniform; square overlays square off edges that should stay sharp.
+	local function addTopSquarePatch(surface: Frame, anchor: Vector2, pos: UDim2, bgTransparency: number)
+		-- UICorner is uniform; square overlays on the top edge keep it flush with content above.
 		local patch = Instance.new("Frame")
-		patch.Name = name
+		patch.Name = "TopCornerSquare"
 		patch.Size = UDim2.fromOffset(winCorner + 2, winCorner + 2)
 		patch.AnchorPoint = anchor
 		patch.Position = pos
 		patch.BorderSizePixel = 0
-		patch.ZIndex = z
+		patch.ZIndex = 72
 		patch.Parent = surface
 		reg(patch, "BackgroundColor3", "inact")
 		patch.BackgroundTransparency = bgTransparency
@@ -304,8 +296,8 @@ return function(ctx)
 		reg(bar, "BackgroundColor3", "inact")
 		bar.BackgroundTransparency = bgTransparency
 		corner(bar, winCorner)
-		addCornerPatch(bar, "TopCornerSquare", Vector2.new(0, 0), UDim2.new(0, 0, 0, 0), bgTransparency, 72)
-		addCornerPatch(bar, "TopCornerSquare", Vector2.new(1, 0), UDim2.new(1, 0, 0, 0), bgTransparency, 72)
+		addTopSquarePatch(bar, Vector2.new(0, 0), UDim2.new(0, 0, 0, 0), bgTransparency)
+		addTopSquarePatch(bar, Vector2.new(1, 0), UDim2.new(1, 0, 0, 0), bgTransparency)
 		footerBar = bar
 
 		if runtimeConfig.ShowTopDivider ~= false then

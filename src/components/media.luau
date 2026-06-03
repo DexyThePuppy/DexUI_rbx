@@ -1,11 +1,11 @@
 --!nonstrict
 -- DexUI media component. Attached onto the window's lib via the shared ctx.
 return function(ctx)
-	local textSize = ctx.textSize
 		local lib = ctx.lib
 	local curTheme = ctx.theme
 	local reg, regDynamic = ctx.reg, ctx.regDynamic
 	local tween, corner, ripple = ctx.tween, ctx.corner, ctx.ripple
+	local textSize = ctx.textSize
 	local fontWeight, m3Font = ctx.fontWeight, ctx.m3Font
 	local beginBuildCard, beginCardRow, closeBuildCard = ctx.beginBuildCard, ctx.beginCardRow, ctx.closeBuildCard
 	local nextCardItemOrder, refreshCardRowCorners, styleGroupedSurfaces, tintRow = ctx.nextCardItemOrder, ctx.refreshCardRowCorners, ctx.styleGroupedSurfaces, ctx.tintRow
@@ -284,7 +284,7 @@ return function(ctx)
 		statusLbl.BackgroundTransparency = 1
 		statusLbl.Text = "Browse Creator Store media. Player stays pinned above the catalog."
 		statusLbl.FontFace = m3Font
-		statusLbl.TextSize = textSize("md")
+		statusLbl.TextSize = textSize("sm")
 		statusLbl.TextWrapped = true
 		statusLbl.TextXAlignment = Enum.TextXAlignment.Left
 		statusLbl.TextYAlignment = Enum.TextYAlignment.Top
@@ -887,7 +887,7 @@ return function(ctx)
 			btn.Size = UDim2.new(0, 28, 0, 28)
 			btn.Text = tostring(pageNum)
 			btn.FontFace = fontWeight(Enum.FontWeight.Medium)
-			btn.TextSize = textSize("md")
+			btn.TextSize = textSize("sm")
 			btn.AutoButtonColor = false
 			btn.Parent = pagerRow
 			corner(btn, 999)
@@ -907,7 +907,7 @@ return function(ctx)
 		nextBtn.Size = UDim2.new(0, 28, 0, 28)
 		nextBtn.Text = ">"
 		nextBtn.FontFace = fontWeight(Enum.FontWeight.Medium)
-		nextBtn.TextSize = textSize("md")
+		nextBtn.TextSize = textSize("sm")
 		nextBtn.AutoButtonColor = false
 		nextBtn.Parent = pagerRow
 		corner(nextBtn, 999)

@@ -1,11 +1,11 @@
 --!nonstrict
 -- DexUI switch component. Attached onto the window's lib via the shared ctx.
 return function(ctx)
-	local textSize = ctx.textSize
 		local lib = ctx.lib
 	local curTheme = ctx.theme
 	local reg, regDynamic = ctx.reg, ctx.regDynamic
 	local tween, corner, ripple = ctx.tween, ctx.corner, ctx.ripple
+	local textSize = ctx.textSize
 	local fontWeight, m3Font = ctx.fontWeight, ctx.m3Font
 	local beginBuildCard, beginCardRow, closeBuildCard = ctx.beginBuildCard, ctx.beginCardRow, ctx.closeBuildCard
 	local nextCardItemOrder, refreshCardRowCorners, styleGroupedSurfaces, tintRow = ctx.nextCardItemOrder, ctx.refreshCardRowCorners, ctx.styleGroupedSurfaces, ctx.tintRow
@@ -49,7 +49,7 @@ return function(ctx)
         l.BackgroundTransparency = 1
         l.Text = txt
         l.FontFace = m3Font
-        l.TextSize = textSize("lg")
+        l.TextSize = textSize("md")
         l.TextXAlignment = Enum.TextXAlignment.Left
 		l.Parent = textCol
 		reg(l, "TextColor3", "fg")

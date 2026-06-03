@@ -33,8 +33,7 @@ return function(deps: any)
 	local mouse = deps.mouse
 	local INTRO_BRAND = deps.INTRO_BRAND
 	local fontWeight = deps.fontWeight
-	-- Above footer (≈68–72) so bottom/side resize highlights stay visible; handles stay at 200.
-	local RESIZE_GLOW_Z = 85
+	-- Accent highlights: only the hovered edge OR corner lights up (never the whole frame).
 	local function glowBar(size: UDim2, pos: UDim2, anchor: Vector2): Frame
 		local bar = Instance.new("Frame")
 		bar.Size = size
@@ -42,7 +41,7 @@ return function(deps: any)
 		bar.AnchorPoint = anchor
 		bar.BackgroundTransparency = 1
 		bar.BorderSizePixel = 0
-		bar.ZIndex = RESIZE_GLOW_Z
+		bar.ZIndex = 60
 		bar.Parent = win
 		corner(bar, 999)
 		reg(bar, "BackgroundColor3", "pri")
@@ -72,7 +71,7 @@ return function(deps: any)
 		clip.Position = UDim2.new(ax, 0, ay, 0)
 		clip.BackgroundTransparency = 1
 		clip.ClipsDescendants = true
-		clip.ZIndex = RESIZE_GLOW_Z
+		clip.ZIndex = 60
 		clip.Parent = win
 
 		local d = 2 * WIN_RADIUS
@@ -82,7 +81,7 @@ return function(deps: any)
 		accent.Position = UDim2.new(ax, 0, ay, 0)
 		accent.BackgroundTransparency = 1
 		accent.BorderSizePixel = 0
-		accent.ZIndex = RESIZE_GLOW_Z
+		accent.ZIndex = 60
 		accent.Parent = clip
 		corner(accent, WIN_RADIUS)
 		reg(accent, "BackgroundColor3", "pri")
@@ -92,24 +91,19 @@ return function(deps: any)
 		cover.AnchorPoint = Vector2.new(ax, ay)
 		cover.Position = UDim2.new(ax, ax == 0 and 3 or -3, ay, ay == 0 and 3 or -3)
 		cover.BorderSizePixel = 0
-		cover.ZIndex = RESIZE_GLOW_Z + 1
+		cover.ZIndex = 61
 		cover.Parent = clip
 		corner(cover, WIN_RADIUS - 3)
 		reg(cover, "BackgroundColor3", "bg")
-		-- Bottom corners sit over the footer; an opaque bg mask reads as a square artifact.
-		if ay == 1 then
-			cover.BackgroundTransparency = 1
-		end
 		return accent
 	end
 
 	-- Corner hover: the curved corner border is the full accent tint, while the two adjacent
 	-- edges only glow faintly (EDGE_DIM) so the corner itself reads as the focal point.
-	-- Bottom corners skip the arc mask (footer covers that zone); edge bars still highlight.
 	local glowTL = { { makeCornerArc(0, 0), 0 }, { topBar, EDGE_DIM }, { leftBar, EDGE_DIM } }
 	local glowTR = { { makeCornerArc(1, 0), 0 }, { topBar, EDGE_DIM }, { rightBar, EDGE_DIM } }
-	local glowBL = { { bottomBar, 0 }, { leftBar, EDGE_DIM } }
-	local glowBR = { { bottomBar, 0 }, { rightBar, EDGE_DIM } }
+	local glowBL = { { makeCornerArc(0, 1), 0 }, { bottomBar, EDGE_DIM }, { leftBar, EDGE_DIM } }
+	local glowBR = { { makeCornerArc(1, 1), 0 }, { bottomBar, EDGE_DIM }, { rightBar, EDGE_DIM } }
 
 	-- Forward-declared so resize handlers (registered below) see the same locals as pin setup.
 	local pinned = false

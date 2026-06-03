@@ -2,11 +2,29 @@
 -- Brand + constant configuration for DexUI.
 
 return {
-	-- Typography: three sizes only (sm / md / lg). Use ctx.textSize("sm"|"md"|"lg").
+	-- Universal typography: sm / md / lg only (minimum readable small = 12).
 	Typography = {
 		Small = 12,
 		Medium = 14,
 		Large = 18,
+	},
+
+	-- Compact hub grids (scripts, tools, icons, game-info badges).
+	HubGrid = {
+		ScrollPadding = 6,
+		CellGap = 6,
+		ThumbInset = 6,
+		ScriptCellW = 108,
+		ScriptCellH = 124,
+		ToolCellW = 112,
+		ToolCellH = 128,
+		IconCellW = 76,
+		IconCellH = 70,
+		BadgeCellW = 70,
+		BadgeCellH = 78,
+		BadgeIcon = 44,
+		BadgeGap = 4,
+		BadgeCols = 4,
 	},
 
 	-- Branding
@@ -38,7 +56,7 @@ return {
 		Gap = 5,
 		PadRight = 18,
 		PadInner = 12,
-		TextTier = "lg",
+		TextSize = 18,
 		CornerRadius = 10,
 		StackAnchor = Vector2.new(1, 0.5),
 		StackPosition = UDim2.new(1, -16, 0.5, 0),
@@ -74,7 +92,7 @@ return {
 		BackgroundTransparency = 0.35,
 		ShowTopDivider = true,
 		PaddingX = 14,
-		TextTier = "sm",
+		TextSize = 12,
 		Layout = "split",
 		Clock = {
 			Enabled = true,

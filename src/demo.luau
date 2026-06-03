@@ -59,7 +59,8 @@ local function buildDemo(withIntro: boolean?)
 	ui:AddTab("Scripts", 6023426986) -- find_in_page
 	ui:AddParagraph(
 		"Scripts hub",
-		"Grid of games from scripts/index.lua. Click a card to run that game's standalone script in a new DexUI window."
+		"Grid from scripts/index.lua in your executor workspace (not downloaded from GitHub). "
+			.. "Run build.ps1 -Stage or copy the scripts/ folder next to dist/demo.lua. Click a card to launch the matching .lua file."
 	)
 	ui:PopulateScriptsHub()
 

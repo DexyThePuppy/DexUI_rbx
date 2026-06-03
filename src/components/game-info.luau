@@ -3,10 +3,10 @@
 
 local Registry = require("../hub/registry")
 local GameMetadata = require("../hub/game-metadata")
+local Grid = require("../hub/grid-layout")
 local Services = require("../services")
 
 return function(ctx)
-	local textSize = ctx.textSize
 	local lib = ctx.lib
 	local curTheme = ctx.theme
 	local reg = ctx.reg
@@ -18,6 +18,7 @@ return function(ctx)
 	local playFeedback = ctx.playFeedback
 	local trySetClipboard = ctx.trySetClipboard
 	local tooltip = ctx.tooltip
+	local textSize = ctx.textSize
 	local MEDIA_PAGE_SIZE, MEDIA_PAGE_COUNT = ctx.MEDIA_PAGE_SIZE, ctx.MEDIA_PAGE_COUNT
 	local ContentProvider = Services.ContentProvider or game:GetService("ContentProvider")
 	local Players = game:GetService("Players")
@@ -144,7 +145,7 @@ return function(ctx)
 		rejoinBtn.Position = UDim2.new(1, 0, 0, 0)
 		rejoinBtn.Text = "Rejoin"
 		rejoinBtn.FontFace = fontWeight(Enum.FontWeight.Medium)
-		rejoinBtn.TextSize = textSize("md")
+		rejoinBtn.TextSize = textSize("sm")
 		rejoinBtn.AutoButtonColor = false
 		rejoinBtn.Parent = headerRow
 		corner(rejoinBtn, 10)
@@ -172,7 +173,7 @@ return function(ctx)
 			row.Parent = parent
 			local rowLayout = Instance.new("UIListLayout")
 			rowLayout.FillDirection = Enum.FillDirection.Horizontal
-			rowLayout.Padding = UDim.new(0, 3)
+			rowLayout.Padding = UDim.new(0, 6)
 			rowLayout.SortOrder = Enum.SortOrder.LayoutOrder
 			rowLayout.Wraps = true
 			rowLayout.Parent = row
@@ -192,16 +193,16 @@ return function(ctx)
 			badge.Name = "Badge"
 			badge.Text = ""
 			badge.AutoButtonColor = false
-			badge.Size = UDim2.fromOffset(0, 20)
+			badge.Size = UDim2.fromOffset(0, 22)
 			badge.AutomaticSize = Enum.AutomaticSize.X
 			badge.BackgroundColor3 = bg or curTheme.bg
 			badge.BorderSizePixel = 0
 			badge.Parent = row
-			corner(badge, 5)
+			corner(badge, 6)
 
 			local pad = Instance.new("UIPadding")
-			pad.PaddingLeft = UDim.new(0, 4)
-			pad.PaddingRight = UDim.new(0, 4)
+			pad.PaddingLeft = UDim.new(0, 8)
+			pad.PaddingRight = UDim.new(0, 8)
 			pad.Parent = badge
 
 			local lbl = Instance.new("TextLabel")
@@ -459,32 +460,19 @@ return function(ctx)
 			extraBadgeRow.Visible = extraBadgeRow:FindFirstChild("Badge") ~= nil
 		end
 
-		local BADGE_COLS = 5
-		local BADGE_CELL_W = 60
-		local BADGE_CELL_H = 74
-		local BADGE_ICON = 38
-		local BADGE_CELL_GAP = 3
+		local BADGE_COLS = Grid.BADGE_COLS
+		local BADGE_CELL_W = Grid.BADGE_CELL_W
+		local BADGE_CELL_H = Grid.BADGE_CELL_H
+		local BADGE_ICON = Grid.BADGE_ICON
+		local BADGE_GAP = Grid.BADGE_GAP
 		local CLAIMED_GREEN = Color3.fromRGB(56, 170, 92)
 
 		local badgesSection = makeSection(3)
 		badgesSection.Visible = false
-		do
-			local badgesPad = badgesSection:FindFirstChildOfClass("UIPadding")
-			if badgesPad then
-				badgesPad.PaddingTop = UDim.new(0, 6)
-				badgesPad.PaddingBottom = UDim.new(0, 6)
-				badgesPad.PaddingLeft = UDim.new(0, 6)
-				badgesPad.PaddingRight = UDim.new(0, 6)
-			end
-			local badgesList = badgesSection:FindFirstChildOfClass("UIListLayout")
-			if badgesList then
-				badgesList.Padding = UDim.new(0, 4)
-			end
-		end
 
 		local badgesHeading = Instance.new("TextLabel")
 		badgesHeading.LayoutOrder = 0
-		badgesHeading.Size = UDim2.new(1, 0, 0, 18)
+		badgesHeading.Size = UDim2.new(1, 0, 0, 20)
 		badgesHeading.BackgroundTransparency = 1
 		badgesHeading.Text = "Badges"
 		badgesHeading.FontFace = fontWeight(Enum.FontWeight.Medium)
@@ -517,7 +505,7 @@ return function(ctx)
 
 		local badgeGridLayout = Instance.new("UIGridLayout")
 		badgeGridLayout.CellSize = UDim2.fromOffset(BADGE_CELL_W, BADGE_CELL_H)
-		badgeGridLayout.CellPadding = UDim2.fromOffset(BADGE_CELL_GAP, BADGE_CELL_GAP)
+		badgeGridLayout.CellPadding = UDim2.fromOffset(BADGE_GAP, BADGE_GAP)
 		badgeGridLayout.SortOrder = Enum.SortOrder.LayoutOrder
 		badgeGridLayout.HorizontalAlignment = Enum.HorizontalAlignment.Left
 		badgeGridLayout.Parent = badgeGrid
@@ -574,13 +562,13 @@ return function(ctx)
 				cell.BackgroundTransparency = if badge.claimed then 0.35 else 0.55
 				cell.BorderSizePixel = 0
 				cell.Parent = badgeGrid
-				corner(cell, 8)
+				corner(cell, 10)
 				reg(cell, "BackgroundColor3", "bg")
 
 				local icon = Instance.new("ImageLabel")
 				icon.Name = "Icon"
 				icon.Size = UDim2.fromOffset(BADGE_ICON, BADGE_ICON)
-				icon.Position = UDim2.new(0.5, 0, 0, 3)
+				icon.Position = UDim2.new(0.5, 0, 0, 4)
 				icon.AnchorPoint = Vector2.new(0.5, 0)
 				icon.BackgroundTransparency = 1
 				icon.ScaleType = Enum.ScaleType.Fit
@@ -613,8 +601,8 @@ return function(ctx)
 
 				local nameLbl = Instance.new("TextLabel")
 				nameLbl.Name = "Name"
-				nameLbl.Size = UDim2.new(1, -4, 0, 26)
-				nameLbl.Position = UDim2.new(0, 2, 1, -28)
+				nameLbl.Size = UDim2.new(1, -6, 0, 28)
+				nameLbl.Position = UDim2.new(0, 3, 1, -30)
 				nameLbl.BackgroundTransparency = 1
 				nameLbl.Text = badge.name
 				nameLbl.FontFace = m3Font
@@ -634,7 +622,7 @@ return function(ctx)
 			end
 
 			local rows = math.max(1, math.ceil(count / BADGE_COLS))
-			badgeGrid.Size = UDim2.new(1, 0, 0, rows * (BADGE_CELL_H + BADGE_CELL_GAP) - BADGE_CELL_GAP)
+			badgeGrid.Size = UDim2.new(1, 0, 0, rows * (BADGE_CELL_H + BADGE_GAP) - BADGE_GAP)
 		end
 
 		-- Public servers (sorted low → high, paged like Media tab)
@@ -880,7 +868,7 @@ return function(ctx)
 			btn.Size = UDim2.fromOffset(28, 28)
 			btn.Text = tostring(pageNum)
 			btn.FontFace = fontWeight(Enum.FontWeight.Medium)
-			btn.TextSize = textSize("md")
+			btn.TextSize = textSize("sm")
 			btn.AutoButtonColor = false
 			btn.Visible = false
 			btn.Parent = pagerRow
@@ -910,7 +898,7 @@ return function(ctx)
 		pageNextBtn.Size = UDim2.fromOffset(28, 28)
 		pageNextBtn.Text = ">"
 		pageNextBtn.FontFace = fontWeight(Enum.FontWeight.Medium)
-		pageNextBtn.TextSize = textSize("md")
+		pageNextBtn.TextSize = textSize("sm")
 		pageNextBtn.AutoButtonColor = false
 		pageNextBtn.Parent = pagerRow
 		corner(pageNextBtn, 999)
