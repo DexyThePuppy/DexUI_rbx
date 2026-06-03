@@ -84,7 +84,7 @@ return {
 
 	-- Bottom status bar (see components/footer.luau). Override via lib:SetFooterConfig().
 	Footer = {
-		Enabled = true,
+		Enabled = false,
 		Height = 28,
 		BackgroundTransparency = 0.35,
 		ShowTopDivider = true,
