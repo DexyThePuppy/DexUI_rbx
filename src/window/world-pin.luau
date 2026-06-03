@@ -109,6 +109,8 @@ return function(deps: any)
 
 	-- Forward-declared so resize handlers (registered below) see the same locals as pin setup.
 	local pinned = false
+	local pinnedPixelW: number? = nil
+	local pinnedPixelH: number? = nil
 	local worldPanelRotation = CFrame.identity
 	local WP = Config.WorldPin or {}
 	local WORLD_PIXELS_PER_STUD = WP.PixelsPerStud or 512
@@ -173,10 +175,8 @@ return function(deps: any)
 				if pinned then
 					win.Size = UDim2.fromScale(1, 1)
 					win.Position = UDim2.fromOffset(0, 0)
-					resStartSize = Vector2.new(
-						anchorPart.Size.X * WORLD_PIXELS_PER_STUD,
-						anchorPart.Size.Y * WORLD_PIXELS_PER_STUD
-					)
+					local pps = worldFace.PixelsPerStud
+					resStartSize = Vector2.new(anchorPart.Size.X * pps, anchorPart.Size.Y * pps)
 					keepUpright.Enabled = false
 					anchorPart.Anchored = true
 					anchorPart.AssemblyLinearVelocity = Vector3.zero
@@ -229,8 +229,9 @@ return function(deps: any)
 			newH = math.max(minH, newH)
 
 			if pinned then
-				local newWStud = newW / WORLD_PIXELS_PER_STUD
-				local newHStud = newH / WORLD_PIXELS_PER_STUD
+				local pps = worldFace.PixelsPerStud
+				local newWStud = newW / pps
+				local newHStud = newH / pps
 				local shift = Vector3.zero
 				local widthDelta = newWStud - resStartPartSize.X
 				local heightDelta = newHStud - resStartPartSize.Y
@@ -471,10 +472,40 @@ return function(deps: any)
 		return ray.Origin + ray.Direction * depth
 	end
 
+	local function studsSizeForScreenPixels(pixelW: number, pixelH: number, depth: number): (number, number)
+		local cam = Workspace.CurrentCamera
+		if not cam then
+			return pixelW / WORLD_PIXELS_PER_STUD, pixelH / WORLD_PIXELS_PER_STUD
+		end
+		local vp = cam.ViewportSize
+		if vp.X < 1 or vp.Y < 1 then
+			return pixelW / WORLD_PIXELS_PER_STUD, pixelH / WORLD_PIXELS_PER_STUD
+		end
+		local vFov = math.rad(cam.FieldOfView)
+		local hFov = 2 * math.atan(math.tan(vFov * 0.5) * (vp.X / vp.Y))
+		local worldW = 2 * depth * math.tan(hFov * 0.5) * (pixelW / vp.X)
+		local worldH = 2 * depth * math.tan(vFov * 0.5) * (pixelH / vp.Y)
+		return math.max(0.5, worldW), math.max(0.5, worldH)
+	end
+
 	local function syncWorldPartSize(w: number?, h: number?)
-		w = math.max(1, w or win.AbsoluteSize.X)
-		h = math.max(1, h or win.AbsoluteSize.Y)
-		anchorPart.Size = Vector3.new(w / WORLD_PIXELS_PER_STUD, h / WORLD_PIXELS_PER_STUD, 0.08)
+		w = math.max(1, w or pinnedPixelW or win.AbsoluteSize.X)
+		h = math.max(1, h or pinnedPixelH or win.AbsoluteSize.Y)
+		if pinned then
+			-- SurfaceGui layout can briefly report a tiny AbsoluteSize; ignore that feedback loop.
+			if (w < minW or h < minH) and pinnedPixelW and pinnedPixelH then
+				w, h = pinnedPixelW, pinnedPixelH
+			elseif w >= minW and h >= minH then
+				pinnedPixelW, pinnedPixelH = w, h
+			end
+			local worldW, worldH = studsSizeForScreenPixels(w, h, pinViewDepth)
+			anchorPart.Size = Vector3.new(worldW, worldH, anchorPart.Size.Z)
+			local pps = w / worldW
+			worldFace.PixelsPerStud = pps
+			worldBack.PixelsPerStud = pps
+		else
+			anchorPart.Size = Vector3.new(w / WORLD_PIXELS_PER_STUD, h / WORLD_PIXELS_PER_STUD, 0.08)
+		end
 	end
 
 	local function setPartWorldCFrame(pos: Vector3)
@@ -524,8 +555,9 @@ return function(deps: any)
 		setChromeActive(pinBtn, pinned)
 		if pinned then
 			savedScreenPos = win.Position
-			local w = math.max(1, win.AbsoluteSize.X)
-			local h = math.max(1, win.AbsoluteSize.Y)
+			local w = math.max(minW, win.AbsoluteSize.X)
+			local h = math.max(minH, win.AbsoluteSize.Y)
+			pinnedPixelW, pinnedPixelH = w, h
 
 			-- Place on a fixed plane in front of the camera through the window center.
 			local center = win.AbsolutePosition + win.AbsoluteSize / 2
@@ -555,9 +587,13 @@ return function(deps: any)
 			worldBack.Adornee = nil
 			worldBack.Enabled = false
 			anchorPart.CanQuery = false
+			worldFace.PixelsPerStud = WORLD_PIXELS_PER_STUD
+			worldBack.PixelsPerStud = WORLD_PIXELS_PER_STUD
+			pinnedPixelW, pinnedPixelH = nil, nil
 			local screenPos, onScreen = cam:WorldToViewportPoint(anchorPart.Position)
-			local w = math.floor(anchorPart.Size.X * WORLD_PIXELS_PER_STUD + 0.5)
-			local h = math.floor(anchorPart.Size.Y * WORLD_PIXELS_PER_STUD + 0.5)
+			local pps = worldFace.PixelsPerStud
+			local w = math.floor(anchorPart.Size.X * pps + 0.5)
+			local h = math.floor(anchorPart.Size.Y * pps + 0.5)
 			win.Parent = gui
 			win.AnchorPoint = Vector2.new(0, 0)
 			win.Size = UDim2.fromOffset(w, h)

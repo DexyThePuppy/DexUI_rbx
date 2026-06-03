@@ -33,6 +33,14 @@ return function(ctx)
 	type Callback = (...any) -> ()
 	type MediaHit = { id: number, title: string, subtitle: string? }
 
+	local function switchTrackColor(theme: Palette, on: boolean): Color3
+		if on then
+			return theme.pri
+		end
+		-- Darker than card `inact` so the off track reads clearly recessed.
+		return theme.bg:Lerp(Color3.new(0, 0, 0), 0.38)
+	end
+
 	function lib:AddSwitch(txt: string, def: boolean?, cb: Callback?, sub: string?)
         local st = def or false
 		local hasSub = sub ~= nil and sub ~= ""
@@ -85,7 +93,7 @@ return function(ctx)
         trk.Position = UDim2.new(1, 0, 0.5, 0)
         trk.Text = ""
         trk.AutoButtonColor = false
-		trk.BackgroundColor3 = st and curTheme.pri or curTheme.inact
+		trk.BackgroundColor3 = switchTrackColor(curTheme, st)
 		trk.Parent = r
 		corner(trk, 999)
 
@@ -98,14 +106,14 @@ return function(ctx)
 		corner(thm, 999)
 
 		regDynamic(function(theme, dur)
-			tween(trk, "BackgroundColor3", st and theme.pri or theme.inact, dur)
+			tween(trk, "BackgroundColor3", switchTrackColor(theme, st), dur)
 			tween(thm, "BackgroundColor3", st and theme.onpri or theme.out, dur)
 		end)
 
         trk.MouseButton1Click:Connect(function()
             st = not st
 			playFeedback(st and "toggleOn" or "toggleOff")
-			tween(trk, "BackgroundColor3", st and curTheme.pri or curTheme.inact, 0.3)
+			tween(trk, "BackgroundColor3", switchTrackColor(curTheme, st), 0.3)
 			TweenService:Create(thm, STD_TWEEN, {
                 Size = st and UDim2.new(0, 24, 0, 24) or UDim2.new(0, 16, 0, 16),
                 Position = st and UDim2.new(0, 36, 0.5, 0) or UDim2.new(0, 16, 0.5, 0),

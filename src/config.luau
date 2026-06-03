@@ -65,8 +65,8 @@ return {
 	IntroSound = "rbxassetid://118754269860019",
 	IntroBrand = "DexUI",
 
-	-- 3D world-pin panel (SurfaceGui). Higher PixelsPerStud = sharper text (more GPU).
-	-- 256 is ~5× the old 50 default; try 320–512 if you still see blur at your view distance.
+	-- 3D world-pin panel (SurfaceGui). PixelsPerStud caps sharpness; pin mode also scales
+	-- part size to match on-screen footprint (see world-pin studsSizeForScreenPixels).
 	WorldPin = {
 		PixelsPerStud = 512,
 	},
