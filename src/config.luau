@@ -14,7 +14,15 @@ return {
 		Large = 18,
 	},
 
-	-- Game Info tab: stacked section cards (see components/game-info/).
+	-- Stacked section cards (Game Info, Media, etc.).
+	SectionLayout = {
+		SectionGap = 12,
+		SectionPadding = 14,
+		InnerGap = 8,
+		SectionCorner = 12,
+	},
+
+	-- Alias for Game Info mount (same as SectionLayout).
 	GameInfo = {
 		SectionGap = 12,
 		SectionPadding = 14,

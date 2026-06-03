@@ -4,7 +4,7 @@ local Registry = require("../../hub/registry")
 local GameMetadata = require("../../hub/game-metadata")
 local Services = require("../../services")
 
-local Section = require("./section")
+local Section = require("../../core/panel-section")
 local ChipBadges = require("./chip-badges")
 local Header = require("./header")
 local Description = require("./description")
@@ -13,7 +13,7 @@ local AchievementGrid = require("./achievement-grid")
 local Servers = require("./servers")
 local Format = require("./format")
 
-local GI = Config.GameInfo or {}
+local GI = Config.SectionLayout or Config.GameInfo or {}
 local SECTION_GAP: number = GI.SectionGap or 12
 local SECTION_PAD: number = GI.SectionPadding or 14
 local INNER_GAP: number = GI.InnerGap or 8
