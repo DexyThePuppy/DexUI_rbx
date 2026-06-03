@@ -549,10 +549,6 @@ return function(ctx)
 				card.root.BackgroundTransparency = if badge.claimed then 0.35 else 0.55
 				reg(card.root, "BackgroundColor3", "bg")
 
-				card.image.Size = UDim2.fromScale(1, 1)
-				card.image.AnchorPoint = Vector2.new(0, 0)
-				card.image.Position = UDim2.fromScale(0, 0)
-				card.image.ScaleType = Enum.ScaleType.Crop
 				card.image.ImageTransparency = if badge.claimed then 0 else 0.45
 				card.image.Active = false
 				card.image.Selectable = false

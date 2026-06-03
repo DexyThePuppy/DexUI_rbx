@@ -17,6 +17,8 @@ export type GridSpec = {
 	thumbCorner: number,
 	maxViewport: number,
 	badgeIcon: number,
+	thumbScale: Enum.ScaleType?,
+	thumbFillBackground: boolean?,
 }
 
 export type CardParts = {
@@ -139,10 +141,17 @@ local function createCard(
 	local image = Instance.new("ImageLabel")
 	image.Name = "Image"
 	image.Size = UDim2.fromScale(1, 1)
+	image.AnchorPoint = Vector2.new(0.5, 0.5)
+	image.Position = UDim2.fromScale(0.5, 0.5)
 	image.BackgroundTransparency = 1
-	image.ScaleType = Enum.ScaleType.Crop
+	image.ScaleType = spec.thumbScale or Enum.ScaleType.Crop
 	image.ZIndex = 2
 	image.Parent = thumb
+
+	if spec.thumbFillBackground then
+		thumb.BackgroundTransparency = 0
+		deps.reg(thumb, "BackgroundColor3", "bg")
+	end
 
 	local title = Instance.new("TextLabel")
 	title.Name = "Title"
@@ -235,7 +244,9 @@ end
 
 -- Inline grid (Game Info badges — no scroll wrapper).
 local function buildInline(parent: Instance, deps: GridDeps): GridMount
-	local spec = SPEC
+	local spec = table.clone(SPEC) :: GridSpec
+	spec.thumbScale = Enum.ScaleType.Fit
+	spec.thumbFillBackground = true
 
 	local layout = Instance.new("UIGridLayout")
 	layout.Name = "HubGridLayout"
