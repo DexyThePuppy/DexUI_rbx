@@ -10,6 +10,7 @@ local Palettes = require("../theme/palettes")
 local Util = require("../core/util")
 local Fonts = require("../core/fonts")
 local Sound = require("../core/sound")
+local SettingsStore = require("../core/settings-store")
 local createContext = require("../core/context")
 local playWorldIntro = require("./intro")
 
@@ -105,6 +106,81 @@ local function makeUI(titleText: string?): Window
 	local ContextActionService, Workspace, CoreGui = ctx.ContextActionService, ctx.Workspace, ctx.CoreGui
 	local trackedConns = ctx.trackedConns
 	local INTRO_BRAND, INTRO_SOUND = ctx.INTRO_BRAND, ctx.INTRO_SOUND
+
+	local savedSettings = SettingsStore.load(Config)
+	local saveSettingsScheduled = false
+
+	local function collectSettings(): { any }
+		local ns = {
+			assetId = Sound.getNotificationSoundAssetId(),
+			randomPitch = Sound.isNotificationRandomPitch(),
+			pitch = Sound.getNotificationPitch(),
+		}
+		local pitchMin, pitchMax = Sound.getNotificationPitchRange()
+		ns.pitchMin = pitchMin
+		ns.pitchMax = pitchMax
+
+		local notificationStyle = nil
+		if lib.GetNotificationStyle then
+			notificationStyle = lib:GetNotificationStyle()
+		end
+
+		return {
+			version = 1,
+			soundsEnabled = Sound.isSoundsEnabled(),
+			masterVolume = Sound.getMasterVolume(),
+			accentTint = SettingsStore.colorToTable(curTheme.pri),
+			notificationSound = ns,
+			notificationStyle = notificationStyle,
+		}
+	end
+
+	local function saveSettingsNow()
+		SettingsStore.save(collectSettings())
+	end
+
+	local function scheduleSaveSettings()
+		if saveSettingsScheduled then
+			return
+		end
+		saveSettingsScheduled = true
+		task.delay(0.35, function()
+			saveSettingsScheduled = false
+			saveSettingsNow()
+		end)
+	end
+
+	local function applySavedSettings()
+		local s = savedSettings
+		if s.soundsEnabled ~= nil then
+			Sound.setSoundsEnabled(s.soundsEnabled)
+		end
+		if type(s.masterVolume) == "number" then
+			Sound.setMasterVolume(s.masterVolume)
+		end
+		local ns = s.notificationSound
+		if type(ns) == "table" then
+			if type(ns.assetId) == "number" then
+				Sound.setNotificationSoundAssetId(ns.assetId)
+			end
+			if ns.randomPitch ~= nil then
+				Sound.setNotificationRandomPitch(ns.randomPitch)
+			end
+			if type(ns.pitch) == "number" then
+				Sound.setNotificationPitch(ns.pitch)
+			end
+			if type(ns.pitchMin) == "number" and type(ns.pitchMax) == "number" then
+				Sound.setNotificationPitchRange(ns.pitchMin, ns.pitchMax)
+			end
+		end
+		local tint = SettingsStore.colorFromTable(s.accentTint)
+		if tint then
+			lib:ApplyTint(tint)
+		end
+		if type(s.notificationStyle) == "table" and next(s.notificationStyle) ~= nil and lib.SetNotificationStyle then
+			lib:SetNotificationStyle(s.notificationStyle)
+		end
+	end
 
 
 	-- Re-injection guard: a previous DexUI instance lives in its own VM, so its
@@ -222,6 +298,24 @@ local function makeUI(titleText: string?): Window
 	btnRowLayout.Parent = btnRow
 
 	-- Material symbols spritesheet (Roblox MaterialIcons sheets).
+	local chromeBtnStates: { [TextButton]: { icon: ImageLabel, hover: Color3?, active: boolean } } = {}
+
+	local function setChromeActive(btn: TextButton, active: boolean)
+		local state = chromeBtnStates[btn]
+		if not state or state.active == active then
+			return
+		end
+		state.active = active
+		if active then
+			btn.BackgroundColor3 = curTheme.pri
+			tween(btn, "BackgroundTransparency", 0.72, 0.15)
+			tween(state.icon, "ImageColor3", curTheme.pri, 0.15)
+		else
+			tween(btn, "BackgroundTransparency", 1, 0.15)
+			tween(state.icon, "ImageColor3", state.hover or curTheme.fg, 0.15)
+		end
+	end
+
 	local function chromeButton(order: number, name: string, sheet: number, rect: Vector2, hover: Color3?, cell: Vector2?): (TextButton, ImageLabel)
 		local b = Instance.new("TextButton")
 		b.Name = name
@@ -256,18 +350,32 @@ local function makeUI(titleText: string?): Window
 		icon.Parent = b
 		reg(icon, "ImageColor3", "fg")
 
+		chromeBtnStates[b] = { icon = icon, hover = hover, active = false }
+
 		b.MouseEnter:Connect(function()
+			local state = chromeBtnStates[b]
 			b.BackgroundColor3 = hover or curTheme.fg
-			tween(b, "BackgroundTransparency", 0.85, 0.15)
+			if state.active then
+				tween(b, "BackgroundTransparency", 0.58, 0.15)
+			else
+				tween(b, "BackgroundTransparency", 0.85, 0.15)
+			end
 			playFeedback("hover")
-			if hover then
+			if hover and not state.active then
 				tween(icon, "ImageColor3", hover, 0.15)
 			end
 		end)
 		b.MouseLeave:Connect(function()
-			tween(b, "BackgroundTransparency", 1, 0.15)
-			if hover then
-				tween(icon, "ImageColor3", curTheme.fg, 0.15)
+			local state = chromeBtnStates[b]
+			if state.active then
+				b.BackgroundColor3 = curTheme.pri
+				tween(b, "BackgroundTransparency", 0.72, 0.15)
+				tween(icon, "ImageColor3", curTheme.pri, 0.15)
+			else
+				tween(b, "BackgroundTransparency", 1, 0.15)
+				if hover then
+					tween(icon, "ImageColor3", curTheme.fg, 0.15)
+				end
 			end
 		end)
 		b.MouseButton1Down:Connect(function()
@@ -279,7 +387,7 @@ local function makeUI(titleText: string?): Window
 
 	local searchBtn = chromeButton(1, "Search", 3926305904, Vector2.new(964, 324))
 	local settingsBtn = chromeButton(2, "Settings", 3926307971, Vector2.new(324, 124))
-	local pinBtn, pinIcon = chromeButton(3, "Pin", 3926305904, Vector2.new(684, 564))
+	local pinBtn = chromeButton(3, "Pin", 3926305904, Vector2.new(684, 564))
 	local closeBtn = chromeButton(4, "Close", 3926305904, Vector2.new(284, 4), Color3.fromRGB(255, 95, 95), Vector2.new(24, 24))
 
 	--//---------------------- TAB BAR (vertical sidebar) ----------------------\\--
@@ -614,6 +722,13 @@ local function makeUI(titleText: string?): Window
 	for _, __factory in componentFactories do
 		__factory(ctx)
 	end
+	applySavedSettings()
+
+	local _setNotificationStyle = lib.SetNotificationStyle
+	function lib:SetNotificationStyle(style: any)
+		_setNotificationStyle(style)
+		scheduleSaveSettings()
+	end
 	--//============================================================\\--
 	--||                    LAYOUT COMPONENTS                     ||--
 	--\\============================================================//--
@@ -699,6 +814,11 @@ local function makeUI(titleText: string?): Window
 		if activeOverlay == group then
 			activeOverlay = nil
 		end
+		if group == searchOverlay then
+			setChromeActive(searchBtn, false)
+		elseif group == settingsOverlay then
+			setChromeActive(settingsBtn, false)
+		end
 		tween(group, "GroupTransparency", 1, 0.22)
 		tween(group, "Position", UDim2.new(0, 0, 0, 62), 0.22)
 		task.delay(0.24, function()
@@ -712,6 +832,11 @@ local function makeUI(titleText: string?): Window
 			hideOverlay(activeOverlay)
 		end
 		activeOverlay = group
+		if group == searchOverlay then
+			setChromeActive(searchBtn, true)
+		elseif group == settingsOverlay then
+			setChromeActive(settingsBtn, true)
+		end
 		group.Visible = true
 		group.Position = UDim2.new(0, 0, 0, 62)
 		group.GroupTransparency = 1
@@ -950,6 +1075,7 @@ local function makeUI(titleText: string?): Window
 			-- away from the default palette on load.
 			if tintActive then
 				lib:ApplyTint(color)
+				scheduleSaveSettings()
 			end
 		end, "Pick any colour to retint the interface")
 	end)
@@ -1014,12 +1140,24 @@ local function makeUI(titleText: string?): Window
 			Sound.setSoundsEnabled(not Sound.isSoundsEnabled())
 			refreshSoundToggle()
 			playFeedback(Sound.isSoundsEnabled() and "toggleOn" or "toggleOff") -- the "off" tick is the last sound you hear
+			scheduleSaveSettings()
 		end)
 	end)
 
 	regDynamic(function(theme, dur)
 		tween(soundTrk, "BackgroundColor3", Sound.isSoundsEnabled() and theme.pri or theme.inact, dur)
 		tween(soundThm, "BackgroundColor3", Sound.isSoundsEnabled() and theme.onpri or theme.out, dur)
+		for btn, state in chromeBtnStates do
+			if state.active then
+				if dur > 0 then
+					tween(btn, "BackgroundColor3", theme.pri, dur)
+					tween(state.icon, "ImageColor3", theme.pri, dur)
+				else
+					btn.BackgroundColor3 = theme.pri
+					state.icon.ImageColor3 = theme.pri
+				end
+			end
+		end
 	end)
 
 	buildOverlayGroup(settingsScroll, 4, function()
@@ -1087,6 +1225,7 @@ local function makeUI(titleText: string?): Window
 			end
 			ripple(playBtn, curTheme.onpri)
 			Sound.previewNotificationSound()
+			scheduleSaveSettings()
 		end)
 
 		idBox.FocusLost:Connect(function()
@@ -1097,10 +1236,12 @@ local function makeUI(titleText: string?): Window
 			else
 				idBox.Text = tostring(Sound.getNotificationSoundAssetId())
 			end
+			scheduleSaveSettings()
 		end)
 
 		lib:AddSwitch("Random Notification Pitch", Sound.isNotificationRandomPitch(), function(on)
 			Sound.setNotificationRandomPitch(on)
+			scheduleSaveSettings()
 		end, "Vary playback speed on each toast")
 	end)
 
@@ -1834,6 +1975,7 @@ local function makeUI(titleText: string?): Window
 		end
 
 		pinned = state
+		setChromeActive(pinBtn, pinned)
 		if pinned then
 			savedScreenPos = win.Position
 			local w = math.max(1, win.AbsoluteSize.X)
@@ -1859,7 +2001,6 @@ local function makeUI(titleText: string?): Window
 			win.AnchorPoint = Vector2.new(0, 0)
 			win.Position = UDim2.fromOffset(0, 0)
 			win.Size = UDim2.fromScale(1, 1)
-			tween(pinIcon, "ImageColor3", curTheme.pri, 0.2)
 			playFeedback("toggleOn")
 		else
 			disableWorldPhysics()
@@ -1884,7 +2025,6 @@ local function makeUI(titleText: string?): Window
 			else
 				win.Position = savedScreenPos
 			end
-			tween(pinIcon, "ImageColor3", curTheme.fg, 0.2)
 			playFeedback("toggleOff")
 		end
 	end
@@ -2049,6 +2189,7 @@ local function makeUI(titleText: string?): Window
 		if unloaded then
 			return
 		end
+		saveSettingsNow()
 		unloaded = true
 		if genv.__DexUI_Unload then
 			genv.__DexUI_Unload = nil

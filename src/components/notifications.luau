@@ -620,6 +620,15 @@ return function(ctx)
 		refreshNotifStackLayout(resolveStyle(nil))
 	end
 
+	function lib:GetNotificationStyle(): NotificationStyle?
+		if next(runtimeStyle) == nil then
+			return nil
+		end
+		local copy: NotificationStyle = {}
+		deepMerge(copy, runtimeStyle)
+		return copy
+	end
+
 	function lib:Notify(opts: { Title: string?, Content: string?, Duration: number?, Style: NotificationStyle? })
 		playNotificationSound()
 		pushNotif(formatNotifText(opts), opts.Duration, opts.Style)
