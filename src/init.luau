@@ -10,9 +10,21 @@
 local Config = require("./config")
 local makeUI = require("./window/window")
 
-return {
+local DexUI = {
 	Version = Config.Version,
-	CreateWindow = function(title: string?)
-		return makeUI(title)
-	end,
 }
+
+function DexUI.CreateWindow(title: string?)
+	local ui = makeUI(title)
+	ui._dexuiModule = DexUI
+	return ui
+end
+
+function DexUI.CreateHub(title: string?)
+	local ui = makeUI(title or "DexUI Hub", { hub = true })
+	ui._dexuiModule = DexUI
+	ui:PopulateScriptsHub()
+	return ui
+end
+
+return DexUI

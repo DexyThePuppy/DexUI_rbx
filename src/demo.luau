@@ -55,7 +55,19 @@ local function buildDemo(withIntro: boolean?)
 	ui:AddTab("Media", 6026671208) -- video_library
 	ui:AddMediaBrowser()
 
-	--// Tab 4: Icons (Material Icons library) ----------------------------------
+	--// Tab 4: Scripts hub -----------------------------------------------------
+	ui:AddTab("Scripts", 6031284944)
+	ui:AddParagraph(
+		"Scripts hub",
+		"Grid of games from scripts/index.lua. Click a card to run that game's standalone script in a new DexUI window."
+	)
+	ui:PopulateScriptsHub()
+
+	--// Tab 5: Game info -----------------------------------------------------
+	ui:AddTab("Game Info", 6034509993)
+	ui:AddGameInfo()
+
+	--// Tab 6: Icons (Material Icons library) --------------------------------
 	ui:AddTab("Icons", 6031302950)
 	ui:AddParagraph(
 		"Material Icons",

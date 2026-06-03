@@ -29,6 +29,8 @@ local componentFactories = {
 	require("../components/media"),
 	require("../components/icons"),
 	require("../components/notifications"),
+	require("../components/scripts-hub"),
+	require("../components/game-info"),
 }
 
 type Palette = { bg: Color3, fg: Color3, pri: Color3, onpri: Color3, inact: Color3, out: Color3 }
@@ -52,6 +54,8 @@ export type Window = {
 	AddColorPicker: (self: Window, text: string, default: Color3?, callback: Callback?, subtitle: string?) -> (),
 	AddMediaBrowser: (self: Window) -> (),
 	AddIconBrowser: (self: Window) -> (),
+	PopulateScriptsHub: (self: Window, entries: { any }?) -> (),
+	AddGameInfo: (self: Window) -> (),
 	Notify: (self: Window, opts: { Title: string?, Content: string?, Duration: number?, Style: any? }) -> (),
 	SetNotificationStyle: (self: Window, style: any?) -> (),
 	PlayIntro: (self: Window, opts: { Brand: string?, OnComplete: (() -> ())? }?) -> (),
@@ -69,11 +73,15 @@ export type Window = {
 	PlayFeedback: (self: Window, pattern: string) -> (),
 }
 
-local function makeUI(titleText: string?): Window
+type MakeUIOptions = { hub: boolean? }
+
+local function makeUI(titleText: string?, options: MakeUIOptions?): Window
 	local lib = {} :: any
 	local unloaded = false
 	local reloadCallback: (() -> ())? = nil
-	local appTitle = titleText or "M3 UI Library"
+	local hubMode = options ~= nil and options.hub == true
+	local appTitle = titleText or (if hubMode then "DexUI Hub" else "M3 UI Library")
+	lib.HubMode = hubMode
 	local confirmCloseLayer: Frame? = nil
 
 	local theme = {}

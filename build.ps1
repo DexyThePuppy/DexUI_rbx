@@ -31,6 +31,9 @@ darklua process src/init.luau dist/dexui.lua
 Write-Host "Bundling dist/demo.lua ..."
 darklua process src/demo.luau dist/demo.lua
 
+Write-Host "Bundling dist/hub.lua ..."
+darklua process src/hub-main.luau dist/hub.lua
+
 if ($Minify) {
 	Write-Host "Minifying ..."
 	darklua minify dist/dexui.lua dist/dexui.min.lua
@@ -42,6 +45,12 @@ if ($Stage) {
 	New-Item -ItemType Directory -Force -Path $StageDir | Out-Null
 	Copy-Item dist/dexui.lua (Join-Path $StageDir "dexui.lua") -Force
 	Copy-Item dist/demo.lua (Join-Path $StageDir "demo.lua") -Force
+	Copy-Item dist/hub.lua (Join-Path $StageDir "hub.lua") -Force
+	if (Test-Path "scripts") {
+		$scriptsDest = Join-Path $StageDir "scripts"
+		New-Item -ItemType Directory -Force -Path $scriptsDest | Out-Null
+		Copy-Item scripts\* $scriptsDest -Recurse -Force
+	}
 }
 
 Write-Host "Done."
