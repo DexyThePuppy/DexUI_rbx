@@ -1,6 +1,7 @@
 --!nonstrict
 -- DexUI switch component. Attached onto the window's lib via the shared ctx.
 return function(ctx)
+	local textSize = ctx.textSize
 		local lib = ctx.lib
 	local curTheme = ctx.theme
 	local reg, regDynamic = ctx.reg, ctx.regDynamic
@@ -48,7 +49,7 @@ return function(ctx)
         l.BackgroundTransparency = 1
         l.Text = txt
         l.FontFace = m3Font
-        l.TextSize = 16
+        l.TextSize = textSize("lg")
         l.TextXAlignment = Enum.TextXAlignment.Left
 		l.Parent = textCol
 		reg(l, "TextColor3", "fg")
@@ -64,7 +65,7 @@ return function(ctx)
 			subLbl.BackgroundTransparency = 1
 			subLbl.Text = sub :: string
 			subLbl.FontFace = m3Font
-			subLbl.TextSize = 11
+			subLbl.TextSize = textSize("sm")
 			subLbl.TextXAlignment = Enum.TextXAlignment.Left
 			subLbl.TextYAlignment = Enum.TextYAlignment.Top
 			subLbl.TextTruncate = Enum.TextTruncate.AtEnd

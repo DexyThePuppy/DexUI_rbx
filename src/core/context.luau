@@ -38,6 +38,7 @@ return function(deps: Deps)
 
 	local tween = Util.tween
 	local corner = Util.corner
+	local textSize = Util.textSize
 	local fontWeight = Fonts.fontWeight
 	local m3Font = Fonts.m3Font
 
@@ -382,7 +383,7 @@ return function(deps: Deps)
 		l.BackgroundTransparency = 1
 		l.Text = txt
 		l.FontFace = m3Font
-		l.TextSize = 16
+		l.TextSize = textSize("lg")
 		l.TextXAlignment = Enum.TextXAlignment.Left
 		l.Parent = col
 		reg(l, "TextColor3", "fg")
@@ -397,7 +398,7 @@ return function(deps: Deps)
 			subLbl.BackgroundTransparency = 1
 			subLbl.Text = sub :: string
 			subLbl.FontFace = m3Font
-			subLbl.TextSize = 11
+			subLbl.TextSize = textSize("sm")
 			subLbl.TextXAlignment = Enum.TextXAlignment.Left
 			subLbl.TextYAlignment = Enum.TextYAlignment.Top
 			subLbl.TextTruncate = Enum.TextTruncate.AtEnd

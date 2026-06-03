@@ -1,6 +1,7 @@
 --!nonstrict
 -- DexUI section component. Attached onto the window's lib via the shared ctx.
 return function(ctx)
+	local textSize = ctx.textSize
 		local lib = ctx.lib
 	local curTheme = ctx.theme
 	local reg, regDynamic = ctx.reg, ctx.regDynamic
@@ -38,7 +39,7 @@ return function(ctx)
 		lbl.BackgroundTransparency = 1
 		lbl.Text = txt
 		lbl.FontFace = fontWeight(Enum.FontWeight.Medium)
-		lbl.TextSize = 14
+		lbl.TextSize = textSize("lg")
 		lbl.TextXAlignment = Enum.TextXAlignment.Left
 		lbl.Parent = lib.CurrentBuildContainer
 		reg(lbl, "TextColor3", "pri")

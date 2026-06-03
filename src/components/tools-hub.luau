@@ -8,6 +8,7 @@ local runTool = require("../hub/run-tool")
 export type ToolEntry = ToolsRegistry.ToolEntry
 
 return function(ctx)
+	local textSize = ctx.textSize
 	local lib = ctx.lib
 	local curTheme = ctx.theme
 	local reg = ctx.reg
@@ -81,7 +82,7 @@ return function(ctx)
 		header.BackgroundTransparency = 1
 		header.Text = "Developer tools — click a card to load"
 		header.FontFace = fontWeight(Enum.FontWeight.Medium)
-		header.TextSize = 13
+		header.TextSize = textSize("md")
 		header.TextXAlignment = Enum.TextXAlignment.Left
 		header.TextWrapped = true
 		header.Parent = holder
@@ -188,13 +189,13 @@ return function(ctx)
 			corner(thumb, 8)
 
 			local nameLbl = Instance.new("TextLabel")
-			nameLbl.Size = UDim2.new(1, -8, 0, 24)
+			nameLbl.Size = UDim2.new(1, -8, 0, 26)
 			nameLbl.AnchorPoint = Vector2.new(0.5, 1)
 			nameLbl.Position = UDim2.new(0.5, 0, 1, -INSET)
 			nameLbl.BackgroundTransparency = 1
 			nameLbl.Text = entry.name
 			nameLbl.FontFace = fontWeight(Enum.FontWeight.Medium)
-			nameLbl.TextSize = 12
+			nameLbl.TextSize = textSize("sm")
 			nameLbl.TextWrapped = true
 			nameLbl.TextTruncate = Enum.TextTruncate.AtEnd
 			nameLbl.TextYAlignment = Enum.TextYAlignment.Top
@@ -211,7 +212,7 @@ return function(ctx)
 			extBadge.BackgroundTransparency = 0
 			extBadge.Text = "External"
 			extBadge.FontFace = fontWeight(Enum.FontWeight.Bold)
-			extBadge.TextSize = 9
+			extBadge.TextSize = textSize("sm")
 			extBadge.ZIndex = 4
 			extBadge.Active = false
 			extBadge.Selectable = false

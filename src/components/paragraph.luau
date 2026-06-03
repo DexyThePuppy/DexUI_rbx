@@ -1,6 +1,7 @@
 --!nonstrict
 -- DexUI paragraph component. Attached onto the window's lib via the shared ctx.
 return function(ctx)
+	local textSize = ctx.textSize
 		local lib = ctx.lib
 	local curTheme = ctx.theme
 	local reg, regDynamic = ctx.reg, ctx.regDynamic
@@ -59,7 +60,7 @@ return function(ctx)
 		titleLbl.BackgroundTransparency = 1
 		titleLbl.Text = title
 		titleLbl.FontFace = fontWeight(Enum.FontWeight.Medium)
-		titleLbl.TextSize = 15
+		titleLbl.TextSize = textSize("lg")
 		titleLbl.TextXAlignment = Enum.TextXAlignment.Left
 		titleLbl.LayoutOrder = 1
 		titleLbl.Parent = frame
@@ -71,7 +72,7 @@ return function(ctx)
 		bodyLbl.BackgroundTransparency = 1
 		bodyLbl.Text = body
 		bodyLbl.FontFace = m3Font
-		bodyLbl.TextSize = 13
+		bodyLbl.TextSize = textSize("md")
 		bodyLbl.TextWrapped = true
 		bodyLbl.TextXAlignment = Enum.TextXAlignment.Left
 		bodyLbl.TextYAlignment = Enum.TextYAlignment.Top

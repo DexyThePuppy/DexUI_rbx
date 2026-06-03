@@ -7,6 +7,7 @@ local runScript = require("../hub/run-script")
 export type GameEntry = Registry.GameEntry
 
 return function(ctx)
+	local textSize = ctx.textSize
 	local lib = ctx.lib
 	local curTheme = ctx.theme
 	local reg, regDynamic = ctx.reg, ctx.regDynamic
@@ -124,7 +125,7 @@ return function(ctx)
 			then ("Recognised: " .. recognized.name .. " — pick a script or launch yours")
 			else "Scripts hub — select a game"
 		header.FontFace = fontWeight(Enum.FontWeight.Medium)
-		header.TextSize = 13
+		header.TextSize = textSize("md")
 		header.TextXAlignment = Enum.TextXAlignment.Left
 		header.TextWrapped = true
 		header.Parent = holder
@@ -233,13 +234,13 @@ return function(ctx)
 			corner(thumb, 8)
 
 			local nameLbl = Instance.new("TextLabel")
-			nameLbl.Size = UDim2.new(1, -8, 0, 24)
+			nameLbl.Size = UDim2.new(1, -8, 0, 26)
 			nameLbl.AnchorPoint = Vector2.new(0.5, 1)
 			nameLbl.Position = UDim2.new(0.5, 0, 1, -INSET)
 			nameLbl.BackgroundTransparency = 1
 			nameLbl.Text = entry.name
 			nameLbl.FontFace = m3Font
-			nameLbl.TextSize = 12
+			nameLbl.TextSize = textSize("sm")
 			nameLbl.TextWrapped = true
 			nameLbl.TextTruncate = Enum.TextTruncate.AtEnd
 			nameLbl.TextYAlignment = Enum.TextYAlignment.Top
@@ -254,7 +255,7 @@ return function(ctx)
 				badge.BackgroundTransparency = 0
 				badge.Text = "This game"
 				badge.FontFace = fontWeight(Enum.FontWeight.Bold)
-				badge.TextSize = 10
+				badge.TextSize = textSize("sm")
 				badge.ZIndex = 4
 				badge.Parent = btn
 				corner(badge, 6)

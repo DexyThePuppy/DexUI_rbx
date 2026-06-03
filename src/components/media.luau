@@ -1,6 +1,7 @@
 --!nonstrict
 -- DexUI media component. Attached onto the window's lib via the shared ctx.
 return function(ctx)
+	local textSize = ctx.textSize
 		local lib = ctx.lib
 	local curTheme = ctx.theme
 	local reg, regDynamic = ctx.reg, ctx.regDynamic
@@ -153,7 +154,7 @@ return function(ctx)
 		timeLbl.BackgroundTransparency = 1
 		timeLbl.Text = "0:00 / 0:00"
 		timeLbl.FontFace = m3Font
-		timeLbl.TextSize = 12
+		timeLbl.TextSize = textSize("sm")
 		timeLbl.TextColor3 = pillFg
 		timeLbl.TextXAlignment = Enum.TextXAlignment.Left
 		timeLbl.ZIndex = 2
@@ -283,7 +284,7 @@ return function(ctx)
 		statusLbl.BackgroundTransparency = 1
 		statusLbl.Text = "Browse Creator Store media. Player stays pinned above the catalog."
 		statusLbl.FontFace = m3Font
-		statusLbl.TextSize = 13
+		statusLbl.TextSize = textSize("md")
 		statusLbl.TextWrapped = true
 		statusLbl.TextXAlignment = Enum.TextXAlignment.Left
 		statusLbl.TextYAlignment = Enum.TextYAlignment.Top
@@ -645,7 +646,7 @@ return function(ctx)
 			label.BackgroundTransparency = 1
 			label.Text = kind
 			label.FontFace = m3Font
-			label.TextSize = 14
+			label.TextSize = textSize("md")
 			label.TextColor3 = curTheme.out
 			label.LayoutOrder = 1
 			label.ZIndex = 3
@@ -674,7 +675,7 @@ return function(ctx)
 		searchLbl.BackgroundTransparency = 1
 		searchLbl.Text = "Search"
 		searchLbl.FontFace = m3Font
-		searchLbl.TextSize = 11
+		searchLbl.TextSize = textSize("sm")
 		searchLbl.TextXAlignment = Enum.TextXAlignment.Left
 		searchLbl.Parent = searchFrame
 		reg(searchLbl, "TextColor3", "out")
@@ -685,7 +686,7 @@ return function(ctx)
 		searchBtn.Position = UDim2.new(1, -8, 0.5, 0)
 		searchBtn.Text = "Search"
 		searchBtn.FontFace = fontWeight(Enum.FontWeight.Medium)
-		searchBtn.TextSize = 14
+		searchBtn.TextSize = textSize("md")
 		searchBtn.AutoButtonColor = false
 		searchBtn.Parent = searchFrame
 		corner(searchBtn, 999)
@@ -699,7 +700,7 @@ return function(ctx)
 		searchBox.PlaceholderText = "Keyword (optional — blank shows popular)"
 		searchBox.Text = ""
 		searchBox.FontFace = m3Font
-		searchBox.TextSize = 14
+		searchBox.TextSize = textSize("md")
 		searchBox.TextXAlignment = Enum.TextXAlignment.Left
 		searchBox.ClearTextOnFocus = false
 		searchBox.Parent = searchFrame
@@ -775,7 +776,7 @@ return function(ctx)
 			rowTitle.BackgroundTransparency = 1
 			rowTitle.Text = ""
 			rowTitle.FontFace = fontWeight(Enum.FontWeight.Medium)
-			rowTitle.TextSize = 14
+			rowTitle.TextSize = textSize("md")
 			rowTitle.TextXAlignment = Enum.TextXAlignment.Left
 			rowTitle.TextTruncate = Enum.TextTruncate.AtEnd
 			rowTitle.Parent = row
@@ -788,7 +789,7 @@ return function(ctx)
 			rowSub.BackgroundTransparency = 1
 			rowSub.Text = ""
 			rowSub.FontFace = m3Font
-			rowSub.TextSize = 11
+			rowSub.TextSize = textSize("sm")
 			rowSub.TextXAlignment = Enum.TextXAlignment.Left
 			rowSub.TextTruncate = Enum.TextTruncate.AtEnd
 			rowSub.Parent = row
@@ -886,7 +887,7 @@ return function(ctx)
 			btn.Size = UDim2.new(0, 28, 0, 28)
 			btn.Text = tostring(pageNum)
 			btn.FontFace = fontWeight(Enum.FontWeight.Medium)
-			btn.TextSize = 13
+			btn.TextSize = textSize("md")
 			btn.AutoButtonColor = false
 			btn.Parent = pagerRow
 			corner(btn, 999)
@@ -906,7 +907,7 @@ return function(ctx)
 		nextBtn.Size = UDim2.new(0, 28, 0, 28)
 		nextBtn.Text = ">"
 		nextBtn.FontFace = fontWeight(Enum.FontWeight.Medium)
-		nextBtn.TextSize = 13
+		nextBtn.TextSize = textSize("md")
 		nextBtn.AutoButtonColor = false
 		nextBtn.Parent = pagerRow
 		corner(nextBtn, 999)

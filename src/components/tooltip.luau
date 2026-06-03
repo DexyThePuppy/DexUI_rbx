@@ -53,6 +53,7 @@ export type TooltipController = {
 }
 
 return function(ctx)
+	local textSize = ctx.textSize
 	local reg = ctx.reg
 	local corner = ctx.corner
 	local m3Font = ctx.m3Font
@@ -151,7 +152,7 @@ return function(ctx)
 		end
 	end
 
-	local function addTextBlock(order: number, text: string, size: number, token: string, wrapped: boolean?)
+	local function addTextBlock(order: number, text: string, tier: string | number, token: string, wrapped: boolean?)
 		local lbl = Instance.new("TextLabel")
 		lbl.Name = "Block"
 		lbl.LayoutOrder = order
@@ -160,7 +161,7 @@ return function(ctx)
 		lbl.BackgroundTransparency = 1
 		lbl.Text = text
 		lbl.FontFace = if token == "fg" then fontWeight(Enum.FontWeight.Medium) else m3Font
-		lbl.TextSize = size
+		lbl.TextSize = textSize(tier)
 		lbl.TextXAlignment = Enum.TextXAlignment.Left
 		lbl.TextYAlignment = Enum.TextYAlignment.Top
 		lbl.TextWrapped = wrapped == true
@@ -175,9 +176,9 @@ return function(ctx)
 		for _, block in content.blocks do
 			order += 1
 			if block.kind == "text" then
-				addTextBlock(order, block.text, 12, if block.muted then "out" else "fg", true)
+				addTextBlock(order, block.text, "sm", if block.muted then "out" else "fg", true)
 			elseif block.kind == "title" then
-				addTextBlock(order, block.text, 13, "fg", false)
+				addTextBlock(order, block.text, "lg", "fg", false)
 			elseif block.kind == "divider" then
 				local div = Instance.new("Frame")
 				div.Name = "Divider"
@@ -208,7 +209,7 @@ return function(ctx)
 				labelLbl.BackgroundTransparency = 1
 				labelLbl.Text = block.label
 				labelLbl.FontFace = m3Font
-				labelLbl.TextSize = 10
+				labelLbl.TextSize = textSize("sm")
 				labelLbl.TextXAlignment = Enum.TextXAlignment.Left
 				labelLbl.Parent = group
 				reg(labelLbl, "TextColor3", "out")
@@ -220,7 +221,7 @@ return function(ctx)
 				valueLbl.BackgroundTransparency = 1
 				valueLbl.Text = block.value
 				valueLbl.FontFace = fontWeight(Enum.FontWeight.Medium)
-				valueLbl.TextSize = 12
+				valueLbl.TextSize = textSize("sm")
 				valueLbl.TextWrapped = true
 				valueLbl.TextXAlignment = Enum.TextXAlignment.Left
 				valueLbl.Parent = group
@@ -248,7 +249,7 @@ return function(ctx)
 				labelLbl.BackgroundTransparency = 1
 				labelLbl.Text = block.label
 				labelLbl.FontFace = m3Font
-				labelLbl.TextSize = 11
+				labelLbl.TextSize = textSize("sm")
 				labelLbl.TextXAlignment = Enum.TextXAlignment.Left
 				labelLbl.TextWrapped = true
 				labelLbl.Parent = row
@@ -261,7 +262,7 @@ return function(ctx)
 				valueLbl.BackgroundTransparency = 1
 				valueLbl.Text = block.value
 				valueLbl.FontFace = fontWeight(Enum.FontWeight.Medium)
-				valueLbl.TextSize = 11
+				valueLbl.TextSize = textSize("sm")
 				valueLbl.TextWrapped = true
 				valueLbl.TextXAlignment = Enum.TextXAlignment.Right
 				valueLbl.Parent = row

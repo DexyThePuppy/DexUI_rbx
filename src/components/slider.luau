@@ -1,6 +1,7 @@
 --!nonstrict
 -- DexUI slider component. Attached onto the window's lib via the shared ctx.
 return function(ctx)
+	local textSize = ctx.textSize
 		local lib = ctx.lib
 	local curTheme = ctx.theme
 	local reg, regDynamic = ctx.reg, ctx.regDynamic
@@ -45,7 +46,7 @@ return function(ctx)
 		nameLbl.BackgroundTransparency = 1
 		nameLbl.Text = txt
 		nameLbl.FontFace = m3Font
-		nameLbl.TextSize = 14
+		nameLbl.TextSize = textSize("md")
 		nameLbl.TextXAlignment = Enum.TextXAlignment.Left
 		nameLbl.Parent = r
 		reg(nameLbl, "TextColor3", "out")
@@ -56,7 +57,7 @@ return function(ctx)
         vl.BackgroundTransparency = 1
         vl.Text = string.format("%.2f", v)
 		vl.FontFace = fontWeight(Enum.FontWeight.Medium)
-        vl.TextSize = 14
+        vl.TextSize = textSize("md")
 		vl.TextXAlignment = Enum.TextXAlignment.Right
 		vl.Parent = r
 		reg(vl, "TextColor3", "fg")

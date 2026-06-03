@@ -1,6 +1,7 @@
 --!nonstrict
 -- DexUI dropdown component. Attached onto the window's lib via the shared ctx.
 return function(ctx)
+	local textSize = ctx.textSize
 		local lib = ctx.lib
 	local curTheme = ctx.theme
 	local reg, regDynamic = ctx.reg, ctx.regDynamic
@@ -53,7 +54,7 @@ return function(ctx)
 		lbl.BackgroundTransparency = 1
 		lbl.Text = txt
 		lbl.FontFace = m3Font
-		lbl.TextSize = 11
+		lbl.TextSize = textSize("sm")
 		lbl.TextXAlignment = Enum.TextXAlignment.Left
 		lbl.Parent = header
 		reg(lbl, "TextColor3", "out")
@@ -64,7 +65,7 @@ return function(ctx)
 		valueLbl.BackgroundTransparency = 1
 		valueLbl.Text = selected
 		valueLbl.FontFace = m3Font
-		valueLbl.TextSize = 15
+		valueLbl.TextSize = textSize("md")
 		valueLbl.TextXAlignment = Enum.TextXAlignment.Left
 		valueLbl.Parent = header
 		reg(valueLbl, "TextColor3", "fg")
@@ -179,7 +180,7 @@ return function(ctx)
 			optBtn.BackgroundTransparency = 1
 			optBtn.Text = opt
 			optBtn.FontFace = m3Font
-			optBtn.TextSize = 14
+			optBtn.TextSize = textSize("md")
 			optBtn.TextXAlignment = Enum.TextXAlignment.Left
 			optBtn.AutoButtonColor = false
 			optBtn.LayoutOrder = i

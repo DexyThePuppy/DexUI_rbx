@@ -1,6 +1,7 @@
 --!nonstrict
 -- DexUI textbox component. Attached onto the window's lib via the shared ctx.
 return function(ctx)
+	local textSize = ctx.textSize
 		local lib = ctx.lib
 	local curTheme = ctx.theme
 	local reg, regDynamic = ctx.reg, ctx.regDynamic
@@ -42,7 +43,7 @@ return function(ctx)
         lbl.BackgroundTransparency = 1
         lbl.Text = labelTxt
         lbl.FontFace = m3Font
-        lbl.TextSize = 11
+        lbl.TextSize = textSize("sm")
         lbl.TextXAlignment = Enum.TextXAlignment.Left
 		lbl.Parent = frame
 
@@ -53,7 +54,7 @@ return function(ctx)
         tbox.Text = ""
         tbox.PlaceholderText = ""
         tbox.FontFace = m3Font
-        tbox.TextSize = 15
+        tbox.TextSize = textSize("md")
         tbox.TextXAlignment = Enum.TextXAlignment.Left
         tbox.ClearTextOnFocus = false
 		tbox.Parent = frame

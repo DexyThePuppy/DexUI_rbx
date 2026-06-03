@@ -6,6 +6,7 @@ local GameMetadata = require("../hub/game-metadata")
 local Services = require("../services")
 
 return function(ctx)
+	local textSize = ctx.textSize
 	local lib = ctx.lib
 	local curTheme = ctx.theme
 	local reg = ctx.reg
@@ -130,7 +131,7 @@ return function(ctx)
 		titleLbl.BackgroundTransparency = 1
 		titleLbl.Text = "Loading experience…"
 		titleLbl.FontFace = fontWeight(Enum.FontWeight.Bold)
-		titleLbl.TextSize = 22
+		titleLbl.TextSize = textSize("lg")
 		titleLbl.TextXAlignment = Enum.TextXAlignment.Left
 		titleLbl.TextWrapped = true
 		titleLbl.Parent = headerRow
@@ -143,7 +144,7 @@ return function(ctx)
 		rejoinBtn.Position = UDim2.new(1, 0, 0, 0)
 		rejoinBtn.Text = "Rejoin"
 		rejoinBtn.FontFace = fontWeight(Enum.FontWeight.Medium)
-		rejoinBtn.TextSize = 13
+		rejoinBtn.TextSize = textSize("md")
 		rejoinBtn.AutoButtonColor = false
 		rejoinBtn.Parent = headerRow
 		corner(rejoinBtn, 10)
@@ -209,7 +210,7 @@ return function(ctx)
 			lbl.BackgroundTransparency = 1
 			lbl.Text = label
 			lbl.FontFace = fontWeight(Enum.FontWeight.Medium)
-			lbl.TextSize = 11
+			lbl.TextSize = textSize("sm")
 			lbl.TextColor3 = fg or curTheme.out
 			lbl.Active = false
 			lbl.Selectable = false
@@ -260,7 +261,7 @@ return function(ctx)
 		emptyLbl.BackgroundTransparency = 1
 		emptyLbl.Text = "No thumbnails loaded"
 		emptyLbl.FontFace = m3Font
-		emptyLbl.TextSize = 14
+		emptyLbl.TextSize = textSize("md")
 		emptyLbl.TextColor3 = curTheme.out
 		emptyLbl.Visible = false
 		emptyLbl.ZIndex = 2
@@ -429,7 +430,7 @@ return function(ctx)
 		bodyLbl.BackgroundTransparency = 1
 		bodyLbl.Text = "Fetching name, description, and thumbnails from Roblox…"
 		bodyLbl.FontFace = m3Font
-		bodyLbl.TextSize = 14
+		bodyLbl.TextSize = textSize("md")
 		bodyLbl.TextXAlignment = Enum.TextXAlignment.Left
 		bodyLbl.TextWrapped = true
 		bodyLbl.LineHeight = 1.15
@@ -487,7 +488,7 @@ return function(ctx)
 		badgesHeading.BackgroundTransparency = 1
 		badgesHeading.Text = "Badges"
 		badgesHeading.FontFace = fontWeight(Enum.FontWeight.Medium)
-		badgesHeading.TextSize = 14
+		badgesHeading.TextSize = textSize("md")
 		badgesHeading.TextXAlignment = Enum.TextXAlignment.Left
 		badgesHeading.Parent = badgesSection
 		reg(badgesHeading, "TextColor3", "pri")
@@ -499,7 +500,7 @@ return function(ctx)
 		badgesStatusLbl.BackgroundTransparency = 1
 		badgesStatusLbl.Text = ""
 		badgesStatusLbl.FontFace = m3Font
-		badgesStatusLbl.TextSize = 11
+		badgesStatusLbl.TextSize = textSize("sm")
 		badgesStatusLbl.TextXAlignment = Enum.TextXAlignment.Left
 		badgesStatusLbl.TextWrapped = true
 		badgesStatusLbl.Visible = false
@@ -602,7 +603,7 @@ return function(ctx)
 					tick.BackgroundColor3 = CLAIMED_GREEN
 					tick.Text = "✓"
 					tick.FontFace = fontWeight(Enum.FontWeight.Bold)
-					tick.TextSize = 12
+					tick.TextSize = textSize("sm")
 					tick.TextColor3 = VIP_BADGE_ON
 					tick.Active = false
 					tick.Selectable = false
@@ -612,12 +613,12 @@ return function(ctx)
 
 				local nameLbl = Instance.new("TextLabel")
 				nameLbl.Name = "Name"
-				nameLbl.Size = UDim2.new(1, -4, 0, 24)
-				nameLbl.Position = UDim2.new(0, 2, 1, -26)
+				nameLbl.Size = UDim2.new(1, -4, 0, 26)
+				nameLbl.Position = UDim2.new(0, 2, 1, -28)
 				nameLbl.BackgroundTransparency = 1
 				nameLbl.Text = badge.name
 				nameLbl.FontFace = m3Font
-				nameLbl.TextSize = 10
+				nameLbl.TextSize = textSize("sm")
 				nameLbl.TextWrapped = true
 				nameLbl.TextYAlignment = Enum.TextYAlignment.Top
 				nameLbl.TextColor3 = if badge.claimed then curTheme.fg else curTheme.out
@@ -645,7 +646,7 @@ return function(ctx)
 		serversHeading.BackgroundTransparency = 1
 		serversHeading.Text = "Public servers"
 		serversHeading.FontFace = fontWeight(Enum.FontWeight.Medium)
-		serversHeading.TextSize = 14
+		serversHeading.TextSize = textSize("md")
 		serversHeading.TextXAlignment = Enum.TextXAlignment.Left
 		serversHeading.Parent = serversSection
 		reg(serversHeading, "TextColor3", "pri")
@@ -657,7 +658,7 @@ return function(ctx)
 		serversStatusLbl.BackgroundTransparency = 1
 		serversStatusLbl.Text = "Loading public servers…"
 		serversStatusLbl.FontFace = m3Font
-		serversStatusLbl.TextSize = 11
+		serversStatusLbl.TextSize = textSize("sm")
 		serversStatusLbl.TextXAlignment = Enum.TextXAlignment.Left
 		serversStatusLbl.TextWrapped = true
 		serversStatusLbl.Parent = serversSection
@@ -737,7 +738,7 @@ return function(ctx)
 			rowTitle.BackgroundTransparency = 1
 			rowTitle.Text = ""
 			rowTitle.FontFace = fontWeight(Enum.FontWeight.Medium)
-			rowTitle.TextSize = 14
+			rowTitle.TextSize = textSize("md")
 			rowTitle.TextXAlignment = Enum.TextXAlignment.Left
 			rowTitle.TextTruncate = Enum.TextTruncate.AtEnd
 			rowTitle.Active = false
@@ -752,7 +753,7 @@ return function(ctx)
 			rowSub.BackgroundTransparency = 1
 			rowSub.Text = ""
 			rowSub.FontFace = m3Font
-			rowSub.TextSize = 11
+			rowSub.TextSize = textSize("sm")
 			rowSub.TextXAlignment = Enum.TextXAlignment.Left
 			rowSub.TextTruncate = Enum.TextTruncate.AtEnd
 			rowSub.Active = false
@@ -767,7 +768,7 @@ return function(ctx)
 			joinBtn.Position = UDim2.new(1, -10, 0.5, 0)
 			joinBtn.Text = "Join"
 			joinBtn.FontFace = fontWeight(Enum.FontWeight.Medium)
-			joinBtn.TextSize = 12
+			joinBtn.TextSize = textSize("sm")
 			joinBtn.AutoButtonColor = false
 			joinBtn.ZIndex = 4
 			joinBtn.Parent = row
@@ -879,7 +880,7 @@ return function(ctx)
 			btn.Size = UDim2.fromOffset(28, 28)
 			btn.Text = tostring(pageNum)
 			btn.FontFace = fontWeight(Enum.FontWeight.Medium)
-			btn.TextSize = 13
+			btn.TextSize = textSize("md")
 			btn.AutoButtonColor = false
 			btn.Visible = false
 			btn.Parent = pagerRow
@@ -909,7 +910,7 @@ return function(ctx)
 		pageNextBtn.Size = UDim2.fromOffset(28, 28)
 		pageNextBtn.Text = ">"
 		pageNextBtn.FontFace = fontWeight(Enum.FontWeight.Medium)
-		pageNextBtn.TextSize = 13
+		pageNextBtn.TextSize = textSize("md")
 		pageNextBtn.AutoButtonColor = false
 		pageNextBtn.Parent = pagerRow
 		corner(pageNextBtn, 999)
@@ -948,7 +949,7 @@ return function(ctx)
 		prevBtn.Position = UDim2.new(0, 8, 0.5, 0)
 		prevBtn.Text = "<"
 		prevBtn.FontFace = m3Font
-		prevBtn.TextSize = 18
+		prevBtn.TextSize = textSize("lg")
 		prevBtn.AutoButtonColor = false
 		prevBtn.Visible = false
 		prevBtn.ZIndex = 5
@@ -963,7 +964,7 @@ return function(ctx)
 		nextBtn.Position = UDim2.new(1, -8, 0.5, 0)
 		nextBtn.Text = ">"
 		nextBtn.FontFace = m3Font
-		nextBtn.TextSize = 18
+		nextBtn.TextSize = textSize("lg")
 		nextBtn.AutoButtonColor = false
 		nextBtn.Visible = false
 		nextBtn.ZIndex = 5

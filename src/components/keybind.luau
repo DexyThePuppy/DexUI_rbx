@@ -1,6 +1,7 @@
 --!nonstrict
 -- DexUI keybind component. Attached onto the window's lib via the shared ctx.
 return function(ctx)
+	local textSize = ctx.textSize
 		local lib = ctx.lib
 	local curTheme = ctx.theme
 	local reg, regDynamic = ctx.reg, ctx.regDynamic
@@ -56,7 +57,7 @@ return function(ctx)
 		chip.Position = UDim2.new(1, 0, 0.5, 0)
 		chip.Text = current ~= Enum.KeyCode.Unknown and current.Name or "None"
 		chip.FontFace = fontWeight(Enum.FontWeight.Medium)
-		chip.TextSize = 14
+		chip.TextSize = textSize("md")
 		chip.AutoButtonColor = false
 		chip.BackgroundTransparency = 0
 		chip.Parent = r

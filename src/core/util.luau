@@ -12,6 +12,33 @@ local AssetService = Services.AssetService
 
 local MEDIA_FETCH_LIMIT = Config.MediaFetchLimit
 local CREATOR_STORE_SEARCH = Config.CreatorStoreSearch
+local TYPO = Config.Typography or {}
+local TextSizes = {
+	sm = TYPO.Small or 12,
+	md = TYPO.Medium or 14,
+	lg = TYPO.Large or 18,
+}
+
+local function tierFromNumber(size: number): string
+	if size <= TextSizes.sm then
+		return "sm"
+	end
+	if size <= TextSizes.md then
+		return "md"
+	end
+	return "lg"
+end
+
+-- Universal typography: only sm (12), md (14), lg (18). Accepts tier string or legacy pixel value.
+local function textSize(tier: string | number): number
+	if type(tier) == "number" then
+		tier = tierFromNumber(tier)
+	end
+	if type(tier) ~= "string" then
+		return TextSizes.md
+	end
+	return TextSizes[tier] or TextSizes.md
+end
 
 local M3_EASE = Enum.EasingStyle.Exponential
 local STD_TWEEN = TweenInfo.new(0.3, M3_EASE, Enum.EasingDirection.Out)
@@ -338,6 +365,8 @@ end
 return {
 	M3_EASE = M3_EASE,
 	STD_TWEEN = STD_TWEEN,
+	TextSizes = TextSizes,
+	textSize = textSize,
 	tween = tween,
 	isPrimaryInput = isPrimaryInput,
 	isMoveInput = isMoveInput,

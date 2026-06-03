@@ -1,6 +1,7 @@
 --!nonstrict
 -- DexUI icons component. Attached onto the window's lib via the shared ctx.
 return function(ctx)
+	local textSize = ctx.textSize
 		local lib = ctx.lib
 	local curTheme = ctx.theme
 	local reg, regDynamic = ctx.reg, ctx.regDynamic
@@ -70,7 +71,7 @@ return function(ctx)
 		searchBox.PlaceholderText = "Search Material icons"
 		searchBox.Text = ""
 		searchBox.FontFace = m3Font
-		searchBox.TextSize = 15
+		searchBox.TextSize = textSize("md")
 		searchBox.TextXAlignment = Enum.TextXAlignment.Left
 		searchBox.TextYAlignment = Enum.TextYAlignment.Center
 		searchBox.ClearTextOnFocus = false
@@ -84,7 +85,7 @@ return function(ctx)
 		statusLbl.BackgroundTransparency = 1
 		statusLbl.Text = "Loading Material Icons…"
 		statusLbl.FontFace = fontWeight(Enum.FontWeight.Medium)
-		statusLbl.TextSize = 11
+		statusLbl.TextSize = textSize("sm")
 		statusLbl.TextXAlignment = Enum.TextXAlignment.Left
 		statusLbl.Parent = holder
 		reg(statusLbl, "TextColor3", "out")
@@ -203,13 +204,13 @@ return function(ctx)
 			reg(iconImg, "ImageColor3", "fg")
 
 			local nameLbl = Instance.new("TextLabel")
-			nameLbl.Size = UDim2.new(1, -6, 0, 18)
+			nameLbl.Size = UDim2.new(1, -6, 0, 20)
 			nameLbl.AnchorPoint = Vector2.new(0.5, 1)
 			nameLbl.Position = UDim2.new(0.5, 0, 1, -3)
 			nameLbl.BackgroundTransparency = 1
 			nameLbl.Text = icon.name:gsub("_", " ")
 			nameLbl.FontFace = m3Font
-			nameLbl.TextSize = 10
+			nameLbl.TextSize = textSize("sm")
 			nameLbl.TextWrapped = true
 			nameLbl.TextTruncate = Enum.TextTruncate.AtEnd
 			nameLbl.TextYAlignment = Enum.TextYAlignment.Top

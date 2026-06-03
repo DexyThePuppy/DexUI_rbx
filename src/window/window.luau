@@ -111,6 +111,7 @@ local function makeUI(titleText: string?, options: MakeUIOptions?): Window
 	local curTheme = ctx.theme
 	local reg, regDynamic = ctx.reg, ctx.regDynamic
 	local tween, corner, ripple = ctx.tween, ctx.corner, ctx.ripple
+	local textSize = ctx.textSize
 	local fontWeight, m3Font = ctx.fontWeight, ctx.m3Font
 	local beginCardRow, closeBuildCard, tintRow = ctx.beginCardRow, ctx.closeBuildCard, ctx.tintRow
 	local playFeedback = ctx.playFeedback
@@ -288,7 +289,7 @@ local function makeUI(titleText: string?, options: MakeUIOptions?): Window
     top.BackgroundTransparency = 1
     top.Text = appTitle
 	top.FontFace = fontWeight(Enum.FontWeight.Medium)
-    top.TextSize = 22
+    top.TextSize = textSize("lg")
     top.TextXAlignment = Enum.TextXAlignment.Left
 	top.TextTruncate = Enum.TextTruncate.AtEnd
 	top.ZIndex = 71
@@ -706,7 +707,7 @@ local function makeUI(titleText: string?, options: MakeUIOptions?): Window
 		label.BackgroundTransparency = 1
 		label.Text = txt
 		label.FontFace = m3Font
-		label.TextSize = 14
+		label.TextSize = textSize("md")
 		label.TextColor3 = curTheme.out
 		label.LayoutOrder = 1
 		label.ZIndex = 3
@@ -914,7 +915,7 @@ local function makeUI(titleText: string?, options: MakeUIOptions?): Window
 		txl.BackgroundTransparency = 1
 		txl.Text = label
 		txl.FontFace = fontWeight(Enum.FontWeight.Medium)
-		txl.TextSize = 15
+		txl.TextSize = textSize("md")
 		txl.ZIndex = 104
 		txl.Parent = b
 		if filled then
@@ -1002,7 +1003,7 @@ local function makeUI(titleText: string?, options: MakeUIOptions?): Window
 		confirmTitle.BackgroundTransparency = 1
 		confirmTitle.Text = "Confirm Close."
 		confirmTitle.FontFace = fontWeight(Enum.FontWeight.Medium)
-		confirmTitle.TextSize = 18
+		confirmTitle.TextSize = textSize("lg")
 		confirmTitle.TextXAlignment = Enum.TextXAlignment.Left
 		confirmTitle.TextYAlignment = Enum.TextYAlignment.Center
 		confirmTitle.ZIndex = 103
@@ -1017,7 +1018,7 @@ local function makeUI(titleText: string?, options: MakeUIOptions?): Window
 		body.TextWrapped = true
 		body.TextYAlignment = Enum.TextYAlignment.Top
 		body.FontFace = m3Font
-		body.TextSize = 15
+		body.TextSize = textSize("md")
 		body.TextXAlignment = Enum.TextXAlignment.Left
 		body.ZIndex = 102
 		body.Parent = dialog
@@ -1053,7 +1054,7 @@ local function makeUI(titleText: string?, options: MakeUIOptions?): Window
 		h.BackgroundTransparency = 1
 		h.Text = text
 		h.FontFace = fontWeight(Enum.FontWeight.Medium)
-		h.TextSize = 13
+		h.TextSize = textSize("md")
 		h.TextXAlignment = Enum.TextXAlignment.Left
 		h.LayoutOrder = order
 		h.ZIndex = 81
@@ -1137,7 +1138,7 @@ local function makeUI(titleText: string?, options: MakeUIOptions?): Window
 		lbl.BackgroundTransparency = 1
 		lbl.Text = "Interface Sounds"
 		lbl.FontFace = m3Font
-		lbl.TextSize = 15
+		lbl.TextSize = textSize("md")
 		lbl.TextXAlignment = Enum.TextXAlignment.Left
 		lbl.ZIndex = 2
 		lbl.Parent = content
@@ -1227,7 +1228,7 @@ local function makeUI(titleText: string?, options: MakeUIOptions?): Window
 			lbl.BackgroundTransparency = 1
 			lbl.Text = title
 			lbl.FontFace = m3Font
-			lbl.TextSize = 11
+			lbl.TextSize = textSize("sm")
 			lbl.TextXAlignment = Enum.TextXAlignment.Left
 			lbl.ZIndex = 2
 			lbl.Parent = content
@@ -1240,7 +1241,7 @@ local function makeUI(titleText: string?, options: MakeUIOptions?): Window
 			idBox.Text = initialText
 			idBox.PlaceholderText = placeholder
 			idBox.FontFace = m3Font
-			idBox.TextSize = 15
+			idBox.TextSize = textSize("md")
 			idBox.TextXAlignment = Enum.TextXAlignment.Left
 			idBox.ClearTextOnFocus = false
 			idBox.ZIndex = 2
@@ -1342,7 +1343,7 @@ local function makeUI(titleText: string?, options: MakeUIOptions?): Window
 		lbl.BackgroundTransparency = 1
 		lbl.Text = label
 		lbl.FontFace = m3Font
-		lbl.TextSize = 15
+		lbl.TextSize = textSize("md")
 		lbl.TextXAlignment = Enum.TextXAlignment.Left
 		lbl.ZIndex = 2
 		lbl.Parent = content
@@ -1417,7 +1418,7 @@ local function makeUI(titleText: string?, options: MakeUIOptions?): Window
 	searchField.Text = ""
 	searchField.PlaceholderText = "Search all tabs..."
 	searchField.FontFace = m3Font
-	searchField.TextSize = 15
+	searchField.TextSize = textSize("md")
 	searchField.TextXAlignment = Enum.TextXAlignment.Left
 	searchField.ClearTextOnFocus = false
 	searchField.ZIndex = 82
@@ -1476,7 +1477,7 @@ local function makeUI(titleText: string?, options: MakeUIOptions?): Window
 			empty.BackgroundTransparency = 1
 			empty.Text = "No matching elements"
 			empty.FontFace = m3Font
-			empty.TextSize = 14
+			empty.TextSize = textSize("md")
 			empty.ZIndex = 82
 			empty.TextColor3 = curTheme.out
 			empty.Parent = resultsHolder
@@ -1498,7 +1499,7 @@ local function makeUI(titleText: string?, options: MakeUIOptions?): Window
 				nameL.BackgroundTransparency = 1
 				nameL.Text = entry.name
 				nameL.FontFace = m3Font
-				nameL.TextSize = 14
+				nameL.TextSize = textSize("md")
 				nameL.TextXAlignment = Enum.TextXAlignment.Left
 				nameL.TextTruncate = Enum.TextTruncate.AtEnd
 				nameL.ZIndex = 2
@@ -1512,7 +1513,7 @@ local function makeUI(titleText: string?, options: MakeUIOptions?): Window
 				tabL.BackgroundTransparency = 1
 				tabL.Text = tabName
 				tabL.FontFace = m3Font
-				tabL.TextSize = 12
+				tabL.TextSize = textSize("sm")
 				tabL.TextXAlignment = Enum.TextXAlignment.Right
 				tabL.ZIndex = 2
 				tabL.Parent = content

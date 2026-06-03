@@ -30,7 +30,8 @@ export type FooterConfig = {
 	BackgroundTransparency: number?,
 	ShowTopDivider: boolean?,
 	PaddingX: number?,
-	TextSize: number?,
+	TextTier: ("sm" | "md" | "lg")?,
+	TextSize: (number | string)?, -- legacy: tier name or pixel value, mapped via textSize()
 	Layout: ("row" | "split")?,
 	Clock: FooterClockConfig?,
 	Version: FooterVersionConfig?,
@@ -61,6 +62,7 @@ local function deepMerge(into: { any }, from: { any }?)
 end
 
 return function(ctx)
+	local textSize = ctx.textSize
 	local lib = ctx.lib
 	local Config = ctx.config
 	local curTheme = ctx.theme
@@ -180,7 +182,7 @@ return function(ctx)
 		lbl.AutomaticSize = Enum.AutomaticSize.XY
 		lbl.BackgroundTransparency = 1
 		lbl.FontFace = m3Font
-		lbl.TextSize = runtimeConfig.TextSize or 11
+		lbl.TextSize = textSize(runtimeConfig.TextTier or runtimeConfig.TextSize or "sm")
 		lbl.TextXAlignment = Enum.TextXAlignment.Left
 		lbl.Text = resolveSegmentText(seg)
 		lbl.Parent = parent

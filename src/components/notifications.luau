@@ -18,7 +18,8 @@ export type NotificationStyle = {
 	Gap: number?,
 	PadRight: number?,
 	PadInner: number?,
-	TextSize: number?,
+	TextTier: ("sm" | "md" | "lg")?,
+	TextSize: (number | string)?, -- legacy
 	CornerRadius: number?,
 	StackAnchor: Vector2?,
 	StackPosition: UDim2?,
@@ -99,6 +100,7 @@ local function cloneStyle(style: ResolvedStyle): ResolvedStyle
 end
 
 return function(ctx)
+	local textSize = ctx.textSize
 	local lib = ctx.lib
 	local curTheme: Palette = ctx.theme
 	local regDynamic = ctx.regDynamic
@@ -148,7 +150,7 @@ return function(ctx)
 			Gap = cfg.Gap or 5,
 			PadRight = cfg.PadRight or 18,
 			PadInner = cfg.PadInner or 12,
-			TextSize = cfg.TextSize or 22,
+			TextSize = textSize(cfg.TextTier or cfg.TextSize or "lg"),
 			CornerRadius = cfg.CornerRadius or 10,
 			StackAnchor = cfg.StackAnchor or Vector2.new(1, 0.5),
 			StackPosition = cfg.StackPosition or UDim2.new(1, -16, 0.5, 0),
@@ -399,7 +401,7 @@ return function(ctx)
 	)
 		clearGradients(label)
 		label.FontFace = fontWeight(Enum.FontWeight.Bold)
-		label.TextSize = style.TextSize
+		label.TextSize = textSize(style.TextSize)
 		label.TextXAlignment = Enum.TextXAlignment.Left
 		label.TextYAlignment = Enum.TextYAlignment.Center
 		label.TextStrokeTransparency = 1

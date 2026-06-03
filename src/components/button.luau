@@ -1,6 +1,7 @@
 --!nonstrict
 -- DexUI button component. Attached onto the window's lib via the shared ctx.
 return function(ctx)
+	local textSize = ctx.textSize
 		local lib = ctx.lib
 	local curTheme = ctx.theme
 	local reg, regDynamic = ctx.reg, ctx.regDynamic
@@ -48,7 +49,7 @@ return function(ctx)
         txl.BackgroundTransparency = 1
         txl.Text = txt
 		txl.FontFace = fontWeight(Enum.FontWeight.Medium)
-        txl.TextSize = 15
+        txl.TextSize = textSize("md")
 		txl.ZIndex = 2
 		txl.Parent = b
 		reg(txl, "TextColor3", "onpri")

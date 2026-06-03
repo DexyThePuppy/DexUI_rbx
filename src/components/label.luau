@@ -1,6 +1,7 @@
 --!nonstrict
 -- DexUI label component. Attached onto the window's lib via the shared ctx.
 return function(ctx)
+	local textSize = ctx.textSize
 		local lib = ctx.lib
 	local curTheme = ctx.theme
 	local reg, regDynamic = ctx.reg, ctx.regDynamic
@@ -53,7 +54,7 @@ return function(ctx)
 		lbl.BackgroundTransparency = 1
 		lbl.Text = txt
 		lbl.FontFace = m3Font
-		lbl.TextSize = 14
+		lbl.TextSize = textSize("md")
 		lbl.TextXAlignment = Enum.TextXAlignment.Left
 		lbl.Parent = content
 		reg(lbl, "TextColor3", "fg")
