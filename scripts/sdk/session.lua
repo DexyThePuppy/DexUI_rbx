@@ -1,60 +1,61 @@
--- Session, logging, legacy cleanup, shared ctx shell.
-local EXPECTED_PLACE = 15197136141
-local LEGACY_GUI = "M3_FabrikFarm"
-local HISTORY_GUI = "M3_FabrikFarmHistory"
-local FARM_NOTIF_DURATION = 4.2
-
-return function(DexUI)
+-- Session lifecycle: ctx shell, logging, DexUI notify/feedback, inject teardown.
+return function(manifest, DexUI)
 	local plrs = game:GetService("Players")
 	local http = game:GetService("HttpService")
 	local G = (getgenv and getgenv()) or shared or _G
 
+	local function copyTable(t)
+		if not t then
+			return {}
+		end
+		local out = {}
+		for k, v in t do
+			out[k] = v
+		end
+		return out
+	end
+
+	local logTag = manifest.logTag or manifest.id or "DexUIScript"
+	local notifDuration = manifest.notifDuration or 4
+	local genv = manifest.genv or {}
+	local legacyGuis = manifest.legacyGuis or {}
+	local shutdownCopy = manifest.shutdown or {}
+
 	local ctx = {
+		manifest = manifest,
 		DexUI = DexUI,
 		G = G,
-		placeId = EXPECTED_PLACE,
-		upgradeIds = { "OreLimit", "OreValue", "DropperSpeed", "ConveyorSpeed", "WalkSpeed", "ShinyOresChance" },
-		config = {
-			Enabled = false,
-			AutoCollect = false,
-			AutoButtons = false,
-			AutoGemUpgrades = false,
-			AutoRebirth = false,
-			AutoManualDropper = false,
-			HideMonetization = false,
-			VerboseLogging = false,
-			SmartCollect = true,
-			SmartBuyPriority = true,
-			SmartGemValue = true,
-			LoopDelay = 0.4,
-			CollectMin = 50,
-			RebirthInterval = 8,
-		},
-		stats = { collects = 0, buttons = 0, upgrades = 0, rebirths = 0, manualDrops = 0, lastMsg = "", errors = 0, cycles = 0 },
-		timers = {
-			lastRebirthAt = 0,
-			lastManualDropAt = 0,
-			lastAdCleanAt = 0,
-			lastCycleAt = 0,
-			lastProgressAt = 0,
-			rebirthBusyUntil = 0,
-			loopAcc = 0,
-			incomeSampleAt = 0,
-			incomeSampleTotal = 0,
-		},
-		game = { incomePerSec = 0, gameCashLabel = nil, gameCashHooked = false },
-		caches = { rebirth = { bought = 0, needed = 0, canRebirth = false } },
-		widgets = { status = nil, progress = nil, stats = nil },
+		genv = genv,
+		id = manifest.id,
+		name = manifest.name or manifest.id,
+		logTag = logTag,
+		placeId = manifest.placeId,
+		placeIds = manifest.placeIds,
+		config = copyTable(manifest.config),
+		stats = copyTable(manifest.stats),
+		timers = copyTable(manifest.timers),
+		caches = copyTable(manifest.caches),
+		widgets = copyTable(manifest.widgets),
+		game = copyTable(manifest.game),
 		ui = nil,
 		startupReady = false,
 		injectId = http:GenerateGUID(false),
 		session = nil,
 		log = { verbose = false, phase = "boot", bootClock = os.clock() },
+		notifDuration = notifDuration,
 	}
+
+	-- Optional extra fields (game-specific handles on ctx root).
+	if manifest.ctxExtend then
+		for key, value in manifest.ctxExtend do
+			ctx[key] = value
+		end
+	end
 
 	local function logLine(level, msg)
 		return string.format(
-			"[FabrikFarm][%s][%6.2fs][%s] %s",
+			"[%s][%s][%6.2fs][%s] %s",
+			logTag,
 			level,
 			os.clock() - ctx.log.bootClock,
 			ctx.log.phase,
@@ -64,7 +65,9 @@ return function(DexUI)
 
 	function ctx.log.setPhase(phase)
 		ctx.log.phase = phase
-		ctx.G.__FabrikFarmPhase = phase
+		if genv.phase then
+			G[genv.phase] = phase
+		end
 		if ctx.log.verbose then
 			print(logLine("DEBUG", "→ phase"))
 		end
@@ -125,8 +128,9 @@ return function(DexUI)
 	end
 
 	function ctx.cleanupLegacy()
-		ctx.destroyNamedGui(LEGACY_GUI)
-		ctx.destroyNamedGui(HISTORY_GUI)
+		for _, guiName in legacyGuis do
+			ctx.destroyNamedGui(guiName)
+		end
 	end
 
 	local function stopSessionThreads(session)
@@ -160,7 +164,7 @@ return function(DexUI)
 		if not text or text == "" then
 			return
 		end
-		ctx.notify.push({ Content = text, Duration = FARM_NOTIF_DURATION })
+		ctx.notify.push({ Content = text, Duration = notifDuration })
 	end
 
 	function ctx.feedback.play(pattern)
@@ -182,54 +186,86 @@ return function(DexUI)
 	end
 
 	function ctx.shutdown(notifyUser)
-		local session = ctx.session or ctx.G.__FabrikFarmSession
+		local sessionKey = genv.session
+		local session = ctx.session or (sessionKey and G[sessionKey])
 		local wasActive = session and session.alive
-		local ui = ctx.getUi()
 		if session then
 			session.alive = false
 			stopSessionThreads(session)
 		end
 		if notifyUser ~= false and wasActive then
-			ctx.notify.push({ Title = "Fabrik Farm", Content = "Unloaded — farm stopped", Duration = 2.5 })
+			ctx.notify.push({
+				Title = shutdownCopy.title or ctx.name,
+				Content = shutdownCopy.message or "Unloaded",
+				Duration = shutdownCopy.duration or 2.5,
+			})
 		end
 		if ctx.ui then
 			pcall(function()
 				ctx.ui:Destroy()
 			end)
 			ctx.ui = nil
-			ctx.G.__FabrikFarmUI = nil
+			if genv.ui then
+				G[genv.ui] = nil
+			end
 		end
 		ctx.cleanupLegacy()
 		ctx.log.setPhase("unloaded")
 		if notifyUser ~= false and wasActive then
-			ctx.log.info("Unloaded — farm loops stopped, UI removed")
+			ctx.log.info(shutdownCopy.logMessage or "Unloaded — session stopped, UI removed")
+		end
+	end
+
+	function ctx.clearGenv()
+		if genv.session then
+			G[genv.session] = nil
+		end
+		if genv.ui then
+			G[genv.ui] = nil
+		end
+		if genv.config then
+			G[genv.config] = nil
+		end
+		if genv.stats then
+			G[genv.stats] = nil
+		end
+		if genv.injectId then
+			G[genv.injectId] = nil
 		end
 	end
 
 	-- Prior inject teardown
 	ctx.log.setPhase("killPrevious")
 	ctx.log.info("starting injection " .. ctx.injectId)
-	if ctx.G.__FabrikFarmSession then
+	if genv.session and G[genv.session] then
 		ctx.log.info("found previous session — stopping it")
-		ctx.G.__FabrikFarmSession.alive = false
-		stopSessionThreads(ctx.G.__FabrikFarmSession)
+		G[genv.session].alive = false
+		stopSessionThreads(G[genv.session])
 	end
-	if ctx.G.__FabrikFarmUI then
+	if genv.ui and G[genv.ui] then
 		pcall(function()
-			ctx.G.__FabrikFarmUI:Destroy()
+			G[genv.ui]:Destroy()
 		end)
-		ctx.G.__FabrikFarmUI = nil
+		G[genv.ui] = nil
 	end
 	ctx.cleanupLegacy()
 
 	ctx.session = { alive = true, connections = {}, threads = {}, injectId = ctx.injectId }
-	ctx.G.__FabrikFarmSession = ctx.session
-	ctx.G.__FabrikFarmConfig = ctx.config
-	ctx.G.__FabrikFarmStats = ctx.stats
+	if genv.session then
+		G[genv.session] = ctx.session
+	end
+	if genv.config then
+		G[genv.config] = ctx.config
+	end
+	if genv.stats then
+		G[genv.stats] = ctx.stats
+	end
+	if genv.injectId then
+		G[genv.injectId] = ctx.injectId
+	end
 
 	ctx.lp = plrs.LocalPlayer
 	ctx.rs = game:GetService("RunService")
-	ctx.FARM_NOTIF_DURATION = FARM_NOTIF_DURATION
 
 	return ctx
 end

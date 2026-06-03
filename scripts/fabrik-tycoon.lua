@@ -1,42 +1,272 @@
 --[[
-  [UPD] Fabrik-Tycoon — remote + touch auto farmer (DexUI)
+  [UPD] Fabrik-Tycoon — DexUI auto farmer
   Place: 15197136141
 
-  Modular layout under scripts/fabrik/ (loaded via executor readfile).
-  Requires getgenv().DexUI (scripts hub).
+  HOW THIS SCRIPT IS ORGANIZED
+  ---------------------------
+  scripts/sdk/          Universal: session, logging, loops, DexUI helpers
+  scripts/fabrik/       Fabrik-only logic modules (loaded below):
+    game.lua            Remotes, tycoon getters, HUD cash mirror
+    farm.lua            Collect / buy / gems / rebirth / progression
+    ads.lua             Hide Robux / gamepass pads
+    ui.lua              DexUI window layout (tabs, switches, tools)
+
+  This file is the hub entry: it defines Fabrik config (manifest), runs the SDK,
+  loads game modules, then wires Fabrik-specific startup + main loop here.
 ]]
 
 local DexUI = (getgenv and getgenv().DexUI) or nil
 if not DexUI then
-	error("[fabrik-tycoon] DexUI not found. Launch this script from the DexUI scripts hub.")
+	error("[fabrik-tycoon] DexUI not found. Launch from the DexUI scripts hub.")
 end
 
 if not (readfile and isfile and loadstring) then
 	error("[fabrik-tycoon] Executor must support readfile / isfile / loadstring.")
 end
 
-local PREFIXES = { "scripts/fabrik/", "DexUI/scripts/fabrik/" }
+-- ---------------------------------------------------------------------------
+-- Load helpers
+-- ---------------------------------------------------------------------------
 
-local function loadFabrik(name: string)
-	for _, prefix in PREFIXES do
+local SDK_PREFIXES = { "scripts/sdk/", "DexUI/scripts/sdk/" }
+local MODULE_PREFIXES = { "scripts/fabrik/", "DexUI/scripts/fabrik/" }
+
+local function loadFrom(prefixes: { string }, name: string)
+	for _, prefix in prefixes do
 		local path = prefix .. name .. ".lua"
 		if isfile(path) then
 			local chunk, err = loadstring(readfile(path), "@" .. path)
 			if not chunk then
-				error("[fabrik] " .. tostring(err), 0)
+				error("[fabrik] compile " .. path .. ": " .. tostring(err), 0)
 			end
 			return chunk()
 		end
 	end
-	error("[fabrik] module not found: " .. name, 0)
+	error("[fabrik] missing: " .. name, 0)
 end
 
-local ctx = loadFabrik("bootstrap")(DexUI)
-loadFabrik("game")(ctx)
+--- Load a Fabrik logic module and run it against ctx.
+local function loadFabrikModule(name: string, ctx)
+	local init = loadFrom(MODULE_PREFIXES, name)
+	if type(init) == "function" then
+		init(ctx)
+	end
+end
+
+-- ---------------------------------------------------------------------------
+-- Fabrik manifest (game-specific — not in scripts/sdk/)
+-- Passed to SDK.run; only lists modules that are pure logic under scripts/fabrik/
+-- ---------------------------------------------------------------------------
+
+local manifest = {
+	id = "fabrik-tycoon",
+	name = "Fabrik Farm",
+	windowTitle = "Fabrik-Tycoon Farm",
+	logTag = "FabrikFarm",
+	placeId = 15197136141,
+	placeIds = { 15197136141 },
+
+	prefixes = MODULE_PREFIXES,
+
+	-- Logic modules only; UI + runtime wiring stay in this file.
+	pipeline = { "game", "farm", "ads" },
+	abortAfter = { "game" },
+
+	legacyGuis = { "M3_FabrikFarm", "M3_FabrikFarmHistory" },
+	genv = {
+		session = "__FabrikFarmSession",
+		ui = "__FabrikFarmUI",
+		config = "__FabrikFarmConfig",
+		stats = "__FabrikFarmStats",
+		phase = "__FabrikFarmPhase",
+	},
+
+	shutdown = {
+		title = "Fabrik Farm",
+		message = "Unloaded — farm stopped",
+		logMessage = "Unloaded — farm loops stopped, UI removed",
+	},
+
+	notifDuration = 4.2,
+	notifyStyle = {
+		Life = 4.2,
+		Text = { Gradient = "rainbow" },
+		TextStroke = { Gradient = "rainbow", Thickness = 3.5 },
+		StackPosition = UDim2.new(1, -16, 0.58, 0),
+	},
+
+	footer = {
+		Enabled = true,
+		Height = 28,
+		Layout = "split",
+		Left = {
+			{ id = "farm", kind = "text", text = "Farm OFF", muted = true },
+		},
+		Right = {
+			{ id = "phase", kind = "text", text = "boot", align = "right", muted = true },
+			{ id = "spacer", kind = "spacer" },
+			{ id = "version", kind = "version" },
+		},
+	},
+
+	ctxExtend = {
+		upgradeIds = { "OreLimit", "OreValue", "DropperSpeed", "ConveyorSpeed", "WalkSpeed", "ShinyOresChance" },
+	},
+
+	config = {
+		Enabled = false,
+		AutoCollect = false,
+		AutoButtons = false,
+		AutoGemUpgrades = false,
+		AutoRebirth = false,
+		AutoManualDropper = false,
+		HideMonetization = false,
+		VerboseLogging = false,
+		SmartCollect = true,
+		SmartBuyPriority = true,
+		SmartGemValue = true,
+		LoopDelay = 0.4,
+		CollectMin = 50,
+		RebirthInterval = 8,
+	},
+
+	stats = {
+		collects = 0,
+		buttons = 0,
+		upgrades = 0,
+		rebirths = 0,
+		manualDrops = 0,
+		lastMsg = "",
+		errors = 0,
+		cycles = 0,
+	},
+
+	timers = {
+		lastRebirthAt = 0,
+		lastManualDropAt = 0,
+		lastAdCleanAt = 0,
+		lastCycleAt = 0,
+		lastProgressAt = 0,
+		rebirthBusyUntil = 0,
+		loopAcc = 0,
+		incomeSampleAt = 0,
+		incomeSampleTotal = 0,
+	},
+
+	caches = {
+		rebirth = { bought = 0, needed = 0, canRebirth = false },
+	},
+
+	widgets = {
+		status = nil,
+		progress = nil,
+		stats = nil,
+	},
+
+	game = {
+		incomePerSec = 0,
+		gameCashLabel = nil,
+		gameCashHooked = false,
+	},
+}
+
+-- ---------------------------------------------------------------------------
+-- 1) SDK bootstrap: ctx, session, ctx.loop.*, ctx.dexui.*
+-- ---------------------------------------------------------------------------
+
+local SDK = loadFrom(SDK_PREFIXES, "run")
+local ctx = SDK(manifest, DexUI)
 if not ctx.isAlive() then
 	return
 end
-loadFabrik("farm")(ctx)
-loadFabrik("ads")(ctx)
-loadFabrik("ui")(ctx)
-loadFabrik("runtime")(ctx)
+
+-- ---------------------------------------------------------------------------
+-- 2) Fabrik DexUI (module: scripts/fabrik/ui.lua)
+-- ---------------------------------------------------------------------------
+
+loadFabrikModule("ui", ctx)
+
+-- ---------------------------------------------------------------------------
+-- 3) Fabrik startup + main loop (game-specific — was runtime.lua)
+--    Uses universal ctx.loop / ctx.runStep from scripts/sdk/loop.lua
+-- ---------------------------------------------------------------------------
+
+local Config = ctx.config
+local stats = ctx.stats
+
+ctx.loop.runSteps({
+	{ name = "initSyncConfig", run = function()
+		ctx.log.verbose = Config.VerboseLogging
+	end },
+	{ name = "initRebirthProgress", run = function()
+		ctx.progress.update(true)
+	end },
+	{ name = "initStatus", run = ctx.status.update },
+	{ name = "hookGameCash", run = ctx.game.hookCashHud },
+})
+
+task.spawn(function()
+	for _ = 1, 20 do
+		if ctx.game.gameCashHooked then
+			break
+		end
+		ctx.game.hookCashHud()
+		task.wait(1)
+	end
+end)
+
+ctx.startupReady = true
+ctx.log.info("startup complete — ad hiding gated behind toggle")
+
+ctx.runStep("startAdCleaner", ctx.ads.start)
+
+ctx.runStep("consumeServerError", function()
+	local RS = ctx.rs
+	local serverErr = RS:FindFirstChild("Events") and RS.Events:FindFirstChild("ServerError")
+	if serverErr and serverErr:IsA("RemoteEvent") then
+		ctx.track(serverErr.OnClientEvent:Connect(function(msg)
+			if ctx.log.verbose then
+				ctx.log.debug("ServerError: " .. tostring(msg))
+			end
+		end))
+	end
+end)
+
+ctx.loop.warnWrongPlace()
+
+if not ctx.findPath then
+	ctx.log.warn("Rebirth findPath unavailable — auto rebirth progress may be wrong")
+end
+
+ctx.log.setPhase("ready")
+ctx.log.info("Loaded (DexUI) — all toggles default OFF | " .. ctx.status.line())
+
+ctx.loop.startHeartbeat({
+	masterKey = "Enabled",
+	delayKey = "LoopDelay",
+	tick = ctx.farm.safeOnce,
+})
+
+ctx.loop.startWatchdog({
+	masterKey = "Enabled",
+	onTick = function()
+		ctx.log.verbose = Config.VerboseLogging
+		ctx.status.update()
+	end,
+	logLine = function()
+		return string.format(
+			"[%s] %s | btn:%d drop:%d gem:%d col:%d reb:%d err:%d | %.2fs | phase:%s | %s",
+			ctx.logTag,
+			ctx.status.line(),
+			stats.buttons,
+			stats.manualDrops,
+			stats.upgrades,
+			stats.collects,
+			stats.rebirths,
+			stats.errors,
+			Config.LoopDelay,
+			ctx.log.phase,
+			stats.lastMsg ~= "" and stats.lastMsg or "—"
+		)
+	end,
+})

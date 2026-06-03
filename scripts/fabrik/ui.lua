@@ -1,60 +1,22 @@
--- DexUI window, tabs, and widget handles on ctx.widgets.
+-- DexUI window for Fabrik (uses scripts/sdk/dexui.lua helpers).
 return function(ctx)
 	local Config = ctx.config
 	local stats = ctx.stats
-	local G = ctx.G
-	local DexUI = ctx.DexUI
-	local farmNotify = ctx.notify.push
-	local farmPlayFeedback = ctx.feedback.play
-	local FARM_NOTIF_DURATION = ctx.FARM_NOTIF_DURATION
+	local unloadScript = ctx.dexui.bindUnload({
+		masterKey = "Enabled",
+		clearWidgets = true,
+	})
 
-	local function unloadScript()
-		Config.Enabled = false
-		ctx.shutdown(true)
-		ctx.session = nil
-		G.__FabrikFarmSession = nil
-		G.__FabrikFarmInjectId = nil
-		G.__FabrikFarmConfig = nil
-		G.__FabrikFarmStats = nil
-		ctx.widgets.status = nil
-		ctx.widgets.progress = nil
-		ctx.widgets.stats = nil
-	end
-
-	local ui = DexUI.CreateWindow("Fabrik-Tycoon Farm")
-	ctx.ui = ui
-	G.__FabrikFarmUI = ui
-
-	if ui.SetNotificationStyle then
-		ui:SetNotificationStyle({
-			Life = FARM_NOTIF_DURATION,
-			Text = { Gradient = "rainbow" },
-			TextStroke = { Gradient = "rainbow", Thickness = 3.5 },
-			StackPosition = UDim2.new(1, -16, 0.58, 0),
-		})
-	end
-
-	if ui.SetFooterConfig then
-		ui:SetFooterConfig({
-			Enabled = true,
-			Height = 28,
-			Layout = "split",
-			Left = {
-				{ id = "farm", kind = "text", text = "Farm OFF", muted = true },
-			},
-			Right = {
-				{ id = "phase", kind = "text", text = "boot", align = "right", muted = true },
-				{ id = "spacer", kind = "spacer" },
-				{ id = "version", kind = "version" },
-			},
-		})
-	end
+	local ui = ctx.DexUI.CreateWindow(ctx.manifest.windowTitle or "Fabrik-Tycoon Farm")
+	ctx.dexui.publishUi(ui)
+	ctx.dexui.applyNotifyStyle(ui)
+	ctx.dexui.applyFooter(ui)
 
 	ui:AddTab("Farm", 4483362458)
 	ui:AddSection("Auto farm")
 	ui:AddSwitch("Master auto farm", Config.Enabled, function(v)
 		Config.Enabled = v
-		farmPlayFeedback(v and "toggleOn" or "toggleOff")
+		ctx.feedback.play(v and "toggleOn" or "toggleOff")
 		ctx.status.updateFooter()
 	end)
 
@@ -96,7 +58,7 @@ return function(ctx)
 	ctx.widgets.progress = progressPara
 	ui:AddButton("Refresh now", function()
 		ctx.progress.update(true)
-		farmPlayFeedback("selection")
+		ctx.feedback.play("selection")
 	end)
 
 	ui:AddTab("Settings", 4483362458)
@@ -132,18 +94,18 @@ return function(ctx)
 	ui:AddButton("Collect now", function()
 		ctx.farm.tryCollect(true)
 		ctx.status.update()
-		farmPlayFeedback("selection")
+		ctx.feedback.play("selection")
 	end)
 	ui:AddButton("Buy next building", function()
 		ctx.farm.tryBuyCheapestButton()
 		ctx.status.update()
-		farmPlayFeedback("selection")
+		ctx.feedback.play("selection")
 	end)
 	ui:AddButton("Rebirth now", function()
 		if ctx.farm.tryRebirth() then
-			farmPlayFeedback("toggleOn")
+			ctx.feedback.play("toggleOn")
 		else
-			farmNotify({
+			ctx.notify.push({
 				Title = "Rebirth",
 				Content = stats.lastMsg ~= "" and stats.lastMsg or "Not ready",
 				Duration = 3,
@@ -170,21 +132,18 @@ return function(ctx)
 			stats.collects,
 			stats.rebirths
 		))
-		farmNotify({ Title = "Diagnostics", Content = diag, Duration = 6 })
+		ctx.notify.push({ Title = "Diagnostics", Content = diag, Duration = 6 })
 	end)
 
 	ui:AddDivider()
 	ui:AddSection("Danger")
 	ui:AddButton("Quit — stop farm & unload", unloadScript)
 
-	if ui.AddGameInfo then
-		ui:AddTab("About", 6026568227)
-		ui:AddGameInfo()
-	end
+	ctx.dexui.addAboutTab(ui)
 
 	ui:Show()
-	farmNotify({
-		Title = "Fabrik Farm",
+	ctx.notify.push({
+		Title = ctx.name,
 		Content = "Loaded — enable Master auto farm when ready.",
 		Duration = 3,
 	})
