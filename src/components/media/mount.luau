@@ -43,6 +43,7 @@ local function mount(ctx)
 		padding = SL.SectionPadding or 14,
 		innerGap = SL.InnerGap or 8,
 		cornerRadius = SL.SectionCorner or 12,
+		titleGap = SL.TitleGap or 6,
 	}
 
 	local holder = Instance.new("Frame")
@@ -59,13 +60,12 @@ local function mount(ctx)
 	layout.SortOrder = Enum.SortOrder.LayoutOrder
 	layout.Parent = holder
 
-	local playerSection, playerBase = Section.create(holder, 0, sectionDeps, {
+	local playerBlock = Section.create(holder, 0, sectionDeps, {
 		name = "Player",
 		title = "Player",
 	})
 	local playerApi = Player.build({
-		section = playerSection,
-		layoutBase = playerBase,
+		section = playerBlock.card,
 		holder = holder,
 		win = win,
 		curTheme = curTheme,
@@ -85,20 +85,18 @@ local function mount(ctx)
 		onInputEnded = onInputEnded,
 	})
 
-	local browseSection, browseBase = Section.create(holder, 1, sectionDeps, {
+	local browseBlock = Section.create(holder, 1, sectionDeps, {
 		name = "Browse",
 		title = "Browse",
 	})
-	local resultsSection, resultsBase = Section.create(holder, 2, sectionDeps, {
+	local resultsBlock = Section.create(holder, 2, sectionDeps, {
 		name = "Results",
 		title = "Results",
 	})
 
 	Catalog.build({
-		browseSection = browseSection,
-		browseBase = browseBase,
-		resultsSection = resultsSection,
-		resultsBase = resultsBase,
+		browseSection = browseBlock.card,
+		resultsSection = resultsBlock.card,
 		player = playerApi,
 		curTheme = curTheme,
 		reg = reg,

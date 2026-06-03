@@ -339,6 +339,37 @@ local function buildSection(
 	return holder, mount
 end
 
+-- Visuals-style block: section title outside, scroll grid inside inact card.
+local PanelSection = require("./panel-section")
+
+local function buildPanelSection(
+	tabParent: Instance,
+	layoutOrder: number,
+	panelDeps: PanelSection.SectionDeps,
+	gridDeps: GridDeps,
+	opts: {
+		title: string?,
+		name: string?,
+		maxHeight: number?,
+	}
+): (PanelSection.SectionResult, GridMount)
+	local block = PanelSection.create(tabParent, layoutOrder, panelDeps, {
+		title = opts.title,
+		name = opts.name,
+	})
+
+	local gridHost = Instance.new("Frame")
+	gridHost.Name = "GridHost"
+	gridHost.LayoutOrder = 0
+	gridHost.Size = UDim2.new(1, 0, 0, 0)
+	gridHost.AutomaticSize = Enum.AutomaticSize.Y
+	gridHost.BackgroundTransparency = 1
+	gridHost.Parent = block.card
+
+	local mount = buildScroll(gridHost, gridDeps, opts.maxHeight)
+	return block, mount
+end
+
 return {
 	spec = SPEC,
 	thumbHeight = thumbHeight,
@@ -347,4 +378,5 @@ return {
 	buildScroll = buildScroll,
 	buildInline = buildInline,
 	buildSection = buildSection,
+	buildPanelSection = buildPanelSection,
 }

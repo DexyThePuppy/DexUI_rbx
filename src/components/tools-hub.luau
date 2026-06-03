@@ -1,7 +1,9 @@
 --!nonstrict
 -- Tools hub grid: external utilities loaded from release URLs.
 
+local Config = require("../config")
 local ToolsRegistry = require("../hub/tools-registry")
+local SL = Config.SectionLayout or Config.GameInfo or {}
 local ToolAssets = require("../hub/tool-assets")
 local runTool = require("../hub/run-tool")
 
@@ -12,7 +14,7 @@ return function(ctx)
 	local curTheme = ctx.theme
 	local reg = ctx.reg
 	local tween, corner, ripple = ctx.tween, ctx.corner, ctx.ripple
-	local beginCardRow = ctx.beginCardRow
+	local nextCardItemOrder = ctx.nextCardItemOrder
 	local playFeedback = ctx.playFeedback
 	local fontWeight = ctx.fontWeight
 	local tooltip = ctx.tooltip
@@ -71,7 +73,18 @@ return function(ctx)
 	function lib:PopulateToolsHub(entries: { ToolEntry }?)
 		local list = entries or ToolsRegistry.load()
 
-		local _, mount = Grid.buildSection(beginCardRow(nil, true), gridDeps, {
+		local panelDeps = {
+			corner = corner,
+			reg = reg,
+			fontWeight = fontWeight,
+			textSize = textSize,
+			padding = SL.SectionPadding or 14,
+			innerGap = SL.InnerGap or 8,
+			cornerRadius = SL.SectionCorner or 12,
+			titleGap = SL.TitleGap or 6,
+		}
+		local _, mount = Grid.buildPanelSection(lib.CurrentBuildContainer, nextCardItemOrder(), panelDeps, gridDeps, {
+			name = "ToolsHub",
 			title = "Developer tools — click a card to load",
 			maxHeight = Grid.spec.maxViewport,
 		})

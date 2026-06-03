@@ -3,7 +3,6 @@ local Format = require("./format")
 
 export type CarouselDeps = {
 	section: Frame,
-	layoutBase: number?,
 	holder: Instance,
 	curTheme: { pri: Color3, out: Color3, inact: Color3 },
 	m3Font: Font,
@@ -23,7 +22,6 @@ local MAX_CAROUSEL_SLIDES = 8
 
 local function build(deps: CarouselDeps)
 	local carouselSection = deps.section
-	local base = deps.layoutBase or 0
 
 	local carouselCenterW = 320
 	local carouselCenterH = math.floor(carouselCenterW * ASPECT_16_9 + 0.5)
@@ -31,7 +29,7 @@ local function build(deps: CarouselDeps)
 	local carouselSideH = math.floor(carouselSideW * ASPECT_16_9 + 0.5)
 
 	local carouselShell = Instance.new("Frame")
-	carouselShell.LayoutOrder = base
+	carouselShell.LayoutOrder = 0
 	carouselShell.Size = UDim2.new(1, 0, 0, carouselCenterH + 24)
 	carouselShell.BorderSizePixel = 0
 	carouselShell.ClipsDescendants = true
@@ -99,7 +97,7 @@ local function build(deps: CarouselDeps)
 	local slotRight = makeCarouselSlot("Right")
 
 	local dots = Instance.new("Frame")
-	dots.LayoutOrder = base + 1
+	dots.LayoutOrder = 1
 	dots.Size = UDim2.new(1, 0, 0, 8)
 	dots.BackgroundTransparency = 1
 	dots.Parent = carouselSection

@@ -1,8 +1,6 @@
 --!nonstrict
 export type ServersDeps = {
 	section: Frame,
-	layoutBase: number?,
-	useSectionTitle: boolean?,
 	curTheme: { pri: Color3, fg: Color3, onpri: Color3, inact: Color3 },
 	m3Font: Font,
 	fontWeight: (Enum.FontWeight) -> Font,
@@ -19,23 +17,7 @@ export type ServersDeps = {
 
 local function build(deps: ServersDeps)
 	local serversSection = deps.section
-	local base = deps.layoutBase or 0
-	local useSectionTitle = deps.useSectionTitle == true
-	local order = base
-
-	if not useSectionTitle then
-		local serversHeading = Instance.new("TextLabel")
-		serversHeading.LayoutOrder = order
-		serversHeading.Size = UDim2.new(1, 0, 0, 20)
-		serversHeading.BackgroundTransparency = 1
-		serversHeading.Text = "Public servers"
-		serversHeading.FontFace = deps.fontWeight(Enum.FontWeight.Medium)
-		serversHeading.TextSize = deps.textSize("md")
-		serversHeading.TextXAlignment = Enum.TextXAlignment.Left
-		serversHeading.Parent = serversSection
-		deps.reg(serversHeading, "TextColor3", "pri")
-		order += 1
-	end
+	local order = 0
 
 	local serversStatusLbl = Instance.new("TextLabel")
 	serversStatusLbl.LayoutOrder = order

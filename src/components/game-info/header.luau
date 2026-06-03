@@ -4,7 +4,6 @@ local Format = require("./format")
 
 export type HeaderDeps = {
 	section: Frame,
-	layoutBase: number?,
 	chip: any,
 	entry: any?,
 	fontWeight: (Enum.FontWeight) -> Font,
@@ -18,10 +17,9 @@ export type HeaderDeps = {
 
 local function build(deps: HeaderDeps)
 	local headerSection = deps.section
-	local base = deps.layoutBase or 0
 
 	local headerRow = Instance.new("Frame")
-	headerRow.LayoutOrder = base
+	headerRow.LayoutOrder = 0
 	headerRow.Size = UDim2.new(1, 0, 0, 0)
 	headerRow.AutomaticSize = Enum.AutomaticSize.Y
 	headerRow.BackgroundTransparency = 1
@@ -65,7 +63,7 @@ local function build(deps: HeaderDeps)
 		end)
 	end)
 
-	local metaBadgeRow = deps.chip.makeBadgeRow(headerSection, base + 1, "MetaBadges")
+	local metaBadgeRow = deps.chip.makeBadgeRow(headerSection, 1, "MetaBadges")
 
 	local function renderMetaBadges(meta: any)
 		deps.chip.clearBadgeRow(metaBadgeRow)

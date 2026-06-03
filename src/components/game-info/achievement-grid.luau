@@ -3,8 +3,8 @@ local GameMetadata = require("../../hub/game-metadata")
 
 export type AchievementGridDeps = {
 	section: Frame,
-	layoutBase: number?,
-	useSectionTitle: boolean?,
+	block: Frame,
+	heading: TextLabel?,
 	Grid: any,
 	gridDeps: any,
 	curTheme: { fg: Color3, out: Color3 },
@@ -20,33 +20,12 @@ local CLAIMED_GREEN = Color3.fromRGB(56, 170, 92)
 local VIP_BADGE_ON = Color3.fromRGB(255, 255, 255)
 
 local function build(deps: AchievementGridDeps)
-	local badgesSection = deps.section
-	badgesSection.Visible = false
-	local base = deps.layoutBase or 0
-	local useSectionTitle = deps.useSectionTitle == true
-	local order = base
-
-	local badgesHeading: TextLabel? = nil
-	if not useSectionTitle then
-		badgesHeading = Instance.new("TextLabel")
-		badgesHeading.LayoutOrder = order
-		badgesHeading.Size = UDim2.new(1, 0, 0, 20)
-		badgesHeading.BackgroundTransparency = 1
-		badgesHeading.Text = "Badges"
-		badgesHeading.FontFace = deps.fontWeight(Enum.FontWeight.Medium)
-		badgesHeading.TextSize = deps.textSize("md")
-		badgesHeading.TextXAlignment = Enum.TextXAlignment.Left
-		badgesHeading.Parent = badgesSection
-		deps.reg(badgesHeading, "TextColor3", "pri")
-		order += 1
-	end
-
-	local sectionTitleLbl = if useSectionTitle
-		then badgesSection:FindFirstChild("SectionTitle") :: TextLabel?
-		else nil
+	local card = deps.section
+	local block = deps.block
+	block.Visible = false
 
 	local badgesStatusLbl = Instance.new("TextLabel")
-	badgesStatusLbl.LayoutOrder = order
+	badgesStatusLbl.LayoutOrder = 0
 	badgesStatusLbl.Size = UDim2.new(1, 0, 0, 0)
 	badgesStatusLbl.AutomaticSize = Enum.AutomaticSize.Y
 	badgesStatusLbl.BackgroundTransparency = 1
@@ -56,17 +35,16 @@ local function build(deps: AchievementGridDeps)
 	badgesStatusLbl.TextXAlignment = Enum.TextXAlignment.Left
 	badgesStatusLbl.TextWrapped = true
 	badgesStatusLbl.Visible = false
-	badgesStatusLbl.Parent = badgesSection
+	badgesStatusLbl.Parent = card
 	deps.reg(badgesStatusLbl, "TextColor3", "out")
-	order += 1
 
 	local badgeGrid = Instance.new("Frame")
 	badgeGrid.Name = "BadgeGrid"
-	badgeGrid.LayoutOrder = order
+	badgeGrid.LayoutOrder = 1
 	badgeGrid.Size = UDim2.new(1, 0, 0, 0)
 	badgeGrid.AutomaticSize = Enum.AutomaticSize.Y
 	badgeGrid.BackgroundTransparency = 1
-	badgeGrid.Parent = badgesSection
+	badgeGrid.Parent = card
 
 	local badgeMount = deps.Grid.buildInline(badgeGrid, deps.gridDeps)
 
@@ -97,10 +75,10 @@ local function build(deps: AchievementGridDeps)
 		clearBadgeGrid()
 		local count = if badges then #badges else 0
 		if count == 0 then
-			badgesSection.Visible = false
+			block.Visible = false
 			return
 		end
-		badgesSection.Visible = true
+		block.Visible = true
 
 		local claimed = 0
 		for _, badge in badges do
@@ -110,25 +88,23 @@ local function build(deps: AchievementGridDeps)
 		end
 
 		local totalLabel = if badgeAtLeast then tostring(count) .. "+" else tostring(count)
-		local headingText = string.format("%d / %s claimed", claimed, totalLabel)
-		if badgesHeading then
-			badgesHeading.Text = "Badges · " .. headingText
-		elseif sectionTitleLbl then
-			sectionTitleLbl.Text = "Badges · " .. headingText
+		local headingText = string.format("Badges · %d / %s claimed", claimed, totalLabel)
+		if deps.heading then
+			deps.heading.Text = headingText
 		end
 
 		for i, badge in badges do
-			local card = badgeMount.addCard(i)
-			card.root.Name = "Badge" .. tostring(badge.id)
-			card.root.BackgroundTransparency = if badge.claimed then 0.35 else 0.55
-			deps.reg(card.root, "BackgroundColor3", "bg")
+			local gridCard = badgeMount.addCard(i)
+			gridCard.root.Name = "Badge" .. tostring(badge.id)
+			gridCard.root.BackgroundTransparency = if badge.claimed then 0.35 else 0.55
+			deps.reg(gridCard.root, "BackgroundColor3", "bg")
 
-			card.image.ImageTransparency = if badge.claimed then 0 else 0.45
-			card.image.Active = false
-			card.image.Selectable = false
+			gridCard.image.ImageTransparency = if badge.claimed then 0 else 0.45
+			gridCard.image.Active = false
+			gridCard.image.Selectable = false
 			local uri = badgeThumbUri(badge)
 			if uri then
-				card.image.Image = uri
+				gridCard.image.Image = uri
 			end
 
 			if badge.claimed then
@@ -145,21 +121,21 @@ local function build(deps: AchievementGridDeps)
 				tick.ZIndex = 5
 				tick.Active = false
 				tick.Selectable = false
-				tick.Parent = card.thumb
+				tick.Parent = gridCard.thumb
 				deps.corner(tick, 999)
 			end
 
-			card.title.Text = badge.name
-			card.title.FontFace = deps.m3Font
-			card.title.TextSize = deps.textSize("sm")
-			card.title.TextWrapped = true
-			card.title.TextTruncate = Enum.TextTruncate.AtEnd
-			card.title.TextColor3 = if badge.claimed then deps.curTheme.fg else deps.curTheme.out
-			card.title.Active = false
-			card.title.Selectable = false
+			gridCard.title.Text = badge.name
+			gridCard.title.FontFace = deps.m3Font
+			gridCard.title.TextSize = deps.textSize("sm")
+			gridCard.title.TextWrapped = true
+			gridCard.title.TextTruncate = Enum.TextTruncate.AtEnd
+			gridCard.title.TextColor3 = if badge.claimed then deps.curTheme.fg else deps.curTheme.out
+			gridCard.title.Active = false
+			gridCard.title.Selectable = false
 
 			if deps.tooltip then
-				deps.tooltip.attach(card.root, function()
+				deps.tooltip.attach(gridCard.root, function()
 					return GameMetadata.buildBadgeTooltipContent(badge)
 				end)
 			end
@@ -169,7 +145,7 @@ local function build(deps: AchievementGridDeps)
 	end
 
 	return {
-		section = badgesSection,
+		block = block,
 		renderBadgeGrid = renderBadgeGrid,
 	}
 end

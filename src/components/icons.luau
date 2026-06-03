@@ -1,5 +1,10 @@
 --!nonstrict
 -- DexUI icons component. Attached onto the window's lib via the shared ctx.
+
+local Config = require("../config")
+local PanelSection = require("../core/panel-section")
+local SL = Config.SectionLayout or Config.GameInfo or {}
+
 return function(ctx)
 		local lib = ctx.lib
 	local curTheme = ctx.theme
@@ -35,24 +40,29 @@ return function(ctx)
 	type MediaHit = { id: number, title: string, subtitle: string? }
 
 	function lib:AddIconBrowser()
-		local holder = Instance.new("Frame")
-		holder.Name = "IconBrowser"
-		holder.Size = UDim2.new(1, 0, 0, 0)
-		holder.AutomaticSize = Enum.AutomaticSize.Y
-		holder.BackgroundTransparency = 1
-		holder.Parent = beginCardRow(nil, true)
-		indexElement("Icon Browser", holder)
+		local panelDeps = {
+			corner = corner,
+			reg = reg,
+			fontWeight = fontWeight,
+			textSize = textSize,
+			padding = SL.SectionPadding or 14,
+			innerGap = SL.InnerGap or 8,
+			cornerRadius = SL.SectionCorner or 12,
+			titleGap = SL.TitleGap or 6,
+		}
+		local block = PanelSection.create(lib.CurrentBuildContainer, nextCardItemOrder(), panelDeps, {
+			name = "IconBrowser",
+			title = "Material Icons",
+		})
+		indexElement("Icon Browser", block.block)
 
-		local layout = Instance.new("UIListLayout")
-		layout.SortOrder = Enum.SortOrder.LayoutOrder
-		layout.Padding = UDim.new(0, 10)
-		layout.Parent = holder
+		local card = block.card
 
 		local searchFrame = Instance.new("Frame")
-		searchFrame.LayoutOrder = 1
+		searchFrame.LayoutOrder = 0
 		searchFrame.Size = UDim2.new(1, 0, 0, 46)
 		searchFrame.BorderSizePixel = 0
-		searchFrame.Parent = holder
+		searchFrame.Parent = card
 		corner(searchFrame, 999)
 		reg(searchFrame, "BackgroundColor3", "bg")
 
@@ -81,22 +91,22 @@ return function(ctx)
 		reg(searchBox, "PlaceholderColor3", "out")
 
 		local statusLbl = Instance.new("TextLabel")
-		statusLbl.LayoutOrder = 2
+		statusLbl.LayoutOrder = 1
 		statusLbl.Size = UDim2.new(1, 0, 0, 16)
 		statusLbl.BackgroundTransparency = 1
 		statusLbl.Text = "Loading Material Icons…"
 		statusLbl.FontFace = fontWeight(Enum.FontWeight.Medium)
 		statusLbl.TextSize = textSize("sm")
 		statusLbl.TextXAlignment = Enum.TextXAlignment.Left
-		statusLbl.Parent = holder
+		statusLbl.Parent = card
 		reg(statusLbl, "TextColor3", "out")
 
 		local gridHost = Instance.new("Frame")
-		gridHost.LayoutOrder = 3
+		gridHost.LayoutOrder = 2
 		gridHost.Size = UDim2.new(1, 0, 0, 0)
 		gridHost.AutomaticSize = Enum.AutomaticSize.Y
 		gridHost.BackgroundTransparency = 1
-		gridHost.Parent = holder
+		gridHost.Parent = card
 
 		local gridMount = Grid.buildScroll(gridHost, {
 			corner = corner,

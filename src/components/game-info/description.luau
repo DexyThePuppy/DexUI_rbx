@@ -3,7 +3,6 @@ local Format = require("./format")
 
 export type DescriptionDeps = {
 	section: Frame,
-	layoutBase: number?,
 	chip: any,
 	entry: any?,
 	curTheme: { bg: Color3, fg: Color3, out: Color3, inact: Color3 },
@@ -19,9 +18,8 @@ local BADGE_VERIFIED = Color3.fromRGB(0, 162, 255)
 
 local function build(deps: DescriptionDeps)
 	local descSection = deps.section
-	local base = deps.layoutBase or 0
 
-	local settingsRow = deps.chip.makeBadgeRow(descSection, base, "Settings")
+	local settingsRow = deps.chip.makeBadgeRow(descSection, 0, "Settings")
 
 	local function addSettingBadge(label: string, bg: Color3, fg: Color3)
 		deps.chip.addInfoBadge(settingsRow, label, bg, fg)
@@ -46,7 +44,7 @@ local function build(deps: DescriptionDeps)
 		settingsRow.Visible = settingsRow:FindFirstChild("Badge") ~= nil
 	end
 
-	local statsBadgeRow = deps.chip.makeBadgeRow(descSection, base + 1, "StatsBadges")
+	local statsBadgeRow = deps.chip.makeBadgeRow(descSection, 1, "StatsBadges")
 
 	local function addStatBadges(meta: any)
 		deps.chip.clearBadgeRow(statsBadgeRow)
@@ -94,7 +92,7 @@ local function build(deps: DescriptionDeps)
 	end
 
 	local bodyLbl = Instance.new("TextLabel")
-	bodyLbl.LayoutOrder = base + 2
+	bodyLbl.LayoutOrder = 2
 	bodyLbl.Size = UDim2.new(1, 0, 0, 0)
 	bodyLbl.AutomaticSize = Enum.AutomaticSize.Y
 	bodyLbl.BackgroundTransparency = 1
@@ -107,7 +105,7 @@ local function build(deps: DescriptionDeps)
 	bodyLbl.Parent = descSection
 	deps.reg(bodyLbl, "TextColor3", "fg")
 
-	local extraBadgeRow = deps.chip.makeBadgeRow(descSection, base + 3, "ExtraBadges")
+	local extraBadgeRow = deps.chip.makeBadgeRow(descSection, 3, "ExtraBadges")
 
 	local function renderExtraBadges(meta: any)
 		deps.chip.clearBadgeRow(extraBadgeRow)

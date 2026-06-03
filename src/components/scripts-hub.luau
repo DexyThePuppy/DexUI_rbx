@@ -1,8 +1,11 @@
 --!nonstrict
 -- Scripts hub grid: game thumbnails from scripts/index.lua, launches standalone scripts.
 
+local Config = require("../config")
 local Registry = require("../hub/registry")
 local runScript = require("../hub/run-script")
+
+local SL = Config.SectionLayout or Config.GameInfo or {}
 
 export type GameEntry = Registry.GameEntry
 
@@ -12,7 +15,7 @@ return function(ctx)
 	local reg, regDynamic = ctx.reg, ctx.regDynamic
 	local tween, corner, ripple = ctx.tween, ctx.corner, ctx.ripple
 	local m3Font = ctx.m3Font
-	local beginCardRow = ctx.beginCardRow
+	local nextCardItemOrder = ctx.nextCardItemOrder
 	local playFeedback = ctx.playFeedback
 	local fontWeight = ctx.fontWeight
 	local tooltip = ctx.tooltip
@@ -116,7 +119,18 @@ return function(ctx)
 			then ("Recognised: " .. recognized.name .. " — pick a script or launch yours")
 			else "Scripts hub — select a game"
 
-		local _, mount = Grid.buildSection(beginCardRow(nil, true), gridDeps, {
+		local panelDeps = {
+			corner = corner,
+			reg = reg,
+			fontWeight = fontWeight,
+			textSize = textSize,
+			padding = SL.SectionPadding or 14,
+			innerGap = SL.InnerGap or 8,
+			cornerRadius = SL.SectionCorner or 12,
+			titleGap = SL.TitleGap or 6,
+		}
+		local _, mount = Grid.buildPanelSection(lib.CurrentBuildContainer, nextCardItemOrder(), panelDeps, gridDeps, {
+			name = "ScriptsHub",
 			title = title,
 			maxHeight = Grid.spec.maxViewport,
 		})

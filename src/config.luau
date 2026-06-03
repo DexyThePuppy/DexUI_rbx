@@ -17,6 +17,7 @@ return {
 	-- Stacked section cards (Game Info, Media, etc.).
 	SectionLayout = {
 		SectionGap = 12,
+		TitleGap = 6,
 		SectionPadding = 14,
 		InnerGap = 8,
 		SectionCorner = 12,
@@ -25,6 +26,7 @@ return {
 	-- Alias for Game Info mount (same as SectionLayout).
 	GameInfo = {
 		SectionGap = 12,
+		TitleGap = 6,
 		SectionPadding = 14,
 		InnerGap = 8,
 		SectionCorner = 12,

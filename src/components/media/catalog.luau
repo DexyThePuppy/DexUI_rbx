@@ -8,9 +8,7 @@ export type PlayerApi = {
 
 export type CatalogDeps = {
 	browseSection: Frame,
-	browseBase: number,
 	resultsSection: Frame,
-	resultsBase: number,
 	player: PlayerApi,
 	curTheme: { bg: Color3, fg: Color3, pri: Color3, onpri: Color3, inact: Color3, out: Color3 },
 	reg: (Instance, string, string) -> (),
@@ -31,9 +29,7 @@ export type CatalogDeps = {
 
 local function build(deps: CatalogDeps)
 	local browseSection = deps.browseSection
-	local browseBase = deps.browseBase
 	local resultsSection = deps.resultsSection
-	local resultsBase = deps.resultsBase
 	local curTheme = deps.curTheme
 	local reg = deps.reg
 	local corner = deps.corner
@@ -60,7 +56,7 @@ local function build(deps: CatalogDeps)
 
 	local subTabArea = Instance.new("Frame")
 	subTabArea.Name = "SubTabs"
-	subTabArea.LayoutOrder = browseBase
+	subTabArea.LayoutOrder = 0
 	subTabArea.Size = UDim2.new(1, 0, 0, 40)
 	subTabArea.BackgroundTransparency = 1
 	subTabArea.ClipsDescendants = true
@@ -203,7 +199,7 @@ local function build(deps: CatalogDeps)
 
 	local statusLbl = Instance.new("TextLabel")
 	statusLbl.Name = "Status"
-	statusLbl.LayoutOrder = browseBase + 2
+	statusLbl.LayoutOrder = 2
 	statusLbl.Size = UDim2.new(1, 0, 0, 0)
 	statusLbl.AutomaticSize = Enum.AutomaticSize.Y
 	statusLbl.BackgroundTransparency = 1
@@ -225,7 +221,7 @@ local function build(deps: CatalogDeps)
 	end
 
 	local searchFrame = Instance.new("Frame")
-	searchFrame.LayoutOrder = browseBase + 1
+	searchFrame.LayoutOrder = 1
 	searchFrame.Size = UDim2.new(1, 0, 0, 56)
 	searchFrame.BorderSizePixel = 0
 	searchFrame.Parent = browseSection
@@ -275,7 +271,7 @@ local function build(deps: CatalogDeps)
 
 	local resultsFrame = Instance.new("Frame")
 	resultsFrame.Name = "Results"
-	resultsFrame.LayoutOrder = resultsBase
+	resultsFrame.LayoutOrder = 0
 	resultsFrame.Size = UDim2.new(1, 0, 0, pageSize * 52)
 	resultsFrame.BackgroundTransparency = 1
 	resultsFrame.Parent = resultsSection
@@ -373,7 +369,7 @@ local function build(deps: CatalogDeps)
 	end
 
 	local pagerRow = Instance.new("Frame")
-	pagerRow.LayoutOrder = resultsBase + 1
+	pagerRow.LayoutOrder = 1
 	pagerRow.Size = UDim2.new(1, 0, 0, 36)
 	pagerRow.BackgroundTransparency = 1
 	pagerRow.Parent = resultsSection

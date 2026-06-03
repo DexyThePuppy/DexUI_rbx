@@ -3,7 +3,6 @@ export type MediaHit = { id: number, title: string, subtitle: string? }
 
 export type PlayerDeps = {
 	section: Frame,
-	layoutBase: number?,
 	holder: Frame,
 	win: Instance,
 	curTheme: { bg: Color3, fg: Color3, pri: Color3, onpri: Color3, inact: Color3, out: Color3 },
@@ -29,7 +28,6 @@ local ICON_PLAY_CENTER = "rbxassetid://6026663705"
 
 local function build(deps: PlayerDeps)
 	local section = deps.section
-	local layoutBase = deps.layoutBase or 0
 	local holder = deps.holder
 	local win = deps.win
 	local curTheme = deps.curTheme
@@ -53,7 +51,7 @@ local function build(deps: PlayerDeps)
 
 	local playerShell = Instance.new("Frame")
 	playerShell.Name = "PlayerShell"
-	playerShell.LayoutOrder = layoutBase
+	playerShell.LayoutOrder = 0
 	playerShell.Size = UDim2.new(1, 0, 0, 200)
 	playerShell.BackgroundColor3 = Color3.new(0, 0, 0)
 	playerShell.BorderSizePixel = 0
