@@ -95,25 +95,31 @@ return function(ctx)
 		corner(carouselShell, 14)
 		reg(carouselShell, "BackgroundColor3", "inact")
 
-		local carouselScroll = Instance.new("ScrollingFrame")
-		carouselScroll.Size = UDim2.fromScale(1, 1)
-		carouselScroll.BackgroundTransparency = 1
-		carouselScroll.BorderSizePixel = 0
-		carouselScroll.ScrollBarThickness = 0
-		carouselScroll.ScrollingDirection = Enum.ScrollingDirection.X
-		carouselScroll.CanvasSize = UDim2.new(0, 0, 1, 0)
-		carouselScroll.Parent = carouselShell
+		local CAROUSEL_H = 184
+		local CENTER_W = 332
+		local SIDE_W = 248
+		local SIDE_GAP = 14
+		local AUTO_SEC = 7
+		local TWEEN_SEC = 0.45
 
-		local carouselPad = Instance.new("UIPadding")
-		carouselPad.PaddingLeft = UDim.new(0, 8)
-		carouselPad.PaddingRight = UDim.new(0, 8)
-		carouselPad.Parent = carouselScroll
+		local carouselTrack = Instance.new("Frame")
+		carouselTrack.Name = "Track"
+		carouselTrack.Size = UDim2.new(1, 0, 1, 0)
+		carouselTrack.BackgroundTransparency = 1
+		carouselTrack.ClipsDescendants = true
+		carouselTrack.Parent = carouselShell
 
-		local carouselList = Instance.new("UIListLayout")
-		carouselList.FillDirection = Enum.FillDirection.Horizontal
-		carouselList.Padding = UDim.new(0, 8)
-		carouselList.SortOrder = Enum.SortOrder.LayoutOrder
-		carouselList.Parent = carouselScroll
+		local emptyLbl = Instance.new("TextLabel")
+		emptyLbl.Name = "Empty"
+		emptyLbl.Size = UDim2.fromScale(1, 1)
+		emptyLbl.BackgroundTransparency = 1
+		emptyLbl.Text = "No thumbnails loaded"
+		emptyLbl.FontFace = m3Font
+		emptyLbl.TextSize = 14
+		emptyLbl.TextColor3 = curTheme.out
+		emptyLbl.Visible = false
+		emptyLbl.ZIndex = 2
+		emptyLbl.Parent = carouselTrack
 
 		local dots = Instance.new("Frame")
 		dots.LayoutOrder = 3
@@ -155,9 +161,10 @@ return function(ctx)
 		reg(extraLbl, "TextColor3", "out")
 
 		local slideIndex = 1
-		local autoAdvance = 0
+		local lastAutoAt = os.clock()
 		local dotFrames: { Frame } = {}
 		local carouselConn: RBXScriptConnection? = nil
+		local slideEntries: { ImageLabel } = {}
 
 		local prevBtn = Instance.new("TextButton")
 		prevBtn.Size = UDim2.fromOffset(32, 32)
@@ -189,42 +196,120 @@ return function(ctx)
 		reg(nextBtn, "BackgroundColor3", "bg")
 		reg(nextBtn, "TextColor3", "fg")
 
-		local function showSlide(index: number, count: number)
-			if count <= 0 then
+		local function wrapIndex(index: number, count: number): number
+			return ((index - 1) % count) + 1
+		end
+
+		local function relativeOffset(index: number, active: number, count: number): number
+			local rel = index - active
+			if rel > count / 2 then
+				rel -= count
+			elseif rel < -count / 2 then
+				rel += count
+			end
+			return rel
+		end
+
+		local function layoutCarousel(active: number, animate: boolean)
+			local count = #slideEntries
+			emptyLbl.Visible = count == 0
+			if count == 0 then
 				return
 			end
-			slideIndex = ((index - 1) % count) + 1
-			local offset = (slideIndex - 1) * 392
-			tween(carouselScroll, "CanvasPosition", Vector2.new(offset, 0), 0.35)
+
+			active = wrapIndex(active, count)
+			slideIndex = active
+
+			local trackW = math.max(carouselTrack.AbsoluteSize.X, 1)
+			local trackH = math.max(carouselTrack.AbsoluteSize.Y, 1)
+			local midX = trackW * 0.5
+			local midY = trackH * 0.5
+			local step = CENTER_W * 0.5 + SIDE_GAP + SIDE_W * 0.5
+
+			for i, slide in slideEntries do
+				slide.AnchorPoint = Vector2.new(0.5, 0.5)
+				local rel = relativeOffset(i, active, count)
+				local show = count == 1 or rel == 0 or rel == -1 or rel == 1
+				slide.Visible = show
+				if not show then
+					continue
+				end
+
+				local targetW = if rel == 0 then CENTER_W else SIDE_W
+				local targetH = if rel == 0 then CAROUSEL_H - 16 else CAROUSEL_H - 28
+				local targetX = midX + rel * step
+				local targetTrans = if rel == 0 then 0 else 0.35
+				local targetZ = if rel == 0 then 3 else 2
+
+				slide.ZIndex = targetZ
+				if animate then
+					tween(slide, "Size", UDim2.fromOffset(targetW, targetH), TWEEN_SEC)
+					tween(slide, "Position", UDim2.fromOffset(targetX, midY), TWEEN_SEC)
+					tween(slide, "ImageTransparency", targetTrans, TWEEN_SEC)
+				else
+					slide.Size = UDim2.fromOffset(targetW, targetH)
+					slide.AnchorPoint = Vector2.new(0.5, 0.5)
+					slide.Position = UDim2.fromOffset(targetX, midY)
+					slide.ImageTransparency = targetTrans
+				end
+			end
+
 			for i, dot in dotFrames do
-				tween(dot, "BackgroundColor3", if i == slideIndex then curTheme.pri else curTheme.out, 0.2)
+				local color = if i == active then curTheme.pri else curTheme.out
+				if animate then
+					tween(dot, "BackgroundColor3", color, 0.2)
+				else
+					dot.BackgroundColor3 = color
+				end
 			end
 		end
 
-		local function applySlideImage(slide: ImageLabel, uri: string)
+		local function goToSlide(index: number)
+			local count = #slideEntries
+			if count <= 1 then
+				return
+			end
+			layoutCarousel(index, true)
+			lastAutoAt = os.clock()
+		end
+
+		local function waitForLoaded(slide: ImageLabel, uri: string): boolean
 			slide.Image = formatImage(uri)
-			slide.ImageTransparency = 0.4
-			task.spawn(function()
-				pcall(function()
-					ContentProvider:PreloadAsync({ slide })
-				end)
-				for _ = 1, 20 do
-					if not slide.Parent then
-						return
-					end
-					if slide.IsLoaded then
-						break
-					end
-					task.wait(0.15)
-				end
-				if slide.Parent then
-					slide.ImageTransparency = 0
-				end
+			slide.ImageTransparency = 1
+			pcall(function()
+				ContentProvider:PreloadAsync({ slide })
 			end)
+			for _ = 1, 40 do
+				if not slide.Parent then
+					return false
+				end
+				if slide.IsLoaded then
+					return true
+				end
+				task.wait(0.12)
+			end
+			return slide.IsLoaded
+		end
+
+		local function uniqueImages(images: { string }): { string }
+			local out: { string } = {}
+			local seen: { [string]: boolean } = {}
+			for _, uri in images do
+				local formatted = formatImage(uri)
+				if formatted ~= "" and not seen[formatted] then
+					seen[formatted] = true
+					table.insert(out, formatted)
+				end
+			end
+			return out
 		end
 
 		local function rebuildCarousel(images: { string })
-			for _, ch in carouselScroll:GetChildren() do
+			for _, slide in slideEntries do
+				slide:Destroy()
+			end
+			table.clear(slideEntries)
+			for _, ch in carouselTrack:GetChildren() do
 				if ch:IsA("ImageLabel") then
 					ch:Destroy()
 				end
@@ -240,21 +325,26 @@ return function(ctx)
 				carouselConn = nil
 			end
 
-			local count = #images
-			carouselScroll.CanvasSize = UDim2.new(0, math.max(0, count * 400), 1, 0)
-			for i, imgUrl in images do
-				local slide = Instance.new("ImageLabel")
-				slide.LayoutOrder = i
-				slide.Size = UDim2.new(0, 384, 1, -16)
-				slide.Position = UDim2.new(0, 0, 0, 8)
-				slide.BackgroundTransparency = 1
-				slide.ScaleType = Enum.ScaleType.Crop
-				slide.Parent = carouselScroll
-				corner(slide, 10)
-				reg(slide, "BackgroundColor3", "bg")
-				applySlideImage(slide, imgUrl)
+			local candidates = uniqueImages(images)
+			for _, uri in candidates do
+				local probe = Instance.new("ImageLabel")
+				probe.Name = "Slide"
+				probe.AnchorPoint = Vector2.new(0.5, 0.5)
+				probe.BackgroundTransparency = 1
+				probe.ScaleType = Enum.ScaleType.Crop
+				probe.Visible = false
+				probe.Parent = carouselTrack
+				corner(probe, 10)
+				reg(probe, "BackgroundColor3", "bg")
+				if waitForLoaded(probe, uri) then
+					probe.Visible = true
+					table.insert(slideEntries, probe)
+				else
+					probe:Destroy()
+				end
 			end
 
+			local count = #slideEntries
 			for i = 1, count do
 				local dot = Instance.new("Frame")
 				dot.Size = UDim2.fromOffset(8, 8)
@@ -271,15 +361,19 @@ return function(ctx)
 			nextBtn.Visible = multi
 			dots.Visible = multi
 			slideIndex = 1
-			carouselScroll.CanvasPosition = Vector2.zero
+			lastAutoAt = os.clock()
+
+			task.defer(function()
+				game:GetService("RunService").RenderStepped:Wait()
+				if #slideEntries > 0 then
+					layoutCarousel(1, false)
+				end
+			end)
 
 			if multi then
-				autoAdvance = 0
 				carouselConn = onHeartbeat(function()
-					autoAdvance += 1
-					if autoAdvance >= 240 then
-						autoAdvance = 0
-						showSlide(slideIndex + 1, count)
+					if os.clock() - lastAutoAt >= AUTO_SEC then
+						goToSlide(slideIndex + 1)
 					end
 				end)
 			end
@@ -287,13 +381,11 @@ return function(ctx)
 
 		prevBtn.MouseButton1Click:Connect(function()
 			playFeedback("light")
-			showSlide(slideIndex - 1, #dotFrames)
-			autoAdvance = 0
+			goToSlide(slideIndex - 1)
 		end)
 		nextBtn.MouseButton1Click:Connect(function()
 			playFeedback("light")
-			showSlide(slideIndex + 1, #dotFrames)
-			autoAdvance = 0
+			goToSlide(slideIndex + 1)
 		end)
 
 		task.spawn(function()
@@ -351,13 +443,8 @@ return function(ctx)
 
 			rebuildCarousel(images)
 
-			if #images > 0 and carouselScroll:FindFirstChildWhichIsA("ImageLabel") then
-				local first = carouselScroll:FindFirstChildWhichIsA("ImageLabel") :: ImageLabel
-				task.delay(3, function()
-					if first.Parent and not first.IsLoaded then
-						extraLbl.Text = "Thumbnails could not load. Executor needs request + getcustomasset, or rbxthumb support."
-					end
-				end)
+			if #slideEntries == 0 and #images > 0 then
+				extraLbl.Text = "Thumbnails could not load. Executor needs request + getcustomasset, or rbxthumb support."
 			end
 
 			if entry then
