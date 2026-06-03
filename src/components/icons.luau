@@ -27,6 +27,7 @@ return function(ctx)
 	local GuiService, ContextActionService, AssetService, Workspace, CoreGui = ctx.GuiService, ctx.ContextActionService, ctx.AssetService, ctx.Workspace, ctx.CoreGui
 	local popupLayer = ctx.popupLayer
 	local win, gui = ctx.win, ctx.gui
+	local tooltip = ctx.tooltip
 	type Palette = { bg: Color3, fg: Color3, pri: Color3, onpri: Color3, inact: Color3, out: Color3 }
 	type Callback = (...any) -> ()
 	type MediaHit = { id: number, title: string, subtitle: string? }
@@ -227,6 +228,19 @@ return function(ctx)
 				ripple(btn, curTheme.fg, UserInputService:GetMouseLocation().X, UserInputService:GetMouseLocation().Y)
 				copyIcon({ root = btn, name = icon.name, nameLower = string.lower(icon.name), id = icon.id })
 			end)
+
+			if tooltip then
+				local displayName = icon.name:gsub("_", " ")
+				tooltip.attach(btn, {
+					blocks = {
+						{ kind = "title", text = displayName },
+						{ kind = "stat", label = "Asset ID", value = tostring(icon.id) },
+						{ kind = "text", text = formatMaterialIconCode(icon.name, icon.id), muted = true },
+						{ kind = "text", text = "Click to copy", muted = true },
+					},
+					maxWidth = 280,
+				}, { delay = 0.35 })
+			end
 
 			table.insert(cells, {
 				root = btn,

@@ -48,6 +48,8 @@ export type TooltipController = {
 	attach: (target: GuiObject, content: TooltipInput, opts: TooltipAttachOptions?) -> (),
 	detach: (target: GuiObject) -> (),
 	hide: () -> (),
+	buildTitleBody: (title: string, body: string, maxWidth: number?) -> TooltipContent,
+	attachRowHint: (target: GuiObject, title: string, subtitle: string?, opts: TooltipAttachOptions?) -> (),
 }
 
 return function(ctx)
@@ -410,9 +412,28 @@ return function(ctx)
 		end)
 	)
 
+	local function buildTitleBody(title: string, body: string, maxWidth: number?): TooltipContent
+		return {
+			blocks = {
+				{ kind = "title", text = title },
+				{ kind = "text", text = body },
+			},
+			maxWidth = maxWidth or DEFAULT_MAX_W,
+		}
+	end
+
+	local function attachRowHint(target: GuiObject, title: string, subtitle: string?, opts: TooltipAttachOptions?)
+		if not subtitle or subtitle == "" then
+			return
+		end
+		attach(target, buildTitleBody(title, subtitle, if opts then opts.maxWidth else nil), opts)
+	end
+
 	ctx.tooltip = {
 		attach = attach,
 		detach = detach,
 		hide = hide,
+		buildTitleBody = buildTitleBody,
+		attachRowHint = attachRowHint,
 	} :: TooltipController
 end

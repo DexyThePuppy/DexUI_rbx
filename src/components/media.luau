@@ -27,6 +27,7 @@ return function(ctx)
 	local GuiService, ContextActionService, AssetService, Workspace, CoreGui = ctx.GuiService, ctx.ContextActionService, ctx.AssetService, ctx.Workspace, ctx.CoreGui
 	local popupLayer = ctx.popupLayer
 	local win, gui = ctx.win, ctx.gui
+	local tooltip = ctx.tooltip
 	type Palette = { bg: Color3, fg: Color3, pri: Color3, onpri: Color3, inact: Color3, out: Color3 }
 	type Callback = (...any) -> ()
 	type MediaHit = { id: number, title: string, subtitle: string? }
@@ -807,6 +808,28 @@ return function(ctx)
 					playHit(hit)
 				end
 			end)
+
+			if tooltip then
+				tooltip.attach(row, function()
+					local hit = results[pageIndex * MEDIA_PAGE_SIZE + slot]
+					if not hit then
+						return nil
+					end
+					local blocks: { any } = {
+						{ kind = "title", text = hit.title },
+					}
+					if hit.subtitle and hit.subtitle ~= "" then
+						table.insert(blocks, { kind = "text", text = hit.subtitle })
+					end
+					table.insert(blocks, { kind = "divider" })
+					table.insert(blocks, {
+						kind = "stat",
+						label = "Asset ID",
+						value = tostring(hit.id),
+					})
+					return { blocks = blocks, maxWidth = 300 }
+				end, { delay = 0.35 })
+			end
 
 			resultBtns[i] = row
 		end

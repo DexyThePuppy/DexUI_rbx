@@ -27,6 +27,7 @@ return function(ctx)
 	local GuiService, ContextActionService, AssetService, Workspace, CoreGui = ctx.GuiService, ctx.ContextActionService, ctx.AssetService, ctx.Workspace, ctx.CoreGui
 	local popupLayer = ctx.popupLayer
 	local win, gui = ctx.win, ctx.gui
+	local tooltip = ctx.tooltip
 	type Palette = { bg: Color3, fg: Color3, pri: Color3, onpri: Color3, inact: Color3, out: Color3 }
 	type Callback = (...any) -> ()
 	type MediaHit = { id: number, title: string, subtitle: string? }
@@ -53,6 +54,9 @@ return function(ctx)
 		textCol.BackgroundTransparency = 1
 		textCol.Parent = header
 		fillLabelColumn(textCol, txt, sub)
+		if tooltip and hasSub then
+			tooltip.attachRowHint(textCol, txt, sub)
+		end
 
 		local arrow = Instance.new("ImageLabel")
 		arrow.Size = UDim2.new(0, 20, 0, 20)

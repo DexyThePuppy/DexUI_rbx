@@ -15,6 +15,7 @@ return function(ctx)
 	local beginCardRow = ctx.beginCardRow
 	local playFeedback = ctx.playFeedback
 	local fontWeight = ctx.fontWeight
+	local tooltip = ctx.tooltip
 
 	local activeSessions: { any } = {}
 
@@ -41,6 +42,44 @@ return function(ctx)
 				return
 			end
 		end
+	end
+
+	local function buildScriptTooltip(entry: GameEntry): any
+		local blocks: { any } = {
+			{ kind = "title", text = entry.name },
+		}
+		if entry.description and entry.description ~= "" then
+			table.insert(blocks, { kind = "text", text = entry.description })
+		end
+		table.insert(blocks, { kind = "divider" })
+		table.insert(blocks, { kind = "stat", label = "Script", value = entry.script })
+		if entry.placeIds and #entry.placeIds > 0 then
+			local placeParts: { string } = {}
+			for _, id in entry.placeIds do
+				table.insert(placeParts, tostring(id))
+			end
+			table.insert(blocks, {
+				kind = "stat",
+				label = "Place IDs",
+				value = table.concat(placeParts, ", "),
+			})
+		end
+		if entry.universeIds and #entry.universeIds > 0 then
+			local uniParts: { string } = {}
+			for _, id in entry.universeIds do
+				table.insert(uniParts, tostring(id))
+			end
+			table.insert(blocks, {
+				kind = "stat",
+				label = "Universe IDs",
+				value = table.concat(uniParts, ", "),
+			})
+		end
+		if Registry.entryMatchesCurrent(entry) then
+			table.insert(blocks, { kind = "text", text = "Matches your current experience.", muted = true })
+		end
+		table.insert(blocks, { kind = "text", text = "Click to launch script.", muted = true })
+		return { blocks = blocks, maxWidth = 280 }
 	end
 
 	local function launchEntry(entry: GameEntry)
@@ -228,6 +267,12 @@ return function(ctx)
 				playFeedback("selection")
 				launchEntry(entry)
 			end)
+
+			if tooltip then
+				tooltip.attach(btn, function()
+					return buildScriptTooltip(entry)
+				end, { delay = 0.35 })
+			end
 
 			regDynamic(function(theme, dur)
 				if isCurrent then
