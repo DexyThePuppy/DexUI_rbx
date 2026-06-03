@@ -238,7 +238,9 @@ local function makeUI(titleText: string?, options: MakeUIOptions?): Window
     win.ClipsDescendants = true
 	win.Parent = gui
 	reg(win, "BackgroundColor3", "bg")
-	corner(win, 16)
+	local WIN_CORNER = 16
+	corner(win, WIN_CORNER)
+	ctx.WindowCornerRadius = WIN_CORNER
 
 	local function fadeInWin(duration: number?)
 		local mask = Instance.new("Frame")

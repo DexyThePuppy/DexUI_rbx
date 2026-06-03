@@ -65,7 +65,9 @@ return function(ctx)
 	local Config = ctx.config
 	local curTheme = ctx.theme
 	local reg = ctx.reg
+	local corner = ctx.corner
 	local m3Font = ctx.m3Font
+	local winCorner = if type(ctx.WindowCornerRadius) == "number" then ctx.WindowCornerRadius else 16
 
 	type SegmentRow = FooterSegment & { align: string }
 	type LabelEntry = { id: string, lbl: TextLabel, kind: string }
@@ -266,15 +268,26 @@ return function(ctx)
 		local height = runtimeConfig.Height or 28
 		ctx.FooterHeight = height
 
+		-- CanvasGroup + UICorner clips the footer to the window's bottom curve (a plain
+		-- Frame would paint square corners inside the rounded window).
+		local wrap = Instance.new("CanvasGroup")
+		wrap.Name = "FooterWrap"
+		wrap.AnchorPoint = Vector2.new(0, 1)
+		wrap.Position = UDim2.new(0, 0, 1, 0)
+		wrap.Size = UDim2.new(1, 0, 0, height)
+		wrap.BorderSizePixel = 0
+		wrap.BackgroundTransparency = 1
+		wrap.ZIndex = 68
+		wrap.Parent = win
+		corner(wrap, winCorner)
+
 		local bar = Instance.new("Frame")
 		bar.Name = "Footer"
-		bar.AnchorPoint = Vector2.new(0, 1)
-		bar.Position = UDim2.new(0, 0, 1, 0)
-		bar.Size = UDim2.new(1, 0, 0, height)
+		bar.Size = UDim2.fromScale(1, 1)
 		bar.BorderSizePixel = 0
 		bar.ZIndex = 68
 		bar.ClipsDescendants = true
-		bar.Parent = win
+		bar.Parent = wrap
 		reg(bar, "BackgroundColor3", "inact")
 		bar.BackgroundTransparency = runtimeConfig.BackgroundTransparency or 0.35
 		footerBar = bar
