@@ -29,6 +29,7 @@ local componentFactories = {
 	require("../components/media"),
 	require("../components/icons"),
 	require("../components/notifications"),
+	require("../components/tooltip"),
 	require("../components/scripts-hub"),
 	require("../components/game-info"),
 }

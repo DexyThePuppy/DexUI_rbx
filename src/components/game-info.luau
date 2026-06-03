@@ -16,6 +16,7 @@ return function(ctx)
 	local onHeartbeat = ctx.onHeartbeat
 	local playFeedback = ctx.playFeedback
 	local trySetClipboard = ctx.trySetClipboard
+	local tooltip = ctx.tooltip
 	local MEDIA_PAGE_SIZE, MEDIA_PAGE_COUNT = ctx.MEDIA_PAGE_SIZE, ctx.MEDIA_PAGE_COUNT
 	local ContentProvider = Services.ContentProvider or game:GetService("ContentProvider")
 	local Players = game:GetService("Players")
@@ -516,7 +517,10 @@ return function(ctx)
 
 		local function clearBadgeGrid()
 			for _, ch in badgeGrid:GetChildren() do
-				if ch:IsA("Frame") and ch.Name:find("Badge", 1, true) == 1 then
+				if ch:IsA("GuiButton") and ch.Name:find("Badge", 1, true) == 1 then
+					if tooltip then
+						tooltip.detach(ch)
+					end
 					ch:Destroy()
 				end
 			end
@@ -542,9 +546,11 @@ return function(ctx)
 			badgesHeading.Text = string.format("Badges · %d / %s claimed", claimed, totalLabel)
 
 			for i, badge in badges do
-				local cell = Instance.new("Frame")
+				local cell = Instance.new("TextButton")
 				cell.Name = "Badge" .. tostring(badge.id)
 				cell.LayoutOrder = i
+				cell.Text = ""
+				cell.AutoButtonColor = false
 				cell.Size = UDim2.fromOffset(BADGE_CELL_W, BADGE_CELL_H)
 				cell.BackgroundTransparency = if badge.claimed then 0.35 else 0.55
 				cell.BorderSizePixel = 0
@@ -560,6 +566,8 @@ return function(ctx)
 				icon.BackgroundTransparency = 1
 				icon.ScaleType = Enum.ScaleType.Fit
 				icon.ImageTransparency = if badge.claimed then 0 else 0.45
+				icon.Active = false
+				icon.Selectable = false
 				icon.Parent = cell
 				local uri = badgeThumbUri(badge)
 				if uri then
@@ -578,6 +586,8 @@ return function(ctx)
 					tick.FontFace = fontWeight(Enum.FontWeight.Bold)
 					tick.TextSize = 12
 					tick.TextColor3 = VIP_BADGE_ON
+					tick.Active = false
+					tick.Selectable = false
 					tick.Parent = cell
 					corner(tick, 999)
 				end
@@ -593,7 +603,17 @@ return function(ctx)
 				nameLbl.TextWrapped = true
 				nameLbl.TextYAlignment = Enum.TextYAlignment.Top
 				nameLbl.TextColor3 = if badge.claimed then curTheme.fg else curTheme.out
+				nameLbl.Active = false
+				nameLbl.Selectable = false
 				nameLbl.Parent = cell
+
+				local tipText = badge.description
+				if not tipText or tipText == "" then
+					tipText = badge.displayName or badge.name
+				end
+				if tooltip and tipText and tipText ~= "" then
+					tooltip.attach(cell, tipText, { maxWidth = 260 })
+				end
 			end
 
 			local rows = math.max(1, math.ceil(count / BADGE_COLS))
