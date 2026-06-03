@@ -734,6 +734,7 @@ pressManualDropper = function(force)
 	return false
 end
 
+local function buttonCostLabel(btn)
 	if btn:FindFirstChild("Price") then return fmtGameMoney(btn.Price.Value) end
 	if btn:FindFirstChild("RebirthPrice") then return btn.RebirthPrice.Value .. " rebirth" end
 	if btn:FindFirstChild("GamepassPrice") then return "Robux pass" end

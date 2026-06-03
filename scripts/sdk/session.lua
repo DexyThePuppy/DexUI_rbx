@@ -43,6 +43,11 @@ return function(manifest, DexUI)
 		session = nil,
 		log = { verbose = false, phase = "boot", bootClock = os.clock() },
 		notifDuration = notifDuration,
+		notify = {},
+		feedback = {},
+		loop = {},
+		dexui = {},
+		fmt = {},
 	}
 
 	-- Optional extra fields (game-specific handles on ctx root).
