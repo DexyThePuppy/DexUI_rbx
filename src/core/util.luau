@@ -20,16 +20,17 @@ local TextSizes = {
 }
 
 local function tierFromNumber(size: number): string
-	if size <= TextSizes.sm then
+	-- Map legacy pixel sizes onto the three tiers (minimum readable = sm).
+	if size <= TextSizes.sm + 1 then
 		return "sm"
 	end
-	if size <= TextSizes.md then
+	if size <= TextSizes.md + 1 then
 		return "md"
 	end
 	return "lg"
 end
 
--- Universal typography: only sm (12), md (14), lg (18). Accepts tier string or legacy pixel value.
+-- Universal typography: only sm / md / lg. Accepts tier string or legacy pixel value.
 local function textSize(tier: string | number): number
 	if type(tier) == "number" then
 		tier = tierFromNumber(tier)
@@ -37,7 +38,8 @@ local function textSize(tier: string | number): number
 	if type(tier) ~= "string" then
 		return TextSizes.md
 	end
-	return TextSizes[tier] or TextSizes.md
+	local key = string.lower(tier)
+	return TextSizes[key] or TextSizes.md
 end
 
 local M3_EASE = Enum.EasingStyle.Exponential

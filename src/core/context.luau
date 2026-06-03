@@ -39,6 +39,7 @@ return function(deps: Deps)
 	local tween = Util.tween
 	local corner = Util.corner
 	local textSize = Util.textSize
+	local HubGrid = require("./hub-grid")
 	local fontWeight = Fonts.fontWeight
 	local m3Font = Fonts.m3Font
 
@@ -452,9 +453,12 @@ return function(deps: Deps)
 		CARD_ROW_PAD_X = CARD_ROW_PAD_X,
 		CARD_ROW_PAD_Y = CARD_ROW_PAD_Y,
 
-		-- fonts
+		-- fonts / typography
 		m3Font = m3Font,
 		fontWeight = fontWeight,
+		textSize = textSize,
+		TextSizes = Util.TextSizes,
+		hubGrid = HubGrid,
 
 		-- sound
 		playFeedback = Sound.playFeedback,

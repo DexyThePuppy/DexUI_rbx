@@ -59,7 +59,8 @@ local function buildDemo(withIntro: boolean?)
 	ui:AddTab("Scripts", 6023426986) -- find_in_page
 	ui:AddParagraph(
 		"Scripts hub",
-		"Grid from scripts/index.lua (workspace files, not GitHub). Run build.ps1 -Stage or copy scripts/ next to the bundle so launch works."
+		"Grid of games from scripts/index.lua in your executor workspace (not fetched from GitHub). "
+			.. "Click a card to run that game's script via readfile. Use build.ps1 -Stage to copy scripts/ beside the bundle."
 	)
 	ui:PopulateScriptsHub()
 

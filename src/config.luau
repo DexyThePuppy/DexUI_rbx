@@ -7,11 +7,23 @@ return {
 	GuiName = "DexUI",
 	Version = "1.0.0",
 
-	-- Universal UI text scale (only these three sizes are used across DexUI).
+	-- Universal text tiers (only sm / md / lg — no smaller than Small).
 	Typography = {
 		Small = 12,
 		Medium = 14,
 		Large = 18,
+	},
+
+	-- Compact hub / badge grids (scripts, tools, icons, game info badges).
+	HubGrid = {
+		ScrollPad = 8,
+		CellGap = 6,
+		ScriptsCell = { 118, 138 },
+		ToolsCell = { 124, 146 },
+		IconsCell = { 84, 76 },
+		BadgeCell = { 72, 86 },
+		BadgeIcon = 44,
+		BadgeCols = 4,
 	},
 
 	-- Intro
@@ -74,6 +86,7 @@ return {
 		BackgroundTransparency = 0.35,
 		ShowTopDivider = true,
 		PaddingX = 14,
+		TextSize = 12,
 		Layout = "split",
 		Clock = {
 			Enabled = true,

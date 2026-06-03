@@ -55,9 +55,9 @@ export type TooltipController = {
 return function(ctx)
 	local reg = ctx.reg
 	local corner = ctx.corner
-	local textSize = ctx.textSize
 	local m3Font = ctx.m3Font
 	local fontWeight = ctx.fontWeight
+	local textSize = ctx.textSize
 	local popupLayer = ctx.popupLayer
 	local track = ctx.track
 	local onHeartbeat = ctx.onHeartbeat

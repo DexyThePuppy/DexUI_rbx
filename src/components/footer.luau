@@ -66,8 +66,8 @@ return function(ctx)
 	local curTheme = ctx.theme
 	local reg = ctx.reg
 	local corner = ctx.corner
-	local textSize = ctx.textSize
 	local m3Font = ctx.m3Font
+	local textSize = ctx.textSize
 	local winCorner = if type(ctx.WindowCornerRadius) == "number" then ctx.WindowCornerRadius else 16
 
 	type SegmentRow = FooterSegment & { align: string }
@@ -181,7 +181,9 @@ return function(ctx)
 		lbl.AutomaticSize = Enum.AutomaticSize.XY
 		lbl.BackgroundTransparency = 1
 		lbl.FontFace = m3Font
-		lbl.TextSize = if runtimeConfig.TextSize then textSize(runtimeConfig.TextSize) else textSize("sm")
+		lbl.TextSize = if type(runtimeConfig.TextSize) == "number"
+			then textSize(runtimeConfig.TextSize)
+			else textSize("sm")
 		lbl.TextXAlignment = Enum.TextXAlignment.Left
 		lbl.Text = resolveSegmentText(seg)
 		lbl.Parent = parent

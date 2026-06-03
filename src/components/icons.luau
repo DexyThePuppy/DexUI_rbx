@@ -29,10 +29,7 @@ return function(ctx)
 	local win, gui = ctx.win, ctx.gui
 	local tooltip = ctx.tooltip
 	local textSize = ctx.textSize
-
-	local GRID_PAD = 6
-	local CELL_W, CELL_H = 82, 74
-	local CELL_GAP = 5
+	local hubGrid = ctx.hubGrid
 	type Palette = { bg: Color3, fg: Color3, pri: Color3, onpri: Color3, inact: Color3, out: Color3 }
 	type Callback = (...any) -> ()
 	type MediaHit = { id: number, title: string, subtitle: string? }
@@ -112,22 +109,26 @@ return function(ctx)
 		gridScroll.AutomaticCanvasSize = Enum.AutomaticSize.Y
 		gridScroll.Parent = gridHost
 
+		local pad = hubGrid.scrollPad
+		local gap = hubGrid.cellGap
+		local cellW, cellH = hubGrid.iconsCell[1], hubGrid.iconsCell[2]
+
 		local gridPad = Instance.new("UIPadding")
-		gridPad.PaddingTop = UDim.new(0, GRID_PAD)
-		gridPad.PaddingBottom = UDim.new(0, GRID_PAD)
-		gridPad.PaddingLeft = UDim.new(0, GRID_PAD)
-		gridPad.PaddingRight = UDim.new(0, GRID_PAD)
+		gridPad.PaddingTop = UDim.new(0, pad)
+		gridPad.PaddingBottom = UDim.new(0, pad)
+		gridPad.PaddingLeft = UDim.new(0, pad)
+		gridPad.PaddingRight = UDim.new(0, pad)
 		gridPad.Parent = gridScroll
 
 		local gridInner = Instance.new("Frame")
-		gridInner.Size = UDim2.new(1, -(GRID_PAD * 2), 0, 0)
+		gridInner.Size = UDim2.new(1, -(pad * 2), 0, 0)
 		gridInner.AutomaticSize = Enum.AutomaticSize.Y
 		gridInner.BackgroundTransparency = 1
 		gridInner.Parent = gridScroll
 
 		local gridLayout = Instance.new("UIGridLayout")
-		gridLayout.CellSize = UDim2.fromOffset(CELL_W, CELL_H)
-		gridLayout.CellPadding = UDim2.fromOffset(CELL_GAP, CELL_GAP)
+		gridLayout.CellSize = UDim2.fromOffset(cellW, cellH)
+		gridLayout.CellPadding = UDim2.fromOffset(gap, gap)
 		gridLayout.SortOrder = Enum.SortOrder.LayoutOrder
 		gridLayout.Parent = gridInner
 
@@ -197,7 +198,7 @@ return function(ctx)
 			reg(state, "BackgroundColor3", "fg")
 
 			local iconImg = Instance.new("ImageLabel")
-			iconImg.Size = UDim2.fromOffset(34, 34)
+			iconImg.Size = UDim2.fromOffset(36, 36)
 			iconImg.AnchorPoint = Vector2.new(0.5, 0)
 			iconImg.Position = UDim2.new(0.5, 0, 0, 8)
 			iconImg.BackgroundTransparency = 1

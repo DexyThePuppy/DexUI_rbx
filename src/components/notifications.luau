@@ -104,7 +104,6 @@ return function(ctx)
 	local regDynamic = ctx.regDynamic
 	local tween = ctx.tween
 	local corner = ctx.corner
-	local textSize = ctx.textSize
 	local fontWeight = ctx.fontWeight
 	local playFeedback = ctx.playFeedback
 	local playNotificationSound = ctx.playNotificationSound
@@ -112,6 +111,7 @@ return function(ctx)
 	local TweenService = ctx.TweenService
 	local gui = ctx.gui
 	local Config = ctx.config
+	local textSize = ctx.textSize
 
 	local runtimeStyle: NotificationStyle = {}
 	local notifStack: Frame
@@ -149,7 +149,7 @@ return function(ctx)
 			Gap = cfg.Gap or 5,
 			PadRight = cfg.PadRight or 18,
 			PadInner = cfg.PadInner or 12,
-			TextSize = if cfg.TextSize then textSize(cfg.TextSize) else textSize("lg"),
+			TextSize = if type(cfg.TextSize) == "number" then textSize(cfg.TextSize) else textSize("lg"),
 			CornerRadius = cfg.CornerRadius or 10,
 			StackAnchor = cfg.StackAnchor or Vector2.new(1, 0.5),
 			StackPosition = cfg.StackPosition or UDim2.new(1, -16, 0.5, 0),
