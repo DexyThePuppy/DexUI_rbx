@@ -20,7 +20,7 @@ return {
 		Large = 22, -- section titles (M3 Title Large)
 		WeightAdjustment = 300,
 		Weight = {
-			Body = 400,
+			Body = 500, -- 800 with WeightAdjustment (+300)
 			Emphasis = 500, -- buttons, chips, row titles
 			Title = 700, -- section headings, paragraph titles
 			Display = 900, -- intro / hero moments
