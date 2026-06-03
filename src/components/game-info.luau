@@ -206,8 +206,67 @@ return function(ctx)
 		-- Description
 		local descSection = makeSection(3)
 
+		local VIP_BADGE_RED = Color3.fromRGB(210, 48, 48)
+		local VIP_BADGE_ON = Color3.fromRGB(255, 255, 255)
+
+		local settingsRow = Instance.new("Frame")
+		settingsRow.Name = "Settings"
+		settingsRow.LayoutOrder = 0
+		settingsRow.Size = UDim2.new(1, 0, 0, 0)
+		settingsRow.AutomaticSize = Enum.AutomaticSize.Y
+		settingsRow.BackgroundTransparency = 1
+		settingsRow.Parent = descSection
+
+		local settingsLayout = Instance.new("UIListLayout")
+		settingsLayout.FillDirection = Enum.FillDirection.Horizontal
+		settingsLayout.Padding = UDim.new(0, 6)
+		settingsLayout.SortOrder = Enum.SortOrder.LayoutOrder
+		settingsLayout.Parent = settingsRow
+
+		local function clearSettingBadges()
+			for _, ch in settingsRow:GetChildren() do
+				if ch:IsA("Frame") and ch.Name == "Badge" then
+					ch:Destroy()
+				end
+			end
+		end
+
+		local function addSettingBadge(label: string, bg: Color3, fg: Color3)
+			local badge = Instance.new("Frame")
+			badge.Name = "Badge"
+			badge.Size = UDim2.fromOffset(0, 22)
+			badge.AutomaticSize = Enum.AutomaticSize.X
+			badge.BackgroundColor3 = bg
+			badge.BorderSizePixel = 0
+			badge.Parent = settingsRow
+			corner(badge, 6)
+
+			local pad = Instance.new("UIPadding")
+			pad.PaddingLeft = UDim.new(0, 8)
+			pad.PaddingRight = UDim.new(0, 8)
+			pad.Parent = badge
+
+			local lbl = Instance.new("TextLabel")
+			lbl.Size = UDim2.fromOffset(0, 22)
+			lbl.AutomaticSize = Enum.AutomaticSize.X
+			lbl.BackgroundTransparency = 1
+			lbl.Text = label
+			lbl.FontFace = fontWeight(Enum.FontWeight.Medium)
+			lbl.TextSize = 11
+			lbl.TextColor3 = fg
+			lbl.Parent = badge
+		end
+
+		local function renderGameSettings(meta: any)
+			clearSettingBadges()
+			if meta.privateServersEnabled == true then
+				addSettingBadge("VIP server", VIP_BADGE_RED, VIP_BADGE_ON)
+			end
+			settingsRow.Visible = settingsRow:FindFirstChild("Badge") ~= nil
+		end
+
 		local bodyLbl = Instance.new("TextLabel")
-		bodyLbl.LayoutOrder = 0
+		bodyLbl.LayoutOrder = 1
 		bodyLbl.Size = UDim2.new(1, 0, 0, 0)
 		bodyLbl.AutomaticSize = Enum.AutomaticSize.Y
 		bodyLbl.BackgroundTransparency = 1
@@ -221,7 +280,7 @@ return function(ctx)
 		reg(bodyLbl, "TextColor3", "fg")
 
 		local extraLbl = Instance.new("TextLabel")
-		extraLbl.LayoutOrder = 1
+		extraLbl.LayoutOrder = 2
 		extraLbl.Size = UDim2.new(1, 0, 0, 0)
 		extraLbl.AutomaticSize = Enum.AutomaticSize.Y
 		extraLbl.BackgroundTransparency = 1
@@ -235,14 +294,14 @@ return function(ctx)
 
 		makeDivider(4)
 
-		-- Private servers (sorted low → high, paged like Media tab)
+		-- Public servers (sorted low → high, paged like Media tab)
 		local serversSection = makeSection(5)
 
 		local serversHeading = Instance.new("TextLabel")
 		serversHeading.LayoutOrder = 0
 		serversHeading.Size = UDim2.new(1, 0, 0, 20)
 		serversHeading.BackgroundTransparency = 1
-		serversHeading.Text = "Private servers"
+		serversHeading.Text = "Public servers"
 		serversHeading.FontFace = fontWeight(Enum.FontWeight.Medium)
 		serversHeading.TextSize = 14
 		serversHeading.TextXAlignment = Enum.TextXAlignment.Left
@@ -254,7 +313,7 @@ return function(ctx)
 		serversStatusLbl.Size = UDim2.new(1, 0, 0, 0)
 		serversStatusLbl.AutomaticSize = Enum.AutomaticSize.Y
 		serversStatusLbl.BackgroundTransparency = 1
-		serversStatusLbl.Text = "Loading private servers…"
+		serversStatusLbl.Text = "Loading public servers…"
 		serversStatusLbl.FontFace = m3Font
 		serversStatusLbl.TextSize = 11
 		serversStatusLbl.TextXAlignment = Enum.TextXAlignment.Left
@@ -274,15 +333,16 @@ return function(ctx)
 		serversListLayout.Padding = UDim.new(0, 6)
 		serversListLayout.Parent = serversList
 
-		local privateServers: { any } = {}
+		local publicServers: { any } = {}
+		local joinPlaceId = game.PlaceId
 		local serverPageIndex = 0
 		local serverRowBtns: { Frame } = {}
 
 		local function serverPageCount(): number
-			if #privateServers == 0 then
+			if #publicServers == 0 then
 				return 0
 			end
-			return math.ceil(#privateServers / MEDIA_PAGE_SIZE)
+			return math.ceil(#publicServers / MEDIA_PAGE_SIZE)
 		end
 
 		for i = 1, MEDIA_PAGE_SIZE do
@@ -338,7 +398,7 @@ return function(ctx)
 
 			local slot = i
 			joinBtn.MouseButton1Click:Connect(function()
-				local srv = privateServers[serverPageIndex * MEDIA_PAGE_SIZE + slot]
+				local srv = publicServers[serverPageIndex * MEDIA_PAGE_SIZE + slot]
 				if not srv then
 					return
 				end
@@ -347,9 +407,9 @@ return function(ctx)
 				if not player then
 					return
 				end
-				serversStatusLbl.Text = "Joining " .. srv.name .. "…"
+				serversStatusLbl.Text = "Joining server…"
 				pcall(function()
-					TeleportService:TeleportToPrivateServer(game.PlaceId, srv.accessCode, { player })
+					TeleportService:TeleportToPlaceInstance(joinPlaceId, srv.id, player)
 				end)
 			end)
 
@@ -389,25 +449,37 @@ return function(ctx)
 			end
 		end
 
-		local function renderPrivateServers()
+		local function formatServerStatus(srv: any): string
+			local parts = {}
+			if srv.maxPlayers > 0 then
+				table.insert(parts, string.format("%d / %d players", srv.playing, srv.maxPlayers))
+			else
+				table.insert(parts, string.format("%d players", srv.playing))
+			end
+			if srv.ping then
+				table.insert(parts, srv.ping .. " ms")
+			end
+			if srv.fps then
+				table.insert(parts, string.format("%.0f fps", srv.fps))
+			end
+			return table.concat(parts, " · ")
+		end
+
+		local function renderPublicServers()
 			local pages = serverPageCount()
 			if pages > 0 and serverPageIndex >= pages then
 				serverPageIndex = pages - 1
 			end
 			local startIdx = serverPageIndex * MEDIA_PAGE_SIZE + 1
 			for i = 1, MEDIA_PAGE_SIZE do
-				local srv = privateServers[startIdx + i - 1]
+				local srv = publicServers[startIdx + i - 1]
 				local row = serverRowBtns[i]
 				if srv then
 					row.Visible = true
 					local title = row:FindFirstChild("Title") :: TextLabel
 					local sub = row:FindFirstChild("Subtitle") :: TextLabel
-					title.Text = srv.name
-					if srv.maxPlayers > 0 then
-						sub.Text = string.format("%d / %d players", srv.playing, srv.maxPlayers)
-					else
-						sub.Text = string.format("%d players", srv.playing)
-					end
+					title.Text = "Server " .. string.sub(srv.id, 1, 8)
+					sub.Text = formatServerStatus(srv)
 				else
 					row.Visible = false
 				end
@@ -433,11 +505,11 @@ return function(ctx)
 			btn.MouseButton1Click:Connect(function()
 				if pageNum < serverPageCount() then
 					serverPageIndex = pageNum
-					renderPrivateServers()
+					renderPublicServers()
 					local pages = serverPageCount()
 					serversStatusLbl.Text = string.format(
 						"%d server(s) · players low → high · page %d / %d",
-						#privateServers,
+						#publicServers,
 						serverPageIndex + 1,
 						math.max(1, pages)
 					)
@@ -465,10 +537,10 @@ return function(ctx)
 			end
 			if serverPageIndex < pages - 1 then
 				serverPageIndex += 1
-				renderPrivateServers()
+				renderPublicServers()
 				serversStatusLbl.Text = string.format(
 					"%d server(s) · players low → high · page %d / %d",
-					#privateServers,
+					#publicServers,
 					serverPageIndex + 1,
 					pages
 				)
@@ -711,7 +783,7 @@ return function(ctx)
 			if not ok or type(meta) ~= "table" or not holder.Parent then
 				titleLbl.Text = "Current experience"
 				bodyLbl.Text = "Could not load game metadata. Check HttpService / executor request support."
-				serversStatusLbl.Text = "Private servers unavailable."
+				serversStatusLbl.Text = "Public servers unavailable."
 				return
 			end
 
@@ -745,6 +817,7 @@ return function(ctx)
 				then entry.description
 				else (meta.description or "No description returned for this universe.")
 
+			renderGameSettings(meta)
 			bodyLbl.Text = description
 
 			local images: { string } = {}
@@ -775,21 +848,21 @@ return function(ctx)
 				)
 			end
 
-			local listPlaceId = meta.rootPlaceId or meta.placeId
-			local servers, serversErr = GameMetadata.fetchPrivateServers(listPlaceId)
-			privateServers = servers
+			joinPlaceId = meta.rootPlaceId or meta.placeId
+			local servers, serversErr = GameMetadata.fetchPublicServers(joinPlaceId)
+			publicServers = servers
 			serverPageIndex = 0
-			renderPrivateServers()
+			renderPublicServers()
 
 			local pages = serverPageCount()
-			if #privateServers == 0 then
-				serversStatusLbl.Text = serversErr or "No private servers found for this experience."
+			if #publicServers == 0 then
+				serversStatusLbl.Text = serversErr or "No public servers returned for this experience."
 				pagerRow.Visible = false
 			else
 				pagerRow.Visible = pages > 1
 				serversStatusLbl.Text = string.format(
 					"%d server(s) · players low → high · page %d / %d",
-					#privateServers,
+					#publicServers,
 					1,
 					math.max(1, pages)
 				)

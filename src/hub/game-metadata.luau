@@ -19,13 +19,15 @@ export type GameMetadata = {
 	playing: number?,
 	visits: number?,
 	images: { string },
+	privateServersEnabled: boolean?,
 }
 
-export type PrivateServerEntry = {
-	name: string,
+export type PublicServerEntry = {
+	id: string,
 	playing: number,
 	maxPlayers: number,
-	accessCode: string,
+	ping: number?,
+	fps: number?,
 }
 
 local CDN_CACHE_FOLDER = "DexUI/thumbnails"
@@ -242,44 +244,56 @@ local function fetchLoadableThumbnailUris(universeId: number, iconAssetId: numbe
 	return uris
 end
 
-local MAX_PRIVATE_SERVER_PAGES = 8
+local function fetchPrivateServersEnabled(universeId: number): boolean?
+	local data = httpGetJson(
+		"https://games.roblox.com/v1/private-servers/enabled-in-universe/" .. tostring(universeId)
+	)
+	if type(data) == "table" and type(data.privateServersEnabled) == "boolean" then
+		return data.privateServersEnabled
+	end
+	return nil
+end
 
-local function fetchPrivateServers(placeId: number): ({ PrivateServerEntry }, string?)
-	local entries: { PrivateServerEntry } = {}
+local MAX_PUBLIC_SERVER_PAGES = 6
+local PUBLIC_SERVER_PAGE_LIMIT = 100
+
+local function fetchPublicServers(placeId: number): ({ PublicServerEntry }, string?)
+	local entries: { PublicServerEntry } = {}
 	local cursor: string? = nil
 
-	for _ = 1, MAX_PRIVATE_SERVER_PAGES do
-		local url = string.format("https://games.roblox.com/v1/games/%d/private-servers?limit=50", placeId)
+	for _ = 1, MAX_PUBLIC_SERVER_PAGES do
+		local url = string.format(
+			"https://games.roblox.com/v1/games/%d/servers/Public?sortOrder=Asc&excludeFullGames=false&limit=%d",
+			placeId,
+			PUBLIC_SERVER_PAGE_LIMIT
+		)
 		if cursor then
-			url ..= "&exclusiveStartKeyCursor=" .. HttpService:UrlEncode(cursor)
+			url ..= "&cursor=" .. HttpService:UrlEncode(cursor)
 		end
 
 		local data = httpGetJson(url)
 		if type(data) ~= "table" then
 			if #entries == 0 then
-				return {}, "Could not load private servers (HTTP failed or guest — cookie auth may be required)."
+				return {}, "Could not load public servers (HTTP failed)."
 			end
 			break
 		end
 
 		if type(data.errors) == "table" and #data.errors > 0 and #entries == 0 then
-			local msg = if type(data.errors[1].message) == "string" then data.errors[1].message else "Private servers unavailable."
+			local msg = if type(data.errors[1].message) == "string" then data.errors[1].message else "Public servers unavailable."
 			return {}, msg
 		end
 
 		if type(data.data) == "table" then
 			for _, row in data.data do
-				if type(row) == "table" then
-					local code = if type(row.accessCode) == "string" then row.accessCode else row.joinCode
-					local active = row.active
-					if type(code) == "string" and code ~= "" and (active == nil or active == true) then
-						table.insert(entries, {
-							name = if type(row.name) == "string" and row.name ~= "" then row.name else "Private server",
-							playing = if type(row.playing) == "number" then row.playing else 0,
-							maxPlayers = if type(row.maxPlayers) == "number" then row.maxPlayers else 0,
-							accessCode = code,
-						})
-					end
+				if type(row) == "table" and type(row.id) == "string" and row.id ~= "" then
+					table.insert(entries, {
+						id = row.id,
+						playing = if type(row.playing) == "number" then row.playing else 0,
+						maxPlayers = if type(row.maxPlayers) == "number" then row.maxPlayers else 0,
+						ping = if type(row.ping) == "number" then row.ping else nil,
+						fps = if type(row.fps) == "number" then row.fps else nil,
+					})
 				end
 			end
 		end
@@ -294,7 +308,10 @@ local function fetchPrivateServers(placeId: number): ({ PrivateServerEntry }, st
 		if a.playing ~= b.playing then
 			return a.playing < b.playing
 		end
-		return a.name < b.name
+		if (a.ping or 9999) ~= (b.ping or 9999) then
+			return (a.ping or 9999) < (b.ping or 9999)
+		end
+		return a.id < b.id
 	end)
 
 	return entries, nil
@@ -347,11 +364,13 @@ local function fetchCurrentGameMetadata(): GameMetadata
 		playing = playing,
 		visits = visits,
 		images = images,
+		privateServersEnabled = fetchPrivateServersEnabled(universeId),
 	}
 end
 
 return {
 	fetchCurrentGameMetadata = fetchCurrentGameMetadata,
-	fetchPrivateServers = fetchPrivateServers,
+	fetchPublicServers = fetchPublicServers,
+	fetchPrivateServersEnabled = fetchPrivateServersEnabled,
 	placeThumb = placeThumb,
 }
