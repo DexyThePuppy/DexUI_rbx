@@ -11,31 +11,24 @@ local TYPO = Config.Typography or {}
 local NumericWeight = Typography.NumericWeight
 local numericToFontWeight = Typography.numericToFontWeight
 
--- Built-in family with real per-weight masters (Gotham SSm).
-local BUILTIN_FAMILY = TYPO.Family or "rbxasset://fonts/families/GothamSSm.json"
+-- Poppins cloud family (Thin–Heavy). https://create.roblox.com/docs/reference/engine/datatypes/Font
+local BUILTIN_FAMILY = TYPO.Family or "rbxassetid://11702779409"
 
+local GLYPH_BASE = "https://github.com/google/fonts/raw/main/ofl/poppins"
 local GLYPH_FILES = {
-	regular = {
-		file = "Roboto-Regular.ttf",
-		url = "https://github.com/google/fonts/raw/main/apache/roboto/static/Roboto-Regular.ttf",
-	},
-	medium = {
-		file = "Roboto-Medium.ttf",
-		url = "https://github.com/google/fonts/raw/main/apache/roboto/static/Roboto-Medium.ttf",
-	},
-	bold = {
-		file = "Roboto-Bold.ttf",
-		url = "https://github.com/google/fonts/raw/main/apache/roboto/static/Roboto-Bold.ttf",
-	},
-	black = {
-		file = "Roboto-Black.ttf",
-		url = "https://github.com/google/fonts/raw/main/apache/roboto/static/Roboto-Black.ttf",
-	},
+	regular = { file = "Poppins-Regular.ttf", url = GLYPH_BASE .. "/Poppins-Regular.ttf" },
+	medium = { file = "Poppins-Medium.ttf", url = GLYPH_BASE .. "/Poppins-Medium.ttf" },
+	bold = { file = "Poppins-Bold.ttf", url = GLYPH_BASE .. "/Poppins-Bold.ttf" },
+	extrabold = { file = "Poppins-ExtraBold.ttf", url = GLYPH_BASE .. "/Poppins-ExtraBold.ttf" },
+	black = { file = "Poppins-Black.ttf", url = GLYPH_BASE .. "/Poppins-Black.ttf" },
 }
 
 local function glyphSlot(numeric: number): string
 	if numeric >= 900 then
 		return "black"
+	end
+	if numeric >= 800 then
+		return "extrabold"
 	end
 	if numeric >= 700 then
 		return "bold"
@@ -47,7 +40,12 @@ local function glyphSlot(numeric: number): string
 end
 
 local function canLoadCustomFamily(): boolean
-	return isfolder and makefolder and isfile and writefile and getcustomasset
+	return TYPO.UseCustomFamilyFiles == true
+		and isfolder
+		and makefolder
+		and isfile
+		and writefile
+		and getcustomasset
 end
 
 local function ensureGlyph(folder: string, spec: { file: string, url: string }): string?
@@ -64,14 +62,14 @@ local function ensureGlyph(folder: string, spec: { file: string, url: string }):
 	return getcustomasset(path)
 end
 
--- Executor path: build a font-family JSON with one TTF per weight tier.
+-- Optional: offline executor build from Google Fonts TTFs (defaults to cloud Poppins).
 local function loadCustomFamilyUri(): string?
 	if not canLoadCustomFamily() then
 		return nil
 	end
 
 	local folderName = "DexUI Font Assets"
-	local jsonName = "dexui-family.json"
+	local jsonName = "dexui-poppins.json"
 	if not isfolder(folderName) then
 		makefolder(folderName)
 	end
@@ -87,7 +85,7 @@ local function loadCustomFamilyUri(): string?
 
 	local faces = {}
 	local roleOrder = { "body", "emphasis", "title", "display" }
-	for i, role in roleOrder do
+	for _, role in roleOrder do
 		local weight = NumericWeight[role]
 		local slot = glyphSlot(weight)
 		table.insert(faces, {
@@ -99,7 +97,7 @@ local function loadCustomFamilyUri(): string?
 	end
 
 	local fontJson = {
-		name = "DexUI_Roboto",
+		name = "DexUI_Poppins",
 		faces = faces,
 	}
 

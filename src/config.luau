@@ -9,10 +9,11 @@ return {
 
 	-- MUI/M3-style type scale: fixed tiers + per-role weights (see core/typography.luau).
 	-- WeightAdjustment mirrors Android accessibility Bold text (+300, clamped 1–1000).
-	-- Family: Roblox built-in font with real Bold/Medium/Heavy masters (Font.new picks by weight).
-	-- Executor builds a custom family from separate TTFs per tier (see core/fonts.luau).
+	-- Family: Poppins cloud asset (real per-weight masters). Set UseCustomFamilyFiles to
+	-- download Google Fonts TTFs in the executor instead (see core/fonts.luau).
 	Typography = {
-		Family = "rbxasset://fonts/families/GothamSSm.json",
+		Family = "rbxassetid://11702779409",
+		UseCustomFamilyFiles = false,
 		Small = 12, -- caption / helper
 		Medium = 14, -- body (MUI default)
 		Large = 22, -- section titles (M3 Title Large)
