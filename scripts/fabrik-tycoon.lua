@@ -10,8 +10,8 @@
     Collect / gems / rebirth: real remotes (no teleport)
     Manual droppers: fireproximityprompt on MBD1 pad (all manual droppers listen to it)
 
-  Requires getgenv().DexUI (scripts hub). UI: CreateWindow + components; farm
-  toasts use lib:Notify (notifications.luau).
+  Requires getgenv().DexUI (scripts hub). UI modules: switches, sliders, labels,
+  paragraphs, dividers, footer, notifications, game-info; farm toasts via Notify.
 ]]
 
 local DexUI = (getgenv and getgenv().DexUI) or nil
@@ -125,12 +125,30 @@ local function getFarmUi()
 	return G.__FabrikFarmUI
 end
 
+local function farmNotify(opts: { Title: string?, Content: string?, Duration: number?, Style: any? })
+	local ui = getFarmUi()
+	if ui and ui.Notify then
+		ui:Notify(opts)
+	end
+end
+
+local function farmPlayFeedback(pattern: string)
+	local ui = getFarmUi()
+	if ui and ui.PlayFeedback then
+		ui:PlayFeedback(pattern)
+	end
+end
+
 local function shutdown(notify)
 	local s = Session or G.__FabrikFarmSession
 	local wasActive = s and s.alive
+	local ui = getFarmUi()
 	if s then
 		s.alive = false
 		stopSessionThreads(s)
+	end
+	if notify ~= false and wasActive then
+		farmNotify({ Title = "Fabrik Farm", Content = "Unloaded — farm stopped", Duration = 2.5 })
 	end
 	if G.__FabrikFarmUI then
 		pcall(function() G.__FabrikFarmUI:Destroy() end)
@@ -139,10 +157,6 @@ local function shutdown(notify)
 	destroyLegacyGui()
 	setPhase("unloaded")
 	if notify ~= false and wasActive then
-		local ui = getFarmUi()
-		if ui and ui.Notify then
-			ui:Notify({ Title = "Fabrik Farm", Content = "Unloaded — farm stopped", Duration = 2.5 })
-		end
 		logInfo("Unloaded — farm loops stopped, UI removed")
 	end
 end
@@ -275,6 +289,7 @@ local rebirthBusyUntil = 0
 local rebirthCache = { bought = 0, needed = 0, canRebirth = false }
 local statusLabel
 local progressLabel
+local statsLabel
 local lastProgressAt = 0
 local loopAcc = 0
 local incomePerSec = 0
@@ -412,13 +427,7 @@ local function pushFarmHistory(text)
 	if not text or text == "" then
 		return
 	end
-	local ui = getFarmUi()
-	if ui and ui.Notify then
-		ui:Notify({
-			Content = text,
-			Duration = FARM_NOTIF_DURATION,
-		})
-	end
+	farmNotify({ Content = text, Duration = FARM_NOTIF_DURATION })
 end
 
 local function purchaseHistoryLine(btnModel)
@@ -1744,12 +1753,34 @@ local function statusLine()
 	)
 end
 
+local function statsLine()
+	local msg = stats.lastMsg
+	if msg and msg ~= "" then
+		return string.format("Cycles %d · Errors %d · %s", stats.cycles, stats.errors, msg)
+	end
+	return string.format("Cycles %d · Errors %d · phase %s", stats.cycles, stats.errors, currentPhase)
+end
+
+local function updateFooterStatus()
+	local ui = getFarmUi()
+	if not ui or not ui.SetFooterSegmentText then
+		return
+	end
+	local master = if Config.Enabled then "Farm ON" else "Farm OFF"
+	ui:SetFooterSegmentText("farm", master)
+	ui:SetFooterSegmentText("phase", string.format("%s · c%d", currentPhase, stats.cycles))
+end
+
 local function updateStatusLabel()
 	sampleIncomeRate()
 	updateGameCashDisplay()
 	if statusLabel and statusLabel.Set then
 		pcall(function() statusLabel:Set(statusLine()) end)
 	end
+	if statsLabel and statsLabel.Set then
+		pcall(function() statsLabel:Set(statsLine()) end)
+	end
+	updateFooterStatus()
 	updateProgressLabel(false)
 end
 
@@ -1809,6 +1840,11 @@ local function safeFarmOnce()
 		stats.errors += 1
 		stats.lastMsg = string.format("cycle err @%s: %s", currentPhase, tostring(err))
 		logError(string.format("CRASH in farm cycle during phase '%s': %s", currentPhase, tostring(err)))
+		farmNotify({
+			Title = "Farm error",
+			Content = string.format("%s: %s", currentPhase, tostring(err)),
+			Duration = 5,
+		})
 	else
 		local elapsed = lastCycleAt - startT
 		if elapsed > 1 then
@@ -1829,12 +1865,14 @@ local function buildDexUI()
 		G.__FabrikFarmInjectId = nil
 		G.__FabrikFarmConfig = nil
 		G.__FabrikFarmStats = nil
+		statusLabel = nil
+		progressLabel = nil
+		statsLabel = nil
 	end
 
 	local ui = DexUI.CreateWindow("Fabrik-Tycoon Farm")
 	G.__FabrikFarmUI = ui
 
-	-- Rainbow stacked toasts (Config.Notifications defaults; same feed as demo).
 	if ui.SetNotificationStyle then
 		ui:SetNotificationStyle({
 			Life = FARM_NOTIF_DURATION,
@@ -1844,10 +1882,28 @@ local function buildDexUI()
 		})
 	end
 
+	if ui.SetFooterConfig then
+		ui:SetFooterConfig({
+			Enabled = true,
+			Height = 28,
+			Layout = "split",
+			Left = {
+				{ id = "farm", kind = "text", text = "Farm OFF", muted = true },
+			},
+			Right = {
+				{ id = "phase", kind = "text", text = "boot", align = "right", muted = true },
+				{ id = "spacer", kind = "spacer" },
+				{ id = "version", kind = "version" },
+			},
+		})
+	end
+
 	ui:AddTab("Farm", 4483362458)
 	ui:AddSection("Auto farm")
 	ui:AddSwitch("Master auto farm", Config.Enabled, function(v)
 		Config.Enabled = v
+		farmPlayFeedback(v and "toggleOn" or "toggleOff")
+		updateFooterStatus()
 	end)
 
 	ui:AddSection("Include")
@@ -1867,6 +1923,7 @@ local function buildDexUI()
 		Config.AutoManualDropper = v
 	end)
 
+	ui:AddDivider()
 	ui:AddSection("Live status")
 	local statusWidget = ui:AddLabel(statusLine())
 	statusLabel = {
@@ -1874,21 +1931,20 @@ local function buildDexUI()
 			statusWidget.SetText(text)
 		end,
 	}
+	local statsWidget = ui:AddLabel(statsLine())
+	statsLabel = {
+		Set = function(_, text)
+			statsWidget.SetText(text)
+		end,
+	}
 
 	ui:AddTab("Progress", 4483362458)
 	ui:AddSection("Live progression")
-	local progressWidget = ui:AddLabel(progressionContent())
-	progressLabel = {
-		Set = function(_, opts)
-			if type(opts) == "table" then
-				progressWidget.SetText(opts.Content or progressionContent())
-			else
-				progressWidget.SetText(tostring(opts))
-			end
-		end,
-	}
+	local progressPara = ui:AddParagraph("Progression", progressionContent())
+	progressLabel = progressPara
 	ui:AddButton("Refresh now", function()
 		updateProgressLabel(true)
+		farmPlayFeedback("selection")
 	end)
 
 	ui:AddTab("Settings", 4483362458)
@@ -1899,55 +1955,83 @@ local function buildDexUI()
 	ui:AddSlider("Rebirth check interval (s)", 3, 30, Config.RebirthInterval, function(v)
 		Config.RebirthInterval = v
 	end)
+	ui:AddSlider("Min collect amount", 0, 500, Config.CollectMin, function(v)
+		Config.CollectMin = math.floor(v + 0.5)
+	end)
 
+	ui:AddDivider()
 	ui:AddSection("Extras")
 	ui:AddSwitch("Hide Robux / gamepass ads", Config.HideMonetization, function(v)
 		setAdHidingEnabled(v)
 	end)
-	ui:AddSwitch("Verbose logging", Config.VerboseLogging, function(v)
-		Config.VerboseLogging = v
-		LOG_VERBOSE = v
-		logInfo("verbose logging " .. (v and "ON" or "OFF"))
-	end)
+	ui:AddSwitch(
+		"Verbose logging",
+		Config.VerboseLogging,
+		function(v)
+			Config.VerboseLogging = v
+			LOG_VERBOSE = v
+			logInfo("verbose logging " .. (v and "ON" or "OFF"))
+		end,
+		"Console DEBUG lines + ServerError drain"
+	)
 
+	ui:AddDivider()
 	ui:AddSection("Tools")
 	ui:AddButton("Collect now", function()
 		tryCollect(true)
 		updateStatusLabel()
+		farmPlayFeedback("selection")
 	end)
 	ui:AddButton("Buy next building", function()
 		tryBuyCheapestButton()
 		updateStatusLabel()
+		farmPlayFeedback("selection")
 	end)
 	ui:AddButton("Rebirth now", function()
-		tryRebirth()
+		if tryRebirth() then
+			farmPlayFeedback("toggleOn")
+		else
+			farmNotify({ Title = "Rebirth", Content = stats.lastMsg ~= "" and stats.lastMsg or "Not ready", Duration = 3 })
+		end
 		updateStatusLabel()
 	end)
 	ui:AddButton("Print diagnostics", function()
-		logInfo(string.format(
-			"DIAG | phase:%s | alive:%s | cycles:%d errors:%d | last cycle %.1fs ago | %s",
+		local diag = string.format(
+			"phase %s · alive %s · cycles %d · errors %d · last %.1fs · %s",
 			currentPhase,
 			tostring(isAlive()),
 			stats.cycles,
 			stats.errors,
 			lastCycleAt > 0 and (os.clock() - lastCycleAt) or -1,
 			statusLine()
-		))
+		)
+		logInfo("DIAG | " .. diag)
 		logInfo(string.format(
-			"DIAG counts | buttons:%d drops:%d gems:%d collects:%d rebirths:%d | lastMsg: %s",
+			"DIAG counts | buttons:%d drops:%d gems:%d collects:%d rebirths:%d",
 			stats.buttons,
 			stats.manualDrops,
 			stats.upgrades,
 			stats.collects,
-			stats.rebirths,
-			stats.lastMsg ~= "" and stats.lastMsg or "—"
+			stats.rebirths
 		))
+		farmNotify({ Title = "Diagnostics", Content = diag, Duration = 6 })
 	end)
 
+	ui:AddDivider()
 	ui:AddSection("Danger")
 	ui:AddButton("Quit — stop farm & unload", unloadScript)
 
+	if ui.AddGameInfo then
+		ui:AddTab("About", 6026568227)
+		ui:AddGameInfo()
+	end
+
 	ui:Show()
+	farmNotify({
+		Title = "Fabrik Farm",
+		Content = "Loaded — enable Master auto farm when ready.",
+		Duration = 3,
+	})
 end
 
 runStep("buildDexUI", buildDexUI)
@@ -1985,7 +2069,9 @@ runStep("consumeServerError", function()
 end)
 
 if game.PlaceId ~= EXPECTED_PLACE then
-	logWarn(string.format("PlaceId %s != %s — remotes may differ", game.PlaceId, EXPECTED_PLACE))
+	local warnMsg = string.format("PlaceId %s != %s — remotes may differ", game.PlaceId, EXPECTED_PLACE)
+	logWarn(warnMsg)
+	farmNotify({ Title = "Wrong place?", Content = warnMsg, Duration = 6 })
 end
 
 if not findPath then
@@ -2014,11 +2100,15 @@ task.spawn(function()
 		syncConfigFromFlags()
 		updateStatusLabel()
 		if Config.Enabled and lastCycleAt > 0 and os.clock() - lastCycleAt > 5 then
-			logWarn(string.format(
-				"farm loop STALLED — no cycle for %.1fs (stuck in phase '%s')",
+			local stallMsg = string.format(
+				"Stalled %.1fs in phase '%s'",
 				os.clock() - lastCycleAt,
 				currentPhase
-			))
+			)
+			logWarn("farm loop STALLED — " .. stallMsg)
+			if LOG_VERBOSE then
+				farmNotify({ Title = "Farm stalled", Content = stallMsg, Duration = 4 })
+			end
 		end
 		print(string.format(
 			"[FabrikFarm] %s | btn:%d drop:%d gem:%d col:%d reb:%d err:%d | %.2fs | phase:%s | %s",

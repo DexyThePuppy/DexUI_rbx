@@ -47,7 +47,11 @@ export type Window = {
 	AddSection: (self: Window, text: string) -> (),
 	AddDivider: (self: Window) -> (),
 	AddLabel: (self: Window, text: string, icon: (string | number)?) -> { SetText: (string) -> () },
-	AddParagraph: (self: Window, title: string, body: string) -> (),
+	AddParagraph: (
+		self: Window,
+		title: string,
+		body: string
+	) -> { SetTitle: (string) -> (), SetBody: (string) -> (), Set: ({ Title: string?, Content: string? }) -> () },
 	AddButton: (self: Window, text: string, callback: Callback?) -> (),
 	AddSwitch: (self: Window, text: string, default: boolean?, callback: Callback?, subtitle: string?) -> (),
 	AddSlider: (self: Window, text: string, min: number, max: number, default: number?, callback: Callback?) -> (),

@@ -80,6 +80,26 @@ return function(ctx)
 		bodyLbl.Parent = frame
 		reg(bodyLbl, "TextColor3", "out")
 		indexElement(title, frame)
+
+		return {
+			SetTitle = function(newTitle: string)
+				titleLbl.Text = newTitle
+			end,
+			SetBody = function(newBody: string)
+				bodyLbl.Text = newBody
+			end,
+			Set = function(opts: { Title: string?, Content: string? })
+				if type(opts) ~= "table" then
+					return
+				end
+				if opts.Title then
+					titleLbl.Text = opts.Title
+				end
+				if opts.Content then
+					bodyLbl.Text = opts.Content
+				end
+			end,
+		}
 	end
 
 end
