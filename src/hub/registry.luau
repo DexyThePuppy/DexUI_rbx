@@ -17,7 +17,7 @@ local FALLBACK_INDEX = {
 			"rbxthumb://type=Place&id=15197136141&w=768&h=432",
 		},
 		description = "Auto farm for Fabrik-Tycoon (collect, buildings, gems, rebirth).",
-		script = "fabrik-tycoon.lua",
+		script = "games/fabrik-tycoon.lua",
 	},
 	{
 		id = "dexui-demo",

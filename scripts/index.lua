@@ -12,7 +12,7 @@ return {
 			"rbxthumb://type=Place&id=15197136141&w=768&h=432",
 		},
 		description = "Auto collect, buy buildings, gem upgrades, rebirth, manual droppers, and ad hiding for Fabrik-Tycoon.",
-		script = "fabrik-tycoon.lua",
+		script = "games/fabrik-tycoon.lua",
 	},
 	{
 		id = "dexui-demo",
