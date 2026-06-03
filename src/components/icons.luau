@@ -43,7 +43,7 @@ return function(ctx)
 
 		local layout = Instance.new("UIListLayout")
 		layout.SortOrder = Enum.SortOrder.LayoutOrder
-		layout.Padding = UDim.new(0, 10)
+		layout.Padding = UDim.new(0, 6)
 		layout.Parent = holder
 
 		local searchFrame = Instance.new("Frame")
@@ -108,21 +108,21 @@ return function(ctx)
 		gridScroll.Parent = gridHost
 
 		local gridPad = Instance.new("UIPadding")
-		gridPad.PaddingTop = UDim.new(0, 10)
-		gridPad.PaddingBottom = UDim.new(0, 10)
-		gridPad.PaddingLeft = UDim.new(0, 10)
-		gridPad.PaddingRight = UDim.new(0, 10)
+		gridPad.PaddingTop = UDim.new(0, 6)
+		gridPad.PaddingBottom = UDim.new(0, 6)
+		gridPad.PaddingLeft = UDim.new(0, 6)
+		gridPad.PaddingRight = UDim.new(0, 6)
 		gridPad.Parent = gridScroll
 
 		local gridInner = Instance.new("Frame")
-		gridInner.Size = UDim2.new(1, -20, 0, 0)
+		gridInner.Size = UDim2.new(1, -12, 0, 0)
 		gridInner.AutomaticSize = Enum.AutomaticSize.Y
 		gridInner.BackgroundTransparency = 1
 		gridInner.Parent = gridScroll
 
 		local gridLayout = Instance.new("UIGridLayout")
-		gridLayout.CellSize = UDim2.fromOffset(96, 88)
-		gridLayout.CellPadding = UDim2.fromOffset(8, 8)
+		gridLayout.CellSize = UDim2.fromOffset(84, 76)
+		gridLayout.CellPadding = UDim2.fromOffset(5, 5)
 		gridLayout.SortOrder = Enum.SortOrder.LayoutOrder
 		gridLayout.Parent = gridInner
 
@@ -192,9 +192,9 @@ return function(ctx)
 			reg(state, "BackgroundColor3", "fg")
 
 			local iconImg = Instance.new("ImageLabel")
-			iconImg.Size = UDim2.fromOffset(40, 40)
+			iconImg.Size = UDim2.fromOffset(36, 36)
 			iconImg.AnchorPoint = Vector2.new(0.5, 0)
-			iconImg.Position = UDim2.new(0.5, 0, 0, 12)
+			iconImg.Position = UDim2.new(0.5, 0, 0, 8)
 			iconImg.BackgroundTransparency = 1
 			iconImg.Image = "rbxassetid://" .. tostring(icon.id)
 			iconImg.ScaleType = Enum.ScaleType.Fit
@@ -203,9 +203,9 @@ return function(ctx)
 			reg(iconImg, "ImageColor3", "fg")
 
 			local nameLbl = Instance.new("TextLabel")
-			nameLbl.Size = UDim2.new(1, -10, 0, 26)
+			nameLbl.Size = UDim2.new(1, -8, 0, 22)
 			nameLbl.AnchorPoint = Vector2.new(0.5, 1)
-			nameLbl.Position = UDim2.new(0.5, 0, 1, -6)
+			nameLbl.Position = UDim2.new(0.5, 0, 1, -4)
 			nameLbl.BackgroundTransparency = 1
 			nameLbl.Text = icon.name:gsub("_", " ")
 			nameLbl.FontFace = m3Font

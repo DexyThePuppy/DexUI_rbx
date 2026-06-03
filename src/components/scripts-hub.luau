@@ -137,14 +137,14 @@ return function(ctx)
 		gridHost.Parent = holder
 
 		local layout = Instance.new("UIListLayout")
-		layout.Padding = UDim.new(0, 10)
+		layout.Padding = UDim.new(0, 6)
 		layout.SortOrder = Enum.SortOrder.LayoutOrder
 		layout.Parent = holder
 		header.LayoutOrder = 0
 		gridHost.LayoutOrder = 1
 
 		local gridScroll = Instance.new("ScrollingFrame")
-		gridScroll.Size = UDim2.new(1, 0, 0, math.min(420, 80 + math.ceil(#list / 3) * 168))
+		gridScroll.Size = UDim2.new(1, 0, 0, math.min(400, 64 + math.ceil(#list / 3) * 150))
 		gridScroll.BackgroundTransparency = 1
 		gridScroll.BorderSizePixel = 0
 		gridScroll.ScrollBarThickness = 4
@@ -155,21 +155,21 @@ return function(ctx)
 		reg(gridScroll, "BackgroundColor3", "bg")
 
 		local gridPad = Instance.new("UIPadding")
-		gridPad.PaddingTop = UDim.new(0, 12)
-		gridPad.PaddingBottom = UDim.new(0, 12)
-		gridPad.PaddingLeft = UDim.new(0, 12)
-		gridPad.PaddingRight = UDim.new(0, 12)
+		gridPad.PaddingTop = UDim.new(0, 6)
+		gridPad.PaddingBottom = UDim.new(0, 6)
+		gridPad.PaddingLeft = UDim.new(0, 6)
+		gridPad.PaddingRight = UDim.new(0, 6)
 		gridPad.Parent = gridScroll
 
 		local gridInner = Instance.new("Frame")
-		gridInner.Size = UDim2.new(1, -24, 0, 0)
+		gridInner.Size = UDim2.new(1, -12, 0, 0)
 		gridInner.AutomaticSize = Enum.AutomaticSize.Y
 		gridInner.BackgroundTransparency = 1
 		gridInner.Parent = gridScroll
 
 		local gridLayout = Instance.new("UIGridLayout")
-		gridLayout.CellSize = UDim2.fromOffset(132, 156)
-		gridLayout.CellPadding = UDim2.fromOffset(10, 10)
+		gridLayout.CellSize = UDim2.fromOffset(124, 142)
+		gridLayout.CellPadding = UDim2.fromOffset(6, 6)
 		gridLayout.SortOrder = Enum.SortOrder.LayoutOrder
 		gridLayout.Parent = gridInner
 
@@ -216,8 +216,8 @@ return function(ctx)
 			reg(state, "BackgroundColor3", "fg")
 
 			local thumb = Instance.new("ImageLabel")
-			thumb.Size = UDim2.new(1, -16, 0, 88)
-			thumb.Position = UDim2.new(0, 8, 0, 8)
+			thumb.Size = UDim2.new(1, -12, 0, 80)
+			thumb.Position = UDim2.new(0, 6, 0, 6)
 			thumb.BackgroundTransparency = 1
 			thumb.Image = formatThumb(entry.thumbnail)
 			thumb.ScaleType = Enum.ScaleType.Crop
@@ -226,9 +226,9 @@ return function(ctx)
 			corner(thumb, 10)
 
 			local nameLbl = Instance.new("TextLabel")
-			nameLbl.Size = UDim2.new(1, -12, 0, 44)
+			nameLbl.Size = UDim2.new(1, -10, 0, 36)
 			nameLbl.AnchorPoint = Vector2.new(0.5, 1)
-			nameLbl.Position = UDim2.new(0.5, 0, 1, -8)
+			nameLbl.Position = UDim2.new(0.5, 0, 1, -6)
 			nameLbl.BackgroundTransparency = 1
 			nameLbl.Text = entry.name
 			nameLbl.FontFace = m3Font
@@ -243,7 +243,7 @@ return function(ctx)
 			if isCurrent then
 				local badge = Instance.new("TextLabel")
 				badge.Size = UDim2.new(0, 72, 0, 18)
-				badge.Position = UDim2.new(0, 8, 0, 8)
+				badge.Position = UDim2.new(0, 6, 0, 6)
 				badge.BackgroundTransparency = 0
 				badge.Text = "This game"
 				badge.FontFace = fontWeight(Enum.FontWeight.Bold)

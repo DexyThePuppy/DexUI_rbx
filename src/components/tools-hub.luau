@@ -94,7 +94,7 @@ return function(ctx)
 		gridHost.Parent = holder
 
 		local layout = Instance.new("UIListLayout")
-		layout.Padding = UDim.new(0, 10)
+		layout.Padding = UDim.new(0, 6)
 		layout.SortOrder = Enum.SortOrder.LayoutOrder
 		layout.Parent = holder
 		header.LayoutOrder = 0
@@ -103,7 +103,7 @@ return function(ctx)
 		local cols = math.max(2, math.min(4, math.ceil(math.sqrt(#list))))
 		local rows = math.max(1, math.ceil(#list / cols))
 		local gridScroll = Instance.new("ScrollingFrame")
-		gridScroll.Size = UDim2.new(1, 0, 0, math.min(440, 80 + rows * 168))
+		gridScroll.Size = UDim2.new(1, 0, 0, math.min(420, 64 + rows * 152))
 		gridScroll.BackgroundTransparency = 1
 		gridScroll.BorderSizePixel = 0
 		gridScroll.ScrollBarThickness = 4
@@ -114,21 +114,21 @@ return function(ctx)
 		reg(gridScroll, "BackgroundColor3", "bg")
 
 		local gridPad = Instance.new("UIPadding")
-		gridPad.PaddingTop = UDim.new(0, 12)
-		gridPad.PaddingBottom = UDim.new(0, 12)
-		gridPad.PaddingLeft = UDim.new(0, 12)
-		gridPad.PaddingRight = UDim.new(0, 12)
+		gridPad.PaddingTop = UDim.new(0, 6)
+		gridPad.PaddingBottom = UDim.new(0, 6)
+		gridPad.PaddingLeft = UDim.new(0, 6)
+		gridPad.PaddingRight = UDim.new(0, 6)
 		gridPad.Parent = gridScroll
 
 		local gridInner = Instance.new("Frame")
-		gridInner.Size = UDim2.new(1, -24, 0, 0)
+		gridInner.Size = UDim2.new(1, -12, 0, 0)
 		gridInner.AutomaticSize = Enum.AutomaticSize.Y
 		gridInner.BackgroundTransparency = 1
 		gridInner.Parent = gridScroll
 
 		local gridLayout = Instance.new("UIGridLayout")
-		gridLayout.CellSize = UDim2.fromOffset(148, 168)
-		gridLayout.CellPadding = UDim2.fromOffset(12, 12)
+		gridLayout.CellSize = UDim2.fromOffset(136, 152)
+		gridLayout.CellPadding = UDim2.fromOffset(6, 6)
 		gridLayout.SortOrder = Enum.SortOrder.LayoutOrder
 		gridLayout.Parent = gridInner
 
@@ -166,8 +166,8 @@ return function(ctx)
 
 			local thumb = Instance.new("ImageLabel")
 			thumb.Name = "Thumbnail"
-			thumb.Size = UDim2.new(1, -16, 0, 96)
-			thumb.Position = UDim2.new(0, 8, 0, 8)
+			thumb.Size = UDim2.new(1, -12, 0, 88)
+			thumb.Position = UDim2.new(0, 6, 0, 6)
 			thumb.BackgroundTransparency = 1
 			thumb.Image = formatThumb(entry.thumbnail)
 			thumb.ScaleType = Enum.ScaleType.Crop
@@ -183,9 +183,9 @@ return function(ctx)
 			corner(thumb, 10)
 
 			local nameLbl = Instance.new("TextLabel")
-			nameLbl.Size = UDim2.new(1, -12, 0, 48)
+			nameLbl.Size = UDim2.new(1, -10, 0, 40)
 			nameLbl.AnchorPoint = Vector2.new(0.5, 1)
-			nameLbl.Position = UDim2.new(0.5, 0, 1, -8)
+			nameLbl.Position = UDim2.new(0.5, 0, 1, -6)
 			nameLbl.BackgroundTransparency = 1
 			nameLbl.Text = entry.name
 			nameLbl.FontFace = fontWeight(Enum.FontWeight.Medium)
@@ -201,7 +201,7 @@ return function(ctx)
 
 			local extBadge = Instance.new("TextLabel")
 			extBadge.Size = UDim2.new(0, 56, 0, 18)
-			extBadge.Position = UDim2.new(1, -8, 0, 8)
+			extBadge.Position = UDim2.new(1, -6, 0, 6)
 			extBadge.AnchorPoint = Vector2.new(1, 0)
 			extBadge.BackgroundTransparency = 0
 			extBadge.Text = "External"
