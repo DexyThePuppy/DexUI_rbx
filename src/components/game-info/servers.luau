@@ -1,6 +1,8 @@
 --!nonstrict
 export type ServersDeps = {
 	section: Frame,
+	layoutBase: number?,
+	useSectionTitle: boolean?,
 	curTheme: { pri: Color3, fg: Color3, onpri: Color3, inact: Color3 },
 	m3Font: Font,
 	fontWeight: (Enum.FontWeight) -> Font,
@@ -17,20 +19,26 @@ export type ServersDeps = {
 
 local function build(deps: ServersDeps)
 	local serversSection = deps.section
+	local base = deps.layoutBase or 0
+	local useSectionTitle = deps.useSectionTitle == true
+	local order = base
 
-	local serversHeading = Instance.new("TextLabel")
-	serversHeading.LayoutOrder = 0
-	serversHeading.Size = UDim2.new(1, 0, 0, 20)
-	serversHeading.BackgroundTransparency = 1
-	serversHeading.Text = "Public servers"
-	serversHeading.FontFace = deps.fontWeight(Enum.FontWeight.Medium)
-	serversHeading.TextSize = deps.textSize("md")
-	serversHeading.TextXAlignment = Enum.TextXAlignment.Left
-	serversHeading.Parent = serversSection
-	deps.reg(serversHeading, "TextColor3", "pri")
+	if not useSectionTitle then
+		local serversHeading = Instance.new("TextLabel")
+		serversHeading.LayoutOrder = order
+		serversHeading.Size = UDim2.new(1, 0, 0, 20)
+		serversHeading.BackgroundTransparency = 1
+		serversHeading.Text = "Public servers"
+		serversHeading.FontFace = deps.fontWeight(Enum.FontWeight.Medium)
+		serversHeading.TextSize = deps.textSize("md")
+		serversHeading.TextXAlignment = Enum.TextXAlignment.Left
+		serversHeading.Parent = serversSection
+		deps.reg(serversHeading, "TextColor3", "pri")
+		order += 1
+	end
 
 	local serversStatusLbl = Instance.new("TextLabel")
-	serversStatusLbl.LayoutOrder = 1
+	serversStatusLbl.LayoutOrder = order
 	serversStatusLbl.Size = UDim2.new(1, 0, 0, 0)
 	serversStatusLbl.AutomaticSize = Enum.AutomaticSize.Y
 	serversStatusLbl.BackgroundTransparency = 1
@@ -41,10 +49,11 @@ local function build(deps: ServersDeps)
 	serversStatusLbl.TextWrapped = true
 	serversStatusLbl.Parent = serversSection
 	deps.reg(serversStatusLbl, "TextColor3", "out")
+	order += 1
 
 	local serversList = Instance.new("Frame")
 	serversList.Name = "ServerList"
-	serversList.LayoutOrder = 2
+	serversList.LayoutOrder = order
 	serversList.Size = UDim2.new(1, 0, 0, deps.pageSize * 52)
 	serversList.BackgroundTransparency = 1
 	serversList.Parent = serversSection
@@ -181,8 +190,10 @@ local function build(deps: ServersDeps)
 		serverRowBtns[i] = row
 	end
 
+	order += 1
+
 	local pagerRow = Instance.new("Frame")
-	pagerRow.LayoutOrder = 3
+	pagerRow.LayoutOrder = order
 	pagerRow.Size = UDim2.new(1, 0, 0, 36)
 	pagerRow.BackgroundTransparency = 1
 	pagerRow.Parent = serversSection

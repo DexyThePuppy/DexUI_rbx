@@ -14,6 +14,14 @@ return {
 		Large = 18,
 	},
 
+	-- Game Info tab: stacked section cards (see components/game-info/).
+	GameInfo = {
+		SectionGap = 12,
+		SectionPadding = 14,
+		InnerGap = 8,
+		SectionCorner = 12,
+	},
+
 	-- Modular grid layout (card cells; used across tabs and panels).
 	Grid = {
 		Cell = { 96, 104 },

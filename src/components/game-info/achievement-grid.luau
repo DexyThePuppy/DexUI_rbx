@@ -3,6 +3,8 @@ local GameMetadata = require("../../hub/game-metadata")
 
 export type AchievementGridDeps = {
 	section: Frame,
+	layoutBase: number?,
+	useSectionTitle: boolean?,
 	Grid: any,
 	gridDeps: any,
 	curTheme: { fg: Color3, out: Color3 },
@@ -20,20 +22,31 @@ local VIP_BADGE_ON = Color3.fromRGB(255, 255, 255)
 local function build(deps: AchievementGridDeps)
 	local badgesSection = deps.section
 	badgesSection.Visible = false
+	local base = deps.layoutBase or 0
+	local useSectionTitle = deps.useSectionTitle == true
+	local order = base
 
-	local badgesHeading = Instance.new("TextLabel")
-	badgesHeading.LayoutOrder = 0
-	badgesHeading.Size = UDim2.new(1, 0, 0, 20)
-	badgesHeading.BackgroundTransparency = 1
-	badgesHeading.Text = "Badges"
-	badgesHeading.FontFace = deps.fontWeight(Enum.FontWeight.Medium)
-	badgesHeading.TextSize = deps.textSize("md")
-	badgesHeading.TextXAlignment = Enum.TextXAlignment.Left
-	badgesHeading.Parent = badgesSection
-	deps.reg(badgesHeading, "TextColor3", "pri")
+	local badgesHeading: TextLabel? = nil
+	if not useSectionTitle then
+		badgesHeading = Instance.new("TextLabel")
+		badgesHeading.LayoutOrder = order
+		badgesHeading.Size = UDim2.new(1, 0, 0, 20)
+		badgesHeading.BackgroundTransparency = 1
+		badgesHeading.Text = "Badges"
+		badgesHeading.FontFace = deps.fontWeight(Enum.FontWeight.Medium)
+		badgesHeading.TextSize = deps.textSize("md")
+		badgesHeading.TextXAlignment = Enum.TextXAlignment.Left
+		badgesHeading.Parent = badgesSection
+		deps.reg(badgesHeading, "TextColor3", "pri")
+		order += 1
+	end
+
+	local sectionTitleLbl = if useSectionTitle
+		then badgesSection:FindFirstChild("SectionTitle") :: TextLabel?
+		else nil
 
 	local badgesStatusLbl = Instance.new("TextLabel")
-	badgesStatusLbl.LayoutOrder = 1
+	badgesStatusLbl.LayoutOrder = order
 	badgesStatusLbl.Size = UDim2.new(1, 0, 0, 0)
 	badgesStatusLbl.AutomaticSize = Enum.AutomaticSize.Y
 	badgesStatusLbl.BackgroundTransparency = 1
@@ -45,10 +58,11 @@ local function build(deps: AchievementGridDeps)
 	badgesStatusLbl.Visible = false
 	badgesStatusLbl.Parent = badgesSection
 	deps.reg(badgesStatusLbl, "TextColor3", "out")
+	order += 1
 
 	local badgeGrid = Instance.new("Frame")
 	badgeGrid.Name = "BadgeGrid"
-	badgeGrid.LayoutOrder = 2
+	badgeGrid.LayoutOrder = order
 	badgeGrid.Size = UDim2.new(1, 0, 0, 0)
 	badgeGrid.AutomaticSize = Enum.AutomaticSize.Y
 	badgeGrid.BackgroundTransparency = 1
@@ -96,7 +110,12 @@ local function build(deps: AchievementGridDeps)
 		end
 
 		local totalLabel = if badgeAtLeast then tostring(count) .. "+" else tostring(count)
-		badgesHeading.Text = string.format("Badges · %d / %s claimed", claimed, totalLabel)
+		local headingText = string.format("%d / %s claimed", claimed, totalLabel)
+		if badgesHeading then
+			badgesHeading.Text = "Badges · " .. headingText
+		elseif sectionTitleLbl then
+			sectionTitleLbl.Text = "Badges · " .. headingText
+		end
 
 		for i, badge in badges do
 			local card = badgeMount.addCard(i)

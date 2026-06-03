@@ -1,4 +1,5 @@
 --!nonstrict
+local Config = require("../../config")
 local Registry = require("../../hub/registry")
 local GameMetadata = require("../../hub/game-metadata")
 local Services = require("../../services")
@@ -12,13 +13,18 @@ local AchievementGrid = require("./achievement-grid")
 local Servers = require("./servers")
 local Format = require("./format")
 
+local GI = Config.GameInfo or {}
+local SECTION_GAP: number = GI.SectionGap or 12
+local SECTION_PAD: number = GI.SectionPadding or 14
+local INNER_GAP: number = GI.InnerGap or 8
+local SECTION_CORNER: number = GI.SectionCorner or 12
+
 local function mount(ctx)
 	local lib = ctx.lib
 	local curTheme = ctx.theme
 	local reg = ctx.reg
 	local corner = ctx.corner
 	local m3Font = ctx.m3Font
-	local beginCardRow = ctx.beginCardRow
 	local fontWeight = ctx.fontWeight
 	local onHeartbeat = ctx.onHeartbeat
 	local playFeedback = ctx.playFeedback
@@ -26,6 +32,7 @@ local function mount(ctx)
 	local tooltip = ctx.tooltip
 	local textSize = ctx.textSize
 	local Grid = ctx.grid
+	local nextCardItemOrder = ctx.nextCardItemOrder
 	local MEDIA_PAGE_SIZE = ctx.MEDIA_PAGE_SIZE
 	local MEDIA_PAGE_COUNT = ctx.MEDIA_PAGE_COUNT
 	local ContentProvider = Services.ContentProvider or game:GetService("ContentProvider")
@@ -33,17 +40,27 @@ local function mount(ctx)
 	local TeleportService = game:GetService("TeleportService")
 
 	local entry = Registry.findForCurrentGame()
-	local sectionDeps = { corner = corner, reg = reg }
+	local sectionDeps = {
+		corner = corner,
+		reg = reg,
+		fontWeight = fontWeight,
+		textSize = textSize,
+		padding = SECTION_PAD,
+		innerGap = INNER_GAP,
+		cornerRadius = SECTION_CORNER,
+	}
 
+	-- Stack section cards on the tab (not one shared card row surface).
 	local holder = Instance.new("Frame")
 	holder.Name = "GameInfo"
+	holder.LayoutOrder = nextCardItemOrder()
 	holder.Size = UDim2.new(1, 0, 0, 0)
 	holder.AutomaticSize = Enum.AutomaticSize.Y
 	holder.BackgroundTransparency = 1
-	holder.Parent = beginCardRow(nil, true)
+	holder.Parent = lib.CurrentBuildContainer
 
 	local layout = Instance.new("UIListLayout")
-	layout.Padding = UDim.new(0, 16)
+	layout.Padding = UDim.new(0, SECTION_GAP)
 	layout.SortOrder = Enum.SortOrder.LayoutOrder
 	layout.Parent = holder
 
@@ -58,9 +75,13 @@ local function mount(ctx)
 		tooltip = tooltip,
 	})
 
-	local headerSection = Section.create(holder, 0, sectionDeps)
+	local headerSection, headerBase = Section.create(holder, 0, sectionDeps, {
+		name = "Overview",
+		title = "Overview",
+	})
 	local header = Header.build({
 		section = headerSection,
+		layoutBase = headerBase,
 		chip = chip,
 		entry = entry,
 		fontWeight = fontWeight,
@@ -72,9 +93,13 @@ local function mount(ctx)
 		TeleportService = TeleportService,
 	})
 
-	local carouselSection = Section.create(holder, 1, sectionDeps)
+	local carouselSection, carouselBase = Section.create(holder, 1, sectionDeps, {
+		name = "Gallery",
+		title = "Gallery",
+	})
 	local carousel = Carousel.build({
 		section = carouselSection,
+		layoutBase = carouselBase,
 		holder = holder,
 		curTheme = curTheme,
 		m3Font = m3Font,
@@ -86,9 +111,13 @@ local function mount(ctx)
 		ContentProvider = ContentProvider,
 	})
 
-	local descSection = Section.create(holder, 2, sectionDeps)
+	local descSection, descBase = Section.create(holder, 2, sectionDeps, {
+		name = "About",
+		title = "About",
+	})
 	local description = Description.build({
 		section = descSection,
+		layoutBase = descBase,
 		chip = chip,
 		entry = entry,
 		curTheme = curTheme,
@@ -98,9 +127,14 @@ local function mount(ctx)
 		reg = reg,
 	})
 
-	local badgesSection = Section.create(holder, 3, sectionDeps)
+	local badgesSection, badgesBase = Section.create(holder, 3, sectionDeps, {
+		name = "Badges",
+		title = "Badges",
+	})
 	local achievementGrid = AchievementGrid.build({
 		section = badgesSection,
+		layoutBase = badgesBase,
+		useSectionTitle = true,
 		Grid = Grid,
 		gridDeps = { corner = corner, reg = reg, fontWeight = fontWeight, textSize = textSize },
 		curTheme = curTheme,
@@ -112,9 +146,14 @@ local function mount(ctx)
 		tooltip = tooltip,
 	})
 
-	local serversSection = Section.create(holder, 4, sectionDeps)
+	local serversSection, serversBase = Section.create(holder, 4, sectionDeps, {
+		name = "Servers",
+		title = "Public servers",
+	})
 	local servers = Servers.build({
 		section = serversSection,
+		layoutBase = serversBase,
+		useSectionTitle = true,
 		curTheme = curTheme,
 		m3Font = m3Font,
 		fontWeight = fontWeight,
