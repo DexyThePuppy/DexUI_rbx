@@ -2,17 +2,10 @@
   [UPD] Fabrik-Tycoon — DexUI auto farmer
   Place: 15197136141
 
-  HOW THIS SCRIPT IS ORGANIZED
-  ---------------------------
-  scripts/sdk/          Universal: session, logging, loops, DexUI helpers
-  scripts/fabrik/       Fabrik-only logic modules (loaded below):
-    game.lua            Remotes, tycoon getters, HUD cash mirror
-    farm.lua            Collect / buy / gems / rebirth / progression
-    ads.lua             Hide Robux / gamepass pads
-    ui.lua              DexUI window layout (tabs, switches, tools)
-
-  This file is the hub entry: it defines Fabrik config (manifest), runs the SDK,
-  loads game modules, then wires Fabrik-specific startup + main loop here.
+  scripts/sdk/                    Universal session, loops, DexUI helpers
+  scripts/fabrik/                   Shared Fabrik helpers (format, tycoon API, Other module)
+  scripts/games/fabrik-tycoon/      This game's modules (game, farm, ads, ui)
+  scripts/fabrik-tycoon.lua         Hub entry: manifest + SDK + startup / loop wiring
 ]]
 
 local DexUI = (getgenv and getgenv().DexUI) or nil
@@ -24,12 +17,11 @@ if not (readfile and isfile and loadstring) then
 	error("[fabrik-tycoon] Executor must support readfile / isfile / loadstring.")
 end
 
--- ---------------------------------------------------------------------------
--- Load helpers
--- ---------------------------------------------------------------------------
-
 local SDK_PREFIXES = { "scripts/sdk/", "DexUI/scripts/sdk/" }
-local MODULE_PREFIXES = { "scripts/fabrik/", "DexUI/scripts/fabrik/" }
+local MODULE_PREFIXES = {
+	"scripts/games/fabrik-tycoon/",
+	"DexUI/scripts/games/fabrik-tycoon/",
+}
 
 local function loadFrom(prefixes: { string }, name: string)
 	for _, prefix in prefixes do
@@ -37,26 +29,20 @@ local function loadFrom(prefixes: { string }, name: string)
 		if isfile(path) then
 			local chunk, err = loadstring(readfile(path), "@" .. path)
 			if not chunk then
-				error("[fabrik] compile " .. path .. ": " .. tostring(err), 0)
+				error("[fabrik-tycoon] compile " .. path .. ": " .. tostring(err), 0)
 			end
 			return chunk()
 		end
 	end
-	error("[fabrik] missing: " .. name, 0)
+	error("[fabrik-tycoon] missing: " .. name, 0)
 end
 
---- Load a Fabrik logic module and run it against ctx.
-local function loadFabrikModule(name: string, ctx)
+local function loadModule(name: string, ctx)
 	local init = loadFrom(MODULE_PREFIXES, name)
 	if type(init) == "function" then
 		init(ctx)
 	end
 end
-
--- ---------------------------------------------------------------------------
--- Fabrik manifest (game-specific — not in scripts/sdk/)
--- Passed to SDK.run; only lists modules that are pure logic under scripts/fabrik/
--- ---------------------------------------------------------------------------
 
 local manifest = {
 	id = "fabrik-tycoon",
@@ -68,7 +54,6 @@ local manifest = {
 
 	prefixes = MODULE_PREFIXES,
 
-	-- Logic modules only; UI + runtime wiring stay in this file.
 	pipeline = { "game", "farm", "ads" },
 	abortAfter = { "game" },
 
@@ -156,26 +141,13 @@ local manifest = {
 	},
 }
 
--- ---------------------------------------------------------------------------
--- 1) SDK bootstrap: ctx, session, ctx.loop.*, ctx.dexui.*
--- ---------------------------------------------------------------------------
-
 local SDK = loadFrom(SDK_PREFIXES, "run")
 local ctx = SDK(manifest, DexUI)
 if not ctx.isAlive() then
 	return
 end
 
--- ---------------------------------------------------------------------------
--- 2) Fabrik DexUI (module: scripts/fabrik/ui.lua)
--- ---------------------------------------------------------------------------
-
-loadFabrikModule("ui", ctx)
-
--- ---------------------------------------------------------------------------
--- 3) Fabrik startup + main loop (game-specific — was runtime.lua)
---    Uses universal ctx.loop / ctx.runStep from scripts/sdk/loop.lua
--- ---------------------------------------------------------------------------
+loadModule("ui", ctx)
 
 local Config = ctx.config
 local stats = ctx.stats

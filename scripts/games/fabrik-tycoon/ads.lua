@@ -1,72 +1,22 @@
--- Ad hiding
+-- Fabrik-Tycoon: hide Robux / gamepass monetization UI and world pads.
 return function(ctx)
 	local Config = ctx.config
-	local stats = ctx.stats
 	local LP = ctx.lp
-	local RS = ctx.rs
-	local CollectMoney = ctx.remotes.collectMoney
-	local BuyUpgrade = ctx.remotes.buyUpgrade
-	local RequestRebirth = ctx.remotes.requestRebirth
-	local findPath = ctx.findPath
-	local formatGameValue = ctx.formatGameValue
-	local getUpgradeData = ctx.getUpgradeData
-	local UPGRADE_IDS = ctx.upgradeIds
 	local track = ctx.track
-	local logInfo, logWarn, logError, logDebug = ctx.log.info, ctx.log.warn, ctx.log.error, ctx.log.debug
+	local logInfo, logWarn, logDebug = ctx.log.info, ctx.log.warn, ctx.log.debug
 	local setPhase = ctx.log.setPhase
-	local pushFarmHistory = ctx.notify.action
-	local fmtGameMoney = ctx.fmt.money
-	local fmtIncomeRate = ctx.fmt.incomeRate
 	local getTycoon = ctx.game.getTycoon
-	local getMoney = ctx.game.getMoney
-	local getGems = ctx.game.getGems
-	local getRebirths = ctx.game.getRebirths
-	local getToCollect = ctx.game.getToCollect
-	local getClientToCollect = ctx.game.getClientToCollect
-	local getDataFolderToCollect = ctx.game.getDataFolderToCollect
-	local getClientValues = ctx.game.getClientValues
-	local getWealthTotal = ctx.game.getWealthTotal
-	local sampleIncomeRate = ctx.game.sampleIncomeRate
-	local getBuyableButtons = ctx.game.getBuyableButtons
-	local getBuyableRebirthAreaButtons = ctx.game.getBuyableRebirthAreaButtons
-	local isAlive = ctx.isAlive
 	local startupReady = ctx.startupReady
-	local incomePerSec = ctx.game.incomePerSec
-	local gameCashHooked = ctx.game.gameCashHooked
-	local updateGameCashDisplay = ctx.game.updateCashHud
-	local hookGameCashDisplay = ctx.game.hookCashHud
-	local lastRebirthAt = ctx.timers.lastRebirthAt
-	local lastManualDropAt = ctx.timers.lastManualDropAt
 	local lastAdCleanAt = ctx.timers.lastAdCleanAt
-	local lastCycleAt = ctx.timers.lastCycleAt
-	local lastProgressAt = ctx.timers.lastProgressAt
-	local rebirthBusyUntil = ctx.timers.rebirthBusyUntil
-	local loopAcc = ctx.timers.loopAcc
-	local rebirthCache = ctx.caches.rebirth
-	local statusLabel = ctx.widgets.status
-	local progressLabel = ctx.widgets.progress
-	local statsLabel = ctx.widgets.stats
-	local farmNotify = ctx.notify.push
-	local farmPlayFeedback = ctx.feedback.play
 
-	local function purchaseHistoryLine(btnModel)
-		local name = btnModel.Name
-		if btnModel:FindFirstChild("RebirthPrice") then
-			return string.format("+ %s  (%d R)", name, btnModel.RebirthPrice.Value)
-		end
-		if btnModel:FindFirstChild("Price") then
-			return string.format("+ %s  (%s)", name, fmtGameMoney(btnModel.Price.Value))
-		end
-		return "+ " .. name
-	end
+	local AD_HIDE_YIELD_EVERY = 40
+	local AD_HIDE_MIN_INTERVAL = 2
+	local adHideBusy = false
+	local adHidePending = false
+	local adHideDebounceThread = nil
+	local adCleanerConnections = {}
 
-	local function recordPurchaseHistory(btnModel)
-		if btnModel then
-			pushFarmHistory(purchaseHistoryLine(btnModel))
-		end
-	end
-
-local function stripGuiAd(obj)
+	local function stripGuiAd(obj)
 	if obj:IsA("GuiObject") then
 		if not obj.Visible then return end
 		obj.Visible = false

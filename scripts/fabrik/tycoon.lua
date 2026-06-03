@@ -1,87 +1,6 @@
--- Remotes, player/tycoon accessors, HUD cash mirror.
+-- Fabrik helper: tycoon getters, buyable pads, HUD cash mirror (needs ctx.lp, ctx.fmt, ctx.track).
 return function(ctx)
 	local LP = ctx.lp
-	local RS = game:GetService("ReplicatedStorage")
-
-	ctx.runStep("waitEvents", function()
-		ctx.events = RS:WaitForChild("Events", 15)
-	end)
-	if not ctx.events then
-		ctx.log.error("Events folder missing — wrong game? aborting")
-		ctx.shutdown(false)
-		return
-	end
-
-	ctx.runStep("requireOther", function()
-		local ok, Other = pcall(require, RS.Scripts.Other)
-		if ok and Other then
-			ctx.other = Other
-		end
-	end)
-	if not ctx.other then
-		ctx.log.error("require(Scripts.Other) failed — aborting")
-		ctx.shutdown(false)
-		return
-	end
-
-	ctx.formatGameValue = ctx.other.format_value
-	if type(ctx.formatGameValue) ~= "function" then
-		ctx.log.warn("Other.format_value missing — using plain number formatting")
-		ctx.formatGameValue = function(n)
-			return tostring(math.floor((n or 0) + 0.5))
-		end
-	end
-
-	ctx.getUpgradeData = ctx.other.GetDataBasedOnUpgrade
-	if type(ctx.getUpgradeData) ~= "function" then
-		ctx.log.warn("Other.GetDataBasedOnUpgrade missing — gem upgrades disabled")
-		ctx.getUpgradeData = function()
-			return {
-				isMaxReached = true,
-				nextUpgrade_Price = 0,
-				nextUpgrade_ValueBoost = 0,
-				currentUpgrade_ValueBoost = 0,
-			}
-		end
-	end
-
-	ctx.runStep("resolveRemotes", function()
-		ctx.remotes = {
-			collectMoney = ctx.events:WaitForChild("CollectMoney"),
-			buyUpgrade = ctx.events:WaitForChild("BuyUpgrade"),
-			requestRebirth = ctx.events:WaitForChild("RequestRebirth"),
-		}
-	end)
-
-	ctx.runStep("requireFindPath", function()
-		local ok, mod = pcall(function()
-			return require(
-				LP:WaitForChild("PlayerGui")
-					:WaitForChild("MainUI")
-					:WaitForChild("MainClient")
-					:WaitForChild("Rebirth")
-					:WaitForChild("findPath")
-			)
-		end)
-		if ok then
-			ctx.findPath = mod
-		else
-			ctx.log.warn("findPath require failed: " .. tostring(mod))
-		end
-	end)
-
-	function ctx.fmt.money(n)
-		n = math.floor((n or 0) + 0.5)
-		return "$" .. ctx.formatGameValue(n)
-	end
-
-	function ctx.fmt.incomeRate(n)
-		n = math.floor((n or 0) + 0.5)
-		if n <= 0 then
-			return "($0/s)"
-		end
-		return "(" .. ctx.fmt.money(n) .. "/s)"
-	end
 
 	function ctx.game.getClientValues()
 		local pg = LP:FindFirstChild("PlayerGui")
@@ -284,6 +203,4 @@ return function(ctx)
 		end
 		ctx.game.updateCashHud()
 	end
-
-	ctx.cleanupLegacy()
 end

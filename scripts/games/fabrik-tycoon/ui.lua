@@ -1,4 +1,4 @@
--- DexUI window for Fabrik (uses scripts/sdk/dexui.lua helpers).
+-- Fabrik-Tycoon DexUI window (scripts/sdk/dexui.lua helpers).
 return function(ctx)
 	local Config = ctx.config
 	local stats = ctx.stats
