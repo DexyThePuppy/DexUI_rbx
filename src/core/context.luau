@@ -41,6 +41,7 @@ return function(deps: Deps)
 	local textSize = Util.textSize
 	local Grid = require("./grid")
 	local fontWeight = Fonts.fontWeight
+	local fontLarge = Fonts.fontLarge
 	local m3Font = Fonts.m3Font
 
 	local RunService = Services.RunService
@@ -456,6 +457,7 @@ return function(deps: Deps)
 		-- fonts / typography
 		m3Font = m3Font,
 		fontWeight = fontWeight,
+		fontLarge = fontLarge,
 		textSize = textSize,
 		TextSizes = Util.TextSizes,
 		grid = Grid,

@@ -7,6 +7,7 @@ export type HeaderDeps = {
 	chip: any,
 	entry: any?,
 	fontWeight: (Enum.FontWeight) -> Font,
+	fontLarge: Font,
 	textSize: (string) -> number,
 	reg: (Instance, string, string) -> (),
 	corner: (Instance, number) -> (),
@@ -31,7 +32,7 @@ local function build(deps: HeaderDeps)
 	titleLbl.AutomaticSize = Enum.AutomaticSize.Y
 	titleLbl.BackgroundTransparency = 1
 	titleLbl.Text = "Loading experience…"
-	titleLbl.FontFace = deps.fontWeight(Enum.FontWeight.Bold)
+	titleLbl.FontFace = deps.fontLarge
 	titleLbl.TextSize = deps.textSize("lg")
 	titleLbl.TextXAlignment = Enum.TextXAlignment.Left
 	titleLbl.TextWrapped = true

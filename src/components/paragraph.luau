@@ -6,7 +6,7 @@ return function(ctx)
 	local curTheme = ctx.theme
 	local reg, regDynamic = ctx.reg, ctx.regDynamic
 	local tween, corner, ripple = ctx.tween, ctx.corner, ctx.ripple
-	local fontWeight, m3Font = ctx.fontWeight, ctx.m3Font
+	local fontWeight, fontLarge, m3Font = ctx.fontWeight, ctx.fontLarge, ctx.m3Font
 	local beginBuildCard, beginCardRow, closeBuildCard = ctx.beginBuildCard, ctx.beginCardRow, ctx.closeBuildCard
 	local nextCardItemOrder, refreshCardRowCorners, styleGroupedSurfaces, tintRow = ctx.nextCardItemOrder, ctx.refreshCardRowCorners, ctx.styleGroupedSurfaces, ctx.tintRow
 	local indexElement, fillLabelColumn = ctx.indexElement, ctx.fillLabelColumn
@@ -59,7 +59,7 @@ return function(ctx)
 		titleLbl.Size = UDim2.new(1, 0, 0, 18)
 		titleLbl.BackgroundTransparency = 1
 		titleLbl.Text = title
-		titleLbl.FontFace = fontWeight(Enum.FontWeight.Medium)
+		titleLbl.FontFace = fontLarge
 		titleLbl.TextSize = textSize("lg")
 		titleLbl.TextXAlignment = Enum.TextXAlignment.Left
 		titleLbl.LayoutOrder = 1

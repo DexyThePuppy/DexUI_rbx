@@ -18,6 +18,7 @@ return function(ctx)
 	local nextCardItemOrder = ctx.nextCardItemOrder
 	local playFeedback = ctx.playFeedback
 	local fontWeight = ctx.fontWeight
+	local fontLarge = ctx.fontLarge
 	local tooltip = ctx.tooltip
 	local textSize = ctx.textSize
 	local Grid = ctx.grid
@@ -122,7 +123,7 @@ return function(ctx)
 		local panelDeps = {
 			corner = corner,
 			reg = reg,
-			fontWeight = fontWeight,
+			fontLarge = fontLarge,
 			textSize = textSize,
 			padding = SL.SectionPadding or 14,
 			innerGap = SL.InnerGap or 8,

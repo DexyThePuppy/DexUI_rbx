@@ -42,7 +42,13 @@ local function fontWeight(weight: Enum.FontWeight): Font
 	return Font.new(m3Font.Family, weight, Enum.FontStyle.Normal)
 end
 
+-- Large tier headings (section titles, paragraph titles): weight 800.
+local function fontLarge(): Font
+	return fontWeight(Enum.FontWeight.ExtraBold)
+end
+
 return {
 	m3Font = m3Font,
 	fontWeight = fontWeight,
+	fontLarge = fontLarge,
 }

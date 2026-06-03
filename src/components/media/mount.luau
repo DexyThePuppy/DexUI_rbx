@@ -14,6 +14,7 @@ local function mount(ctx)
 	local corner = ctx.corner
 	local m3Font = ctx.m3Font
 	local fontWeight = ctx.fontWeight
+	local fontLarge = ctx.fontLarge
 	local playFeedback = ctx.playFeedback
 	local tooltip = ctx.tooltip
 	local textSize = ctx.textSize
@@ -38,7 +39,7 @@ local function mount(ctx)
 	local sectionDeps = {
 		corner = corner,
 		reg = reg,
-		fontWeight = fontWeight,
+		fontLarge = fontLarge,
 		textSize = textSize,
 		padding = SL.SectionPadding or 14,
 		innerGap = SL.InnerGap or 8,

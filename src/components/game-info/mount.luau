@@ -55,6 +55,7 @@ local function mount(ctx)
 	local m3Font = ctx.m3Font
 
 	local fontWeight = ctx.fontWeight
+	local fontLarge = ctx.fontLarge
 
 	local onHeartbeat = ctx.onHeartbeat
 
@@ -90,7 +91,7 @@ local function mount(ctx)
 
 		reg = reg,
 
-		fontWeight = fontWeight,
+		fontLarge = fontLarge,
 
 		textSize = textSize,
 
@@ -171,6 +172,8 @@ local function mount(ctx)
 		entry = entry,
 
 		fontWeight = fontWeight,
+
+		fontLarge = fontLarge,
 
 		textSize = textSize,
 

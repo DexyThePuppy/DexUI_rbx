@@ -112,7 +112,7 @@ local function makeUI(titleText: string?, options: MakeUIOptions?): Window
 	local reg, regDynamic = ctx.reg, ctx.regDynamic
 	local tween, corner, ripple = ctx.tween, ctx.corner, ctx.ripple
 	local textSize = ctx.textSize
-	local fontWeight, m3Font = ctx.fontWeight, ctx.m3Font
+	local fontWeight, fontLarge, m3Font = ctx.fontWeight, ctx.fontLarge, ctx.m3Font
 	local beginCardRow, closeBuildCard, tintRow = ctx.beginCardRow, ctx.closeBuildCard, ctx.tintRow
 	local playFeedback = ctx.playFeedback
 	local onRender, onInputChanged, onInputEnded = ctx.onRender, ctx.onInputChanged, ctx.onInputEnded
@@ -288,8 +288,8 @@ local function makeUI(titleText: string?, options: MakeUIOptions?): Window
 	top.Position = UDim2.new(0, 24, 0, 6)
     top.BackgroundTransparency = 1
     top.Text = appTitle
-	top.FontFace = fontWeight(Enum.FontWeight.Medium)
-    top.TextSize = textSize("lg")
+	top.FontFace = fontLarge
+	top.TextSize = textSize("lg")
     top.TextXAlignment = Enum.TextXAlignment.Left
 	top.TextTruncate = Enum.TextTruncate.AtEnd
 	top.ZIndex = 71
@@ -1002,7 +1002,7 @@ local function makeUI(titleText: string?, options: MakeUIOptions?): Window
 		confirmTitle.Position = UDim2.new(0, 24, 0, 0)
 		confirmTitle.BackgroundTransparency = 1
 		confirmTitle.Text = "Confirm Close."
-		confirmTitle.FontFace = fontWeight(Enum.FontWeight.Medium)
+		confirmTitle.FontFace = fontLarge
 		confirmTitle.TextSize = textSize("lg")
 		confirmTitle.TextXAlignment = Enum.TextXAlignment.Left
 		confirmTitle.TextYAlignment = Enum.TextYAlignment.Center

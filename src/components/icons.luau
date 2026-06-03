@@ -10,7 +10,7 @@ return function(ctx)
 	local curTheme = ctx.theme
 	local reg, regDynamic = ctx.reg, ctx.regDynamic
 	local tween, corner, ripple = ctx.tween, ctx.corner, ctx.ripple
-	local fontWeight, m3Font = ctx.fontWeight, ctx.m3Font
+	local fontWeight, fontLarge, m3Font = ctx.fontWeight, ctx.fontLarge, ctx.m3Font
 	local beginBuildCard, beginCardRow, closeBuildCard = ctx.beginBuildCard, ctx.beginCardRow, ctx.closeBuildCard
 	local nextCardItemOrder, refreshCardRowCorners, styleGroupedSurfaces, tintRow = ctx.nextCardItemOrder, ctx.refreshCardRowCorners, ctx.styleGroupedSurfaces, ctx.tintRow
 	local indexElement, fillLabelColumn = ctx.indexElement, ctx.fillLabelColumn
@@ -43,7 +43,7 @@ return function(ctx)
 		local panelDeps = {
 			corner = corner,
 			reg = reg,
-			fontWeight = fontWeight,
+			fontLarge = fontLarge,
 			textSize = textSize,
 			padding = SL.SectionPadding or 14,
 			innerGap = SL.InnerGap or 8,
