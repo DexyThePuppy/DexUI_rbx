@@ -1,30 +1,66 @@
 --!nonstrict
--- Shared hover tooltip layer for DexUI windows.
+-- Shared hover tooltip layer for DexUI windows. Supports plain text or modular block layouts.
+
+export type TooltipTextBlock = {
+	kind: "text",
+	text: string,
+	muted: boolean?,
+}
+
+export type TooltipTitleBlock = {
+	kind: "title",
+	text: string,
+}
+
+export type TooltipDividerBlock = {
+	kind: "divider",
+}
+
+export type TooltipStatBlock = {
+	kind: "stat",
+	label: string,
+	value: string,
+	muted: boolean?,
+}
+
+export type TooltipRowBlock = {
+	kind: "row",
+	label: string,
+	value: string,
+	muted: boolean?,
+}
+
+export type TooltipBlock = TooltipTextBlock | TooltipTitleBlock | TooltipDividerBlock | TooltipStatBlock | TooltipRowBlock
+
+export type TooltipContent = {
+	blocks: { TooltipBlock },
+	maxWidth: number?,
+}
 
 export type TooltipAttachOptions = {
 	delay: number?,
 	maxWidth: number?,
 }
 
+export type TooltipInput = string | TooltipContent | (() -> string | TooltipContent?)
+
 export type TooltipController = {
-	attach: (target: GuiObject, text: string | (() -> string?), opts: TooltipAttachOptions?) -> (),
+	attach: (target: GuiObject, content: TooltipInput, opts: TooltipAttachOptions?) -> (),
 	detach: (target: GuiObject) -> (),
 	hide: () -> (),
 }
 
 return function(ctx)
-	local curTheme = ctx.theme
 	local reg = ctx.reg
 	local corner = ctx.corner
 	local m3Font = ctx.m3Font
+	local fontWeight = ctx.fontWeight
 	local popupLayer = ctx.popupLayer
-	local win = ctx.win
 	local track = ctx.track
 	local onHeartbeat = ctx.onHeartbeat
 
-	type Palette = { bg: Color3, fg: Color3, pri: Color3, onpri: Color3, inact: Color3, out: Color3 }
 	type Attached = {
-		text: string | (() -> string?),
+		content: TooltipInput,
 		opts: TooltipAttachOptions?,
 		conns: { RBXScriptConnection },
 	}
@@ -66,39 +102,177 @@ return function(ctx)
 	bubblePad.PaddingBottom = UDim.new(0, 8)
 	bubblePad.Parent = bubble
 
-	local bodyLbl = Instance.new("TextLabel")
-	bodyLbl.Name = "Body"
-	bodyLbl.Size = UDim2.new(1, 0, 0, 0)
-	bodyLbl.AutomaticSize = Enum.AutomaticSize.Y
-	bodyLbl.BackgroundTransparency = 1
-	bodyLbl.TextWrapped = true
-	bodyLbl.FontFace = m3Font
-	bodyLbl.TextSize = 12
-	bodyLbl.TextXAlignment = Enum.TextXAlignment.Left
-	bodyLbl.TextYAlignment = Enum.TextYAlignment.Top
-	bodyLbl.Parent = bubble
-	reg(bodyLbl, "TextColor3", "fg")
+	local contentRoot = Instance.new("Frame")
+	contentRoot.Name = "Content"
+	contentRoot.Size = UDim2.new(1, 0, 0, 0)
+	contentRoot.AutomaticSize = Enum.AutomaticSize.Y
+	contentRoot.BackgroundTransparency = 1
+	contentRoot.BorderSizePixel = 0
+	contentRoot.Parent = bubble
+
+	local contentLayout = Instance.new("UIListLayout")
+	contentLayout.Padding = UDim.new(0, 6)
+	contentLayout.SortOrder = Enum.SortOrder.LayoutOrder
+	contentLayout.Parent = contentRoot
 
 	local attached: { [GuiObject]: Attached } = {}
 	local activeTarget: GuiObject? = nil
 	local showToken = 0
 	local currentMaxW = DEFAULT_MAX_W
 
-	local function resolveText(source: string | (() -> string?)): string?
-		if type(source) == "function" then
-			return source()
-		end
-		local t = source
-		if t == "" then
+	local function normalizeContent(input: TooltipInput?): TooltipContent?
+		if input == nil then
 			return nil
 		end
-		return t
+		if type(input) == "function" then
+			return normalizeContent(input())
+		end
+		if type(input) == "string" then
+			if input == "" then
+				return nil
+			end
+			return { blocks = { { kind = "text", text = input } } }
+		end
+		if type(input) == "table" then
+			if type(input.blocks) == "table" and #input.blocks > 0 then
+				return input :: TooltipContent
+			end
+		end
+		return nil
+	end
+
+	local function clearContent()
+		for _, ch in contentRoot:GetChildren() do
+			if not ch:IsA("UIListLayout") then
+				ch:Destroy()
+			end
+		end
+	end
+
+	local function addTextBlock(order: number, text: string, size: number, token: string, wrapped: boolean?)
+		local lbl = Instance.new("TextLabel")
+		lbl.Name = "Block"
+		lbl.LayoutOrder = order
+		lbl.Size = UDim2.new(1, 0, 0, 0)
+		lbl.AutomaticSize = Enum.AutomaticSize.Y
+		lbl.BackgroundTransparency = 1
+		lbl.Text = text
+		lbl.FontFace = if token == "fg" then fontWeight(Enum.FontWeight.Medium) else m3Font
+		lbl.TextSize = size
+		lbl.TextXAlignment = Enum.TextXAlignment.Left
+		lbl.TextYAlignment = Enum.TextYAlignment.Top
+		lbl.TextWrapped = wrapped == true
+		lbl.Parent = contentRoot
+		reg(lbl, "TextColor3", token)
+		return lbl
+	end
+
+	local function renderContent(content: TooltipContent)
+		clearContent()
+		local order = 0
+		for _, block in content.blocks do
+			order += 1
+			if block.kind == "text" then
+				addTextBlock(order, block.text, 12, if block.muted then "out" else "fg", true)
+			elseif block.kind == "title" then
+				addTextBlock(order, block.text, 13, "fg", false)
+			elseif block.kind == "divider" then
+				local div = Instance.new("Frame")
+				div.Name = "Divider"
+				div.LayoutOrder = order
+				div.Size = UDim2.new(1, 0, 0, 1)
+				div.BorderSizePixel = 0
+				div.BackgroundTransparency = 0.55
+				div.Parent = contentRoot
+				reg(div, "BackgroundColor3", "out")
+			elseif block.kind == "stat" then
+				local group = Instance.new("Frame")
+				group.Name = "Stat"
+				group.LayoutOrder = order
+				group.Size = UDim2.new(1, 0, 0, 0)
+				group.AutomaticSize = Enum.AutomaticSize.Y
+				group.BackgroundTransparency = 1
+				group.Parent = contentRoot
+
+				local groupLayout = Instance.new("UIListLayout")
+				groupLayout.Padding = UDim.new(0, 2)
+				groupLayout.SortOrder = Enum.SortOrder.LayoutOrder
+				groupLayout.Parent = group
+
+				local labelLbl = Instance.new("TextLabel")
+				labelLbl.LayoutOrder = 0
+				labelLbl.Size = UDim2.new(1, 0, 0, 0)
+				labelLbl.AutomaticSize = Enum.AutomaticSize.Y
+				labelLbl.BackgroundTransparency = 1
+				labelLbl.Text = block.label
+				labelLbl.FontFace = m3Font
+				labelLbl.TextSize = 10
+				labelLbl.TextXAlignment = Enum.TextXAlignment.Left
+				labelLbl.Parent = group
+				reg(labelLbl, "TextColor3", "out")
+
+				local valueLbl = Instance.new("TextLabel")
+				valueLbl.LayoutOrder = 1
+				valueLbl.Size = UDim2.new(1, 0, 0, 0)
+				valueLbl.AutomaticSize = Enum.AutomaticSize.Y
+				valueLbl.BackgroundTransparency = 1
+				valueLbl.Text = block.value
+				valueLbl.FontFace = fontWeight(Enum.FontWeight.Medium)
+				valueLbl.TextSize = 12
+				valueLbl.TextWrapped = true
+				valueLbl.TextXAlignment = Enum.TextXAlignment.Left
+				valueLbl.Parent = group
+				reg(valueLbl, "TextColor3", if block.muted then "out" else "fg")
+			elseif block.kind == "row" then
+				local row = Instance.new("Frame")
+				row.Name = "Row"
+				row.LayoutOrder = order
+				row.Size = UDim2.new(1, 0, 0, 0)
+				row.AutomaticSize = Enum.AutomaticSize.Y
+				row.BackgroundTransparency = 1
+				row.Parent = contentRoot
+
+				local rowLayout = Instance.new("UIListLayout")
+				rowLayout.FillDirection = Enum.FillDirection.Horizontal
+				rowLayout.VerticalAlignment = Enum.VerticalAlignment.Top
+				rowLayout.Padding = UDim.new(0, 8)
+				rowLayout.SortOrder = Enum.SortOrder.LayoutOrder
+				rowLayout.Parent = row
+
+				local labelLbl = Instance.new("TextLabel")
+				labelLbl.LayoutOrder = 0
+				labelLbl.Size = UDim2.new(0.42, 0, 0, 0)
+				labelLbl.AutomaticSize = Enum.AutomaticSize.Y
+				labelLbl.BackgroundTransparency = 1
+				labelLbl.Text = block.label
+				labelLbl.FontFace = m3Font
+				labelLbl.TextSize = 11
+				labelLbl.TextXAlignment = Enum.TextXAlignment.Left
+				labelLbl.TextWrapped = true
+				labelLbl.Parent = row
+				reg(labelLbl, "TextColor3", "out")
+
+				local valueLbl = Instance.new("TextLabel")
+				valueLbl.LayoutOrder = 1
+				valueLbl.Size = UDim2.new(0.58, -8, 0, 0)
+				valueLbl.AutomaticSize = Enum.AutomaticSize.Y
+				valueLbl.BackgroundTransparency = 1
+				valueLbl.Text = block.value
+				valueLbl.FontFace = fontWeight(Enum.FontWeight.Medium)
+				valueLbl.TextSize = 11
+				valueLbl.TextWrapped = true
+				valueLbl.TextXAlignment = Enum.TextXAlignment.Right
+				valueLbl.Parent = row
+				reg(valueLbl, "TextColor3", if block.muted then "out" else "fg")
+			end
+		end
 	end
 
 	local function hide()
 		showToken += 1
 		activeTarget = nil
 		bubble.Visible = false
+		clearContent()
 	end
 
 	local function clampX(centerX: number, halfW: number): number
@@ -142,9 +316,10 @@ return function(ctx)
 		bubble.Position = UDim2.fromOffset(relX, relY)
 	end
 
-	local function showFor(target: GuiObject, text: string)
+	local function showFor(target: GuiObject, content: TooltipContent)
 		activeTarget = target
-		bodyLbl.Text = text
+		currentMaxW = content.maxWidth or currentMaxW
+		renderContent(content)
 		bubble.Visible = true
 		task.defer(function()
 			if activeTarget == target and bubble.Visible then
@@ -153,7 +328,7 @@ return function(ctx)
 		end)
 	end
 
-	local function attach(target: GuiObject, text: string | (() -> string?), opts: TooltipAttachOptions?)
+	local function attach(target: GuiObject, content: TooltipInput, opts: TooltipAttachOptions?)
 		if attached[target] then
 			for _, c in attached[target].conns do
 				c:Disconnect()
@@ -176,11 +351,12 @@ return function(ctx)
 					if not target.Parent then
 						return
 					end
-					local resolved = resolveText(text)
+					local resolved = normalizeContent(content)
 					if not resolved then
 						return
 					end
-					currentMaxW = maxW
+					resolved.maxWidth = resolved.maxWidth or maxW
+					currentMaxW = resolved.maxWidth or maxW
 					showFor(target, resolved)
 				end)
 			end)
@@ -207,7 +383,7 @@ return function(ctx)
 			end)
 		)
 
-		attached[target] = { text = text, opts = opts, conns = conns }
+		attached[target] = { content = content, opts = opts, conns = conns }
 	end
 
 	local function detach(target: GuiObject)

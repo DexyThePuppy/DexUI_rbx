@@ -54,6 +54,17 @@ export type GameBadgeEntry = {
 	iconImageId: number,
 	iconUri: string?,
 	claimed: boolean,
+	winRatePercentage: number?,
+	pastDayAwardedCount: number?,
+	awardedCount: number?,
+}
+
+export type BadgeTooltipBlock = {
+	kind: string,
+	text: string?,
+	label: string?,
+	value: string?,
+	muted: boolean?,
 }
 
 export type PublicServerEntry = {
@@ -375,6 +386,135 @@ local function fetchBadgeIconUriMap(badgeIds: { number }): { [number]: string }
 	return out
 end
 
+local function formatAwardCount(n: number?): string
+	if n == nil then
+		return "—"
+	end
+	local whole = tostring(math.floor(math.abs(n)))
+	local grouped = whole:reverse():gsub("(%d%d%d)", "%1,"):reverse():gsub("^,", "")
+	if n < 0 then
+		return "-" .. grouped
+	end
+	return grouped
+end
+
+local function badgeRarityTier(winRate: number): string
+	if winRate >= 90 then
+		return "Freebie"
+	end
+	if winRate >= 80 then
+		return "Cake Walk"
+	end
+	if winRate >= 50 then
+		return "Easy"
+	end
+	if winRate >= 30 then
+		return "Moderate"
+	end
+	if winRate >= 20 then
+		return "Challenging"
+	end
+	if winRate >= 10 then
+		return "Hard"
+	end
+	if winRate >= 5 then
+		return "Extreme"
+	end
+	if winRate >= 1 then
+		return "Insane"
+	end
+	return "Impossible"
+end
+
+local function formatRarityLine(winRate: number?): string?
+	if winRate == nil then
+		return nil
+	end
+	return string.format("%.1f%% (%s)", winRate, badgeRarityTier(winRate))
+end
+
+local function applyBadgeStatistics(badge: GameBadgeEntry, stats: any)
+	if type(stats) ~= "table" then
+		return
+	end
+	if type(stats.winRatePercentage) == "number" then
+		badge.winRatePercentage = stats.winRatePercentage
+	end
+	if type(stats.pastDayAwardedCount) == "number" then
+		badge.pastDayAwardedCount = stats.pastDayAwardedCount
+	end
+	if type(stats.awardedCount) == "number" then
+		badge.awardedCount = stats.awardedCount
+	end
+end
+
+local function fetchBadgeStatistics(badgeId: number): any?
+	local data = httpGetJson("https://badges.roblox.com/v1/badges/" .. tostring(badgeId))
+	if type(data) ~= "table" then
+		return nil
+	end
+	return data.statistics
+end
+
+local function enrichBadgeStatistics(badges: { GameBadgeEntry })
+	for i, badge in badges do
+		applyBadgeStatistics(badge, fetchBadgeStatistics(badge.id))
+		if i % 4 == 0 then
+			task.wait(0.04)
+		end
+	end
+end
+
+local function buildBadgeTooltipContent(badge: GameBadgeEntry): { blocks: { BadgeTooltipBlock }, maxWidth: number }
+	local blocks: { BadgeTooltipBlock } = {}
+
+	local desc = badge.description
+	if not desc or desc == "" then
+		desc = badge.displayName or badge.name
+	end
+	if desc and desc ~= "" then
+		table.insert(blocks, { kind = "text", text = desc })
+	end
+
+	local rarityLine = formatRarityLine(badge.winRatePercentage)
+	local hasStats = rarityLine ~= nil
+		or badge.pastDayAwardedCount ~= nil
+		or badge.awardedCount ~= nil
+
+	if hasStats then
+		if #blocks > 0 then
+			table.insert(blocks, { kind = "divider" })
+		end
+		if rarityLine then
+			table.insert(blocks, {
+				kind = "stat",
+				label = "Rarity",
+				value = rarityLine,
+			})
+		end
+		if badge.pastDayAwardedCount ~= nil then
+			table.insert(blocks, {
+				kind = "stat",
+				label = "Won Yesterday",
+				value = formatAwardCount(badge.pastDayAwardedCount),
+			})
+		end
+		if badge.awardedCount ~= nil then
+			table.insert(blocks, {
+				kind = "stat",
+				label = "Won Ever",
+				value = formatAwardCount(badge.awardedCount),
+			})
+		end
+	end
+
+	if #blocks == 0 then
+		table.insert(blocks, { kind = "text", text = badge.name })
+	end
+
+	return { blocks = blocks, maxWidth = 260 }
+end
+
 local function userHasBadge(userId: number, badgeId: number): boolean
 	local ok, has = pcall(function()
 		return BadgeService:UserHasBadgeAsync(userId, badgeId)
@@ -675,6 +815,7 @@ local function fetchCurrentGameMetadata(): GameMetadata
 
 	local userId = if Players.LocalPlayer then Players.LocalPlayer.UserId else nil
 	local badges, badgeAtLeast = fetchUniverseBadges(universeId, userId)
+	task.spawn(enrichBadgeStatistics, badges)
 	local badgeCount = #badges
 	local badgesClaimed = 0
 	for _, badge in badges do
@@ -732,4 +873,5 @@ return {
 	fetchPrivateServersEnabled = fetchPrivateServersEnabled,
 	resolveLoadableUri = resolveLoadableUri,
 	placeThumb = placeThumb,
+	buildBadgeTooltipContent = buildBadgeTooltipContent,
 }

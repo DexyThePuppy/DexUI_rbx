@@ -607,12 +607,10 @@ return function(ctx)
 				nameLbl.Selectable = false
 				nameLbl.Parent = cell
 
-				local tipText = badge.description
-				if not tipText or tipText == "" then
-					tipText = badge.displayName or badge.name
-				end
-				if tooltip and tipText and tipText ~= "" then
-					tooltip.attach(cell, tipText, { maxWidth = 260 })
+				if tooltip then
+					tooltip.attach(cell, function()
+						return GameMetadata.buildBadgeTooltipContent(badge)
+					end)
 				end
 			end
 
