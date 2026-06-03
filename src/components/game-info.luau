@@ -174,7 +174,7 @@ return function(ctx)
 		local SIDE_W = 248
 		local SIDE_GAP = 14
 		local AUTO_SEC = 7
-		local TWEEN_SEC = 0.45
+		local FADE_SEC = 0.18
 
 		local carouselTrack = Instance.new("Frame")
 		carouselTrack.Name = "Track"
@@ -194,6 +194,23 @@ return function(ctx)
 		emptyLbl.Visible = false
 		emptyLbl.ZIndex = 2
 		emptyLbl.Parent = carouselTrack
+
+		local function makeCarouselSlot(name: string): ImageLabel
+			local slot = Instance.new("ImageLabel")
+			slot.Name = name
+			slot.AnchorPoint = Vector2.new(0.5, 0.5)
+			slot.BackgroundTransparency = 1
+			slot.ScaleType = Enum.ScaleType.Crop
+			slot.Visible = false
+			slot.Parent = carouselTrack
+			corner(slot, 10)
+			reg(slot, "BackgroundColor3", "bg")
+			return slot
+		end
+
+		local slotLeft = makeCarouselSlot("Left")
+		local slotCenter = makeCarouselSlot("Center")
+		local slotRight = makeCarouselSlot("Right")
 
 		local dots = Instance.new("Frame")
 		dots.LayoutOrder = 1
@@ -776,7 +793,7 @@ return function(ctx)
 		local lastAutoAt = os.clock()
 		local dotFrames: { Frame } = {}
 		local carouselConn: RBXScriptConnection? = nil
-		local slideEntries: { ImageLabel } = {}
+		local slideUris: { string } = {}
 
 		local prevBtn = Instance.new("TextButton")
 		prevBtn.Size = UDim2.fromOffset(32, 32)
@@ -812,128 +829,120 @@ return function(ctx)
 			return ((index - 1) % count) + 1
 		end
 
-		local function relativeOffset(index: number, active: number, count: number): number
-			local rel = index - active
-			if rel > count / 2 then
-				rel -= count
-			elseif rel < -count / 2 then
-				rel += count
-			end
-			return rel
-		end
-
-		local function layoutCarousel(active: number, animate: boolean)
-			local count = #slideEntries
-			emptyLbl.Visible = count == 0
-			if count == 0 then
-				return
-			end
-
-			active = wrapIndex(active, count)
-			slideIndex = active
-
+		local function layoutSlotPositions()
 			local trackW = math.max(carouselTrack.AbsoluteSize.X, 1)
 			local trackH = math.max(carouselTrack.AbsoluteSize.Y, 1)
 			local midX = trackW * 0.5
 			local midY = trackH * 0.5
 			local step = CENTER_W * 0.5 + SIDE_GAP + SIDE_W * 0.5
 
-			for i, slide in slideEntries do
-				slide.AnchorPoint = Vector2.new(0.5, 0.5)
-				local rel = relativeOffset(i, active, count)
-				local show = count == 1 or rel == 0 or rel == -1 or rel == 1
-				slide.Visible = show
-				if not show then
-					continue
-				end
+			slotCenter.Size = UDim2.fromOffset(CENTER_W, CAROUSEL_H - 16)
+			slotCenter.Position = UDim2.fromOffset(midX, midY)
+			slotCenter.ZIndex = 3
 
-				local targetW = if rel == 0 then CENTER_W else SIDE_W
-				local targetH = if rel == 0 then CAROUSEL_H - 16 else CAROUSEL_H - 28
-				local targetX = midX + rel * step
-				local targetTrans = if rel == 0 then 0 else 0.35
-				local targetZ = if rel == 0 then 3 else 2
+			slotLeft.Size = UDim2.fromOffset(SIDE_W, CAROUSEL_H - 28)
+			slotLeft.Position = UDim2.fromOffset(midX - step, midY)
+			slotLeft.ZIndex = 2
 
-				slide.ZIndex = targetZ
-				if animate then
-					tween(slide, "Size", UDim2.fromOffset(targetW, targetH), TWEEN_SEC)
-					tween(slide, "Position", UDim2.fromOffset(targetX, midY), TWEEN_SEC)
-					tween(slide, "ImageTransparency", targetTrans, TWEEN_SEC)
-				else
-					slide.Size = UDim2.fromOffset(targetW, targetH)
-					slide.AnchorPoint = Vector2.new(0.5, 0.5)
-					slide.Position = UDim2.fromOffset(targetX, midY)
-					slide.ImageTransparency = targetTrans
-				end
+			slotRight.Size = UDim2.fromOffset(SIDE_W, CAROUSEL_H - 28)
+			slotRight.Position = UDim2.fromOffset(midX + step, midY)
+			slotRight.ZIndex = 2
+		end
+
+		local function refreshDots(active: number)
+			for i, dot in dotFrames do
+				dot.BackgroundColor3 = if i == active then curTheme.pri else curTheme.out
+			end
+		end
+
+		-- Three fixed slots always show prev / active / next (infinite loop, no flying slides).
+		local function applySlots(active: number, fadeCenter: boolean?)
+			local count = #slideUris
+			emptyLbl.Visible = count == 0
+			if count == 0 then
+				slotLeft.Visible = false
+				slotCenter.Visible = false
+				slotRight.Visible = false
+				return
 			end
 
-			for i, dot in dotFrames do
-				local color = if i == active then curTheme.pri else curTheme.out
-				if animate then
-					tween(dot, "BackgroundColor3", color, 0.2)
-				else
-					dot.BackgroundColor3 = color
-				end
+			layoutSlotPositions()
+			active = wrapIndex(active, count)
+			slideIndex = active
+			refreshDots(active)
+
+			if count == 1 then
+				slotLeft.Visible = false
+				slotRight.Visible = false
+				slotCenter.Visible = true
+				slotCenter.Image = slideUris[1]
+				slotCenter.ImageTransparency = 0
+				return
+			end
+
+			slotLeft.Visible = true
+			slotRight.Visible = true
+			slotCenter.Visible = true
+
+			local prevIdx = wrapIndex(active - 1, count)
+			local nextIdx = wrapIndex(active + 1, count)
+
+			slotLeft.Image = slideUris[prevIdx]
+			slotLeft.ImageTransparency = 0.35
+			slotRight.Image = slideUris[nextIdx]
+			slotRight.ImageTransparency = 0.35
+
+			if fadeCenter then
+				tween(slotCenter, "ImageTransparency", 1, FADE_SEC)
+				task.delay(FADE_SEC, function()
+					if not slotCenter.Parent then
+						return
+					end
+					slotCenter.Image = slideUris[active]
+					tween(slotCenter, "ImageTransparency", 0, FADE_SEC)
+				end)
+			else
+				slotCenter.Image = slideUris[active]
+				slotCenter.ImageTransparency = 0
 			end
 		end
 
 		local function goToSlide(index: number)
-			local count = #slideEntries
+			local count = #slideUris
 			if count <= 1 then
 				return
 			end
-			layoutCarousel(index, true)
+			local nextIndex = wrapIndex(index, count)
+			if nextIndex == slideIndex then
+				return
+			end
+			applySlots(nextIndex, true)
 			lastAutoAt = os.clock()
 		end
 
-		local function waitForLoaded(slide: ImageLabel, uri: string): boolean
-			local resolved = formatImage(uri)
-			if not resolved then
-				return false
-			end
-			slide.Image = resolved
-			slide.ImageTransparency = 1
-			pcall(function()
-				ContentProvider:PreloadAsync({ slide })
-			end)
-			if string.find(resolved, "rbxasset://", 1, true) then
-				task.wait(0.15)
-				return true
-			end
-			for _ = 1, 50 do
-				if not slide.Parent then
-					return false
-				end
-				if slide.IsLoaded then
-					return true
-				end
-				task.wait(0.12)
-			end
-			return slide.IsLoaded
+		local MAX_CAROUSEL_SLIDES = 8
+
+		local function isCachedUri(uri: string): boolean
+			return string.find(uri, "rbxasset://", 1, true) ~= nil
 		end
 
 		local function uniqueImages(images: { string }): { string }
 			local out: { string } = {}
 			local seen: { [string]: boolean } = {}
 			for _, uri in images do
-				local formatted = formatImage(uri)
-				if formatted and formatted ~= "" and not seen[formatted] then
-					seen[formatted] = true
-					table.insert(out, formatted)
+				local resolved = if isCachedUri(uri) or string.find(uri, "rbxassetid://", 1, true)
+					then uri
+					else formatImage(uri)
+				if resolved and resolved ~= "" and not seen[resolved] then
+					seen[resolved] = true
+					table.insert(out, resolved)
 				end
 			end
 			return out
 		end
 
 		local function rebuildCarousel(images: { string })
-			for _, slide in slideEntries do
-				slide:Destroy()
-			end
-			table.clear(slideEntries)
-			for _, ch in carouselTrack:GetChildren() do
-				if ch:IsA("ImageLabel") then
-					ch:Destroy()
-				end
-			end
+			table.clear(slideUris)
 			for _, ch in dots:GetChildren() do
 				if ch:IsA("Frame") then
 					ch:Destroy()
@@ -946,25 +955,16 @@ return function(ctx)
 			end
 
 			local candidates = uniqueImages(images)
-			for _, uri in candidates do
-				local probe = Instance.new("ImageLabel")
-				probe.Name = "Slide"
-				probe.AnchorPoint = Vector2.new(0.5, 0.5)
-				probe.BackgroundTransparency = 1
-				probe.ScaleType = Enum.ScaleType.Crop
-				probe.Visible = false
-				probe.Parent = carouselTrack
-				corner(probe, 10)
-				reg(probe, "BackgroundColor3", "bg")
-				if waitForLoaded(probe, uri) then
-					probe.Visible = true
-					table.insert(slideEntries, probe)
-				else
-					probe:Destroy()
+			if #candidates > MAX_CAROUSEL_SLIDES then
+				local trimmed: { string } = {}
+				for i = 1, MAX_CAROUSEL_SLIDES do
+					trimmed[i] = candidates[i]
 				end
+				candidates = trimmed
 			end
+			slideUris = candidates
 
-			local count = #slideEntries
+			local count = #slideUris
 			for i = 1, count do
 				local dot = Instance.new("Frame")
 				dot.Size = UDim2.fromOffset(8, 8)
@@ -983,10 +983,17 @@ return function(ctx)
 			slideIndex = 1
 			lastAutoAt = os.clock()
 
+			if count > 0 then
+				local preload: { Instance } = { slotLeft, slotCenter, slotRight }
+				pcall(function()
+					ContentProvider:PreloadAsync(preload)
+				end)
+			end
+
 			task.defer(function()
 				game:GetService("RunService").RenderStepped:Wait()
-				if #slideEntries > 0 then
-					layoutCarousel(1, false)
+				if #slideUris > 0 then
+					applySlots(1, false)
 				end
 			end)
 
@@ -1055,7 +1062,6 @@ return function(ctx)
 
 			renderGameSettings(meta)
 			bodyLbl.Text = description
-			renderBadgeGrid(meta.badges, meta.badgeCountAtLeast)
 
 			local images: { string } = {}
 			if entry and entry.images then
@@ -1067,18 +1073,19 @@ return function(ctx)
 				end
 			end
 			for _, img in meta.images do
-				local resolved = formatImage(img)
-				if resolved then
-					table.insert(images, resolved)
-				end
+				table.insert(images, img)
 			end
 			if #images == 0 then
-				table.insert(images, GameMetadata.placeThumb(meta.placeId, 768, 432))
+				local fallback = GameMetadata.resolveLoadableUri(GameMetadata.placeThumb(meta.placeId, 768, 432))
+				if fallback then
+					table.insert(images, fallback)
+				end
 			end
 
 			rebuildCarousel(images)
+			renderBadgeGrid(meta.badges, meta.badgeCountAtLeast)
 
-			if #slideEntries == 0 and #images > 0 then
+			if #slideUris == 0 and #images > 0 then
 				extraLbl.Text = "Thumbnails could not load. Executor needs request + getcustomasset, or rbxthumb support."
 			end
 

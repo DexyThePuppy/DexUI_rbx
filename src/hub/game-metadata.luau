@@ -327,22 +327,52 @@ end
 local MAX_BADGE_PAGES = 5
 
 local function fetchBadgeIconUri(badgeId: number): string?
-	local data = httpGetJson(
-		"https://thumbnails.roblox.com/v1/badges/icons?badgeIds="
-			.. tostring(badgeId)
-			.. "&size=150x150&format=Png&isCircular=false"
-	)
-	if type(data) ~= "table" or type(data.data) ~= "table" or #data.data == 0 then
-		return string.format("rbxthumb://type=BadgeIcon&id=%d&w=150&h=150", badgeId)
+	return string.format("rbxthumb://type=BadgeIcon&id=%d&w=150&h=150", badgeId)
+end
+
+local BADGE_ICON_BATCH = 50
+
+local function fetchBadgeIconUriMap(badgeIds: { number }): { [number]: string }
+	local out: { [number]: string } = {}
+	if #badgeIds == 0 then
+		return out
 	end
-	local row = data.data[1]
-	if type(row) == "table" and type(row.imageUrl) == "string" then
-		local cached = cdnUrlToLoadable(row.imageUrl)
-		if cached then
-			return cached
+
+	for start = 1, #badgeIds, BADGE_ICON_BATCH do
+		local chunk: { string } = {}
+		for i = start, math.min(start + BADGE_ICON_BATCH - 1, #badgeIds) do
+			table.insert(chunk, tostring(badgeIds[i]))
+		end
+		local data = httpGetJson(
+			"https://thumbnails.roblox.com/v1/badges/icons?badgeIds="
+				.. table.concat(chunk, ",")
+				.. "&size=150x150&format=Png&isCircular=false"
+		)
+		if type(data) ~= "table" or type(data.data) ~= "table" then
+			continue
+		end
+		for _, row in data.data do
+			if type(row) == "table" and type(row.targetId) == "number" then
+				local badgeId = row.targetId
+				if type(row.imageUrl) == "string" then
+					local cached = cdnUrlToLoadable(row.imageUrl)
+					if cached then
+						out[badgeId] = cached
+						continue
+					end
+				end
+				out[badgeId] = fetchBadgeIconUri(badgeId)
+			end
 		end
 	end
-	return string.format("rbxthumb://type=BadgeIcon&id=%d&w=150&h=150", badgeId)
+
+	for _, badgeId in badgeIds do
+		if not out[badgeId] then
+			out[badgeId] = fetchBadgeIconUri(badgeId)
+		end
+	end
+
+	return out
 end
 
 local function userHasBadge(userId: number, badgeId: number): boolean
@@ -386,7 +416,7 @@ local function fetchUniverseBadges(universeId: number, userId: number?): ({ Game
 						elseif type(row.description) == "string" then row.description
 						else nil,
 					iconImageId = iconId,
-					iconUri = fetchBadgeIconUri(row.id),
+					iconUri = nil,
 					claimed = false,
 				})
 			end
@@ -401,6 +431,12 @@ local function fetchUniverseBadges(universeId: number, userId: number?): ({ Game
 		end
 	end
 
+	local badgeIds: { number } = {}
+	for _, badge in raw do
+		table.insert(badgeIds, badge.id)
+	end
+	local iconMap = fetchBadgeIconUriMap(badgeIds)
+
 	if userId then
 		for i, badge in raw do
 			raw[i] = {
@@ -409,12 +445,16 @@ local function fetchUniverseBadges(universeId: number, userId: number?): ({ Game
 				displayName = badge.displayName,
 				description = badge.description,
 				iconImageId = badge.iconImageId,
-				iconUri = badge.iconUri,
+				iconUri = iconMap[badge.id],
 				claimed = userHasBadge(userId, badge.id),
 			}
 			if i % 8 == 0 then
 				task.wait()
 			end
+		end
+	else
+		for i, badge in raw do
+			raw[i].iconUri = iconMap[badge.id]
 		end
 	end
 
@@ -454,7 +494,7 @@ local function fetchLoadableThumbnailUris(universeId: number, iconAssetId: numbe
 	local seen: { [string]: boolean } = {}
 
 	if iconAssetId and iconAssetId > 0 then
-		addImage(uris, seen, "rbxassetid://" .. tostring(iconAssetId))
+		addResolvedImage(uris, seen, "rbxassetid://" .. tostring(iconAssetId))
 	end
 
 	local multi = httpGetJson(
@@ -466,7 +506,7 @@ local function fetchLoadableThumbnailUris(universeId: number, iconAssetId: numbe
 		for _, bucket in multi.data do
 			if type(bucket.thumbnails) == "table" then
 				for _, thumb in bucket.thumbnails do
-					addImage(uris, seen, resolveThumbnailEntry(thumb, universeId))
+					addResolvedImage(uris, seen, resolveThumbnailEntry(thumb, universeId))
 				end
 			end
 		end
@@ -479,7 +519,7 @@ local function fetchLoadableThumbnailUris(universeId: number, iconAssetId: numbe
 	)
 	if type(icon) == "table" and type(icon.data) == "table" then
 		for _, row in icon.data do
-			addImage(uris, seen, resolveThumbnailEntry(row, universeId))
+			addResolvedImage(uris, seen, resolveThumbnailEntry(row, universeId))
 		end
 	end
 
@@ -622,6 +662,17 @@ local function fetchCurrentGameMetadata(): GameMetadata
 	end
 
 	local upVotes, downVotes = fetchVotes(universeId)
+
+	-- Carousel thumbnails first (CDN cache) before heavier badge/server work.
+	local images: { string } = {}
+	local seen: { [string]: boolean } = {}
+	for _, uri in fetchLoadableThumbnailUris(universeId, iconAssetId) do
+		addResolvedImage(images, seen, uri)
+	end
+	if #images == 0 then
+		addResolvedImage(images, seen, placeThumb(placeId, 768, 432))
+	end
+
 	local userId = if Players.LocalPlayer then Players.LocalPlayer.UserId else nil
 	local badges, badgeAtLeast = fetchUniverseBadges(universeId, userId)
 	local badgeCount = #badges
@@ -634,22 +685,6 @@ local function fetchCurrentGameMetadata(): GameMetadata
 	local groupMemberCount: number? = nil
 	if creatorType == "Group" and creatorId then
 		groupMemberCount = fetchGroupMemberCount(creatorId)
-	end
-
-	local images: { string } = {}
-	local seen: { [string]: boolean } = {}
-	for _, uri in fetchLoadableThumbnailUris(universeId, iconAssetId) do
-		addResolvedImage(images, seen, uri)
-	end
-	for _, assetId in fetchMediaAssetIds(universeId) do
-		addResolvedImage(images, seen, "rbxassetid://" .. string.format("%.0f", assetId))
-	end
-	if rootPlaceId then
-		addResolvedImage(images, seen, placeThumb(rootPlaceId, 768, 432))
-	end
-	addResolvedImage(images, seen, placeThumb(placeId, 420, 420))
-	if #images == 0 then
-		addResolvedImage(images, seen, placeThumb(placeId, 768, 432))
 	end
 
 	local placeVersion, jobId, serverLabel = readSessionInfo()
