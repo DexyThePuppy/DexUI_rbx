@@ -45,7 +45,7 @@ return function(ctx)
 
 		local pad = Instance.new("UIPadding")
 		pad.PaddingTop = UDim.new(0, 14)
-		pad.PaddingBottom = UDim.new(0, 14)
+		pad.PaddingBottom = UDim.new(0, 18)
 		pad.PaddingLeft = UDim.new(0, 16)
 		pad.PaddingRight = UDim.new(0, 16)
 		pad.Parent = frame

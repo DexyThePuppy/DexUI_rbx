@@ -83,7 +83,7 @@ local function createCtx(manifest, DexUI)
 			G[genv.phase] = phase
 		end
 		if ctx.log.verbose then
-			print(logLine("DEBUG", "→ phase"))
+			print(logLine("DEBUG", "-> phase"))
 		end
 	end
 
@@ -1140,7 +1140,7 @@ touchBuy = function(btnModel)
 		local price = priceObj and priceObj.Value or 0
 		if stats.buyGoal and stats.buyGoal ~= btnModel.Name then
 			stats.lastMsg = string.format(
-				"bought %s (%s) ÃƒÂ¢Ã¢â‚¬Â Ã¢â‚¬â„¢ goal %s",
+				"bought %s (%s) -> goal %s",
 				btnModel.Name,
 				fmtGameMoney(price),
 				stats.buyGoal
@@ -1220,7 +1220,7 @@ local function nextStepIncomePad(income, money)
 	return step, step.price - money
 end
 
--- What the farm is doing this cycle (for Progress tab ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â matches tryBuyCheapestButton).
+-- What the farm is doing this cycle (for Progress tab  - matches tryBuyCheapestButton).
 local function describeBuyIntent()
 	local buyable = getBuyableButtons()
 	if #buyable == 0 then
@@ -1321,7 +1321,7 @@ tryBuyCheapestButton = function()
 		if pick then
 			stats.buyGoal = top.name
 			stats.lastMsg = string.format(
-				"progress %s (%s) ÃƒÂ¢Ã¢â‚¬Â Ã¢â‚¬â„¢ goal %s",
+				"progress %s (%s) -> goal %s",
 				pick.name,
 				fmtGameMoney(pick.price),
 				top.name
@@ -1337,7 +1337,7 @@ tryBuyCheapestButton = function()
 		return false
 	end
 
-	-- Only cosmetics remain ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â buy the cheapest affordable one so progression
+	-- Only cosmetics remain  - buy the cheapest affordable one so progression
 	-- (their UnlockNext chains) isn't permanently blocked.
 	table.sort(cosmetics, function(a, b) return a.price < b.price end)
 	local money = getMoney()
@@ -1589,7 +1589,7 @@ local function builtSummary()
 			end
 		end
 	end
-	return string.format("Built %d / %d pads  Ãƒâ€šÃ‚·  %d income pads built", bought, total, incomeBuilt)
+	return string.format("Built %d / %d pads | %d income pads built", bought, total, incomeBuilt)
 end
 
 progressionContent = function()
@@ -1610,12 +1610,12 @@ progressionContent = function()
 	end
 	local intent = describeBuyIntent()
 	if intent.mode == "none" then
-		lines[#lines + 1] = "No buyable pads right now ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â rebirth or a gated"
+		lines[#lines + 1] = "No buyable pads right now  - rebirth or a gated"
 		lines[#lines + 1] = "unlock may be blocking the next area."
 		return table.concat(lines, "\n")
 	end
 	if intent.mode == "cosmetics" then
-		lines[#lines + 1] = "Only decor pads left ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â buying those to unblock chains."
+		lines[#lines + 1] = "Only decor pads left  - buying those to unblock chains."
 		return table.concat(lines, "\n")
 	end
 
@@ -1654,7 +1654,7 @@ progressionContent = function()
 			"  %s of %s  (%d%%)",
 			fmtGameMoney(money), fmtGameMoney(target.price), pct
 		)
-		lines[#lines + 1] = "  Close to goal ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â not buying cheaper pads anymore."
+		lines[#lines + 1] = "  Close to goal  - not buying cheaper pads anymore."
 	else
 		lines[#lines + 1] = "End goal:  " .. target.name
 		lines[#lines + 1] = string.format(
@@ -1663,7 +1663,7 @@ progressionContent = function()
 		)
 		if intent.nextPad and intent.nextPad.name ~= target.name then
 			lines[#lines + 1] = string.format(
-				"  Next step: %s (%s) ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â need %s more",
+				"  Next step: %s (%s)  - need %s more",
 				intent.nextPad.name,
 				fmtGameMoney(intent.nextPad.price),
 				fmtGameMoney(intent.nextShortfall)
@@ -1672,7 +1672,7 @@ progressionContent = function()
 				local combined = money + intent.pool
 				if combined >= intent.nextPad.price then
 					lines[#lines + 1] = string.format(
-						"  Pool %s ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â collect to afford next pad",
+						"  Pool %s  - collect to afford next pad",
 						fmtGameMoney(intent.pool)
 					)
 				else
@@ -1703,7 +1703,7 @@ progressionContent = function()
 		if not nb then break end
 		local oreN = getButtonOreValue(nb)
 		lines[#lines + 1] = string.format(
-			"  ÃƒÂ¢Ã¢â‚¬Â Ã¢â‚¬â„¢ %s  (%s%s)",
+			"  -> %s  (%s%s)",
 			nb.Name, buttonCostLabel(nb), oreN > 0 and (", +" .. oreN .. " ore") or ""
 		)
 		cur, shown = nb, shown + 1
@@ -1743,7 +1743,7 @@ end
 local function updateProgressLabel(force)
 	local progressLabel = ctx.widgets.progress
 	if not (progressLabel and progressLabel.Set) then return end
-	if not force and os.clock() - lastProgressAt < 1 then return end
+	if not force and os.clock() - lastProgressAt < 0.5 then return end
 	lastProgressAt = os.clock()
 	pcall(function()
 		progressLabel:Set({ Title = "Progression", Content = progressionContent() })
@@ -1753,7 +1753,7 @@ end
 local function statusLine()
 	local prog = rebirthCache
 	return string.format(
-		"%s %s Ãƒâ€šÃ‚· pool %s (df %s) Ãƒâ€šÃ‚· gems %d Ãƒâ€šÃ‚· R%d Ãƒâ€šÃ‚· reb %d/%d",
+		"%s %s | pool %s (df %s) | gems %d | R%d | reb %d/%d",
 		fmtGameMoney(getMoney()),
 		fmtIncomeRate(incomePerSec),
 		tostring(getClientToCollect()),
@@ -1768,9 +1768,9 @@ end
 local function statsLine()
 	local msg = stats.lastMsg
 	if msg and msg ~= "" then
-		return string.format("Cycles %d Ãƒâ€šÃ‚· Errors %d Ãƒâ€šÃ‚· %s", stats.cycles, stats.errors, msg)
+		return string.format("Cycles %d | Errors %d | %s", stats.cycles, stats.errors, msg)
 	end
-	return string.format("Cycles %d Ãƒâ€šÃ‚· Errors %d Ãƒâ€šÃ‚· phase %s", stats.cycles, stats.errors, ctx.log.phase)
+	return string.format("Cycles %d | Errors %d | phase %s", stats.cycles, stats.errors, ctx.log.phase)
 end
 
 local function updateStatusLabel()
@@ -1794,6 +1794,7 @@ local function farmOnce()
 	if not Config.Enabled then
 		stats.lastMsg = "master off"
 		setPhase("idle")
+		updateStatusLabel()
 		return
 	end
 
@@ -2288,16 +2289,16 @@ end
 
 	ui:AddDivider()
 	ui:AddSection("Live status")
-	local statusWidget = ui:AddLabel(ctx.status.line())
+	local statusPara = ui:AddParagraph("Status", ctx.status.line())
 	ctx.widgets.status = {
 		Set = function(_, text)
-			statusWidget.SetText(text)
+			statusPara:Set({ Content = text })
 		end,
 	}
-	local statsWidget = ui:AddLabel(ctx.status.statsLine())
+	local statsPara = ui:AddParagraph("Stats", ctx.status.statsLine())
 	ctx.widgets.stats = {
 		Set = function(_, text)
-			statsWidget.SetText(text)
+			statsPara:Set({ Content = text })
 		end,
 	}
 
@@ -2364,7 +2365,7 @@ end
 	end)
 	ui:AddButton("Print diagnostics", function()
 		local diag = string.format(
-			"phase %s · alive %s · cycles %d · errors %d · last %.1fs · %s",
+			"phase %s | alive %s | cycles %d | errors %d | last %.1fs | %s",
 			ctx.log.phase,
 			tostring(ctx.isAlive()),
 			stats.cycles,
@@ -2436,7 +2437,17 @@ if not ctx.findPath then
 end
 ctx.log.setPhase("ready")
 ctx.log.info("Loaded (DexUI) - all toggles default OFF | " .. ctx.status.line())
+ctx.status.update()
+ctx.progress.update(true)
 ctx.loop.startHeartbeat({ masterKey = "Enabled", delayKey = "LoopDelay", tick = ctx.farm.safeOnce })
+task.spawn(function()
+	while ctx.isAlive() do
+		task.wait(2)
+		if ctx.isAlive() then
+			ctx.status.update()
+		end
+	end
+end)
 ctx.loop.startWatchdog({
 	masterKey = "Enabled",
 	onTick = function()
