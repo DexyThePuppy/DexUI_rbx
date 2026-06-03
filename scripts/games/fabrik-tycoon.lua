@@ -168,10 +168,12 @@ local function createCtx(manifest, DexUI)
 	end
 
 	function ctx.notify.push(opts)
-		local ui = ctx.getUi()
-		if ui and ui.Notify then
-			ui:Notify(opts)
-		end
+		task.defer(function()
+			local ui = ctx.getUi()
+			if ui and ui.Notify then
+				ui:Notify(opts)
+			end
+		end)
 	end
 
 	function ctx.notify.action(text)
@@ -182,10 +184,12 @@ local function createCtx(manifest, DexUI)
 	end
 
 	function ctx.feedback.play(pattern)
-		local ui = ctx.getUi()
-		if ui and ui.PlayFeedback then
-			ui:PlayFeedback(pattern)
-		end
+		task.defer(function()
+			local ui = ctx.getUi()
+			if ui and ui.PlayFeedback then
+				ui:PlayFeedback(pattern)
+			end
+		end)
 	end
 
 	function ctx.track(conn)

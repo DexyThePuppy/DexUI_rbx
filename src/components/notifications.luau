@@ -757,7 +757,13 @@ return function(ctx)
 	end
 
 	function lib:Notify(opts: { Title: string?, Content: string?, Duration: number?, Style: NotificationStyle? })
-		playNotificationSound()
-		pushNotif(formatNotifText(opts), opts.Duration, opts.Style)
+		local text = formatNotifText(opts)
+		local life = opts.Duration
+		local styleOverride = opts.Style
+		-- Heartbeat / low-identity threads cannot create Instances; defer to the main task.
+		task.defer(function()
+			playNotificationSound()
+			pushNotif(text, life, styleOverride)
+		end)
 	end
 end
