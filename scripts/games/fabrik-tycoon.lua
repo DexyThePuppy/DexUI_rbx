@@ -848,9 +848,6 @@ if not ctx.isAlive() then return end
 	local rebirthBusyUntil = ctx.timers.rebirthBusyUntil
 	local loopAcc = ctx.timers.loopAcc
 	local rebirthCache = ctx.caches.rebirth
-	local statusLabel = ctx.widgets.status
-	local progressLabel = ctx.widgets.progress
-	local statsLabel = ctx.widgets.stats
 	local farmNotify = ctx.notify.push
 	local farmPlayFeedback = ctx.feedback.play
 
@@ -1744,6 +1741,7 @@ local function tryRebirth()
 end
 
 local function updateProgressLabel(force)
+	local progressLabel = ctx.widgets.progress
 	if not (progressLabel and progressLabel.Set) then return end
 	if not force and os.clock() - lastProgressAt < 1 then return end
 	lastProgressAt = os.clock()
@@ -1778,6 +1776,8 @@ end
 local function updateStatusLabel()
 	sampleIncomeRate()
 	updateGameCashDisplay()
+	local statusLabel = ctx.widgets.status
+	local statsLabel = ctx.widgets.stats
 	if statusLabel and statusLabel.Set then
 		pcall(function() statusLabel:Set(statusLine()) end)
 	end
