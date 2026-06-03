@@ -232,6 +232,20 @@ return function(ctx)
 		end
 	end
 
+	local function addTopSquarePatch(surface: Frame, anchor: Vector2, pos: UDim2, bgTransparency: number)
+		-- UICorner is uniform; square overlays on the top edge keep it flush with content above.
+		local patch = Instance.new("Frame")
+		patch.Name = "TopCornerSquare"
+		patch.Size = UDim2.fromOffset(winCorner + 2, winCorner + 2)
+		patch.AnchorPoint = anchor
+		patch.Position = pos
+		patch.BorderSizePixel = 0
+		patch.ZIndex = 72
+		patch.Parent = surface
+		reg(patch, "BackgroundColor3", "inact")
+		patch.BackgroundTransparency = bgTransparency
+	end
+
 	local function bindClock()
 		local clockCfg = runtimeConfig.Clock or {}
 		if clockCfg.Enabled == false then
@@ -267,29 +281,22 @@ return function(ctx)
 
 		local height = runtimeConfig.Height or 28
 		ctx.FooterHeight = height
-
-		-- CanvasGroup + UICorner clips the footer to the window's bottom curve (a plain
-		-- Frame would paint square corners inside the rounded window).
-		local wrap = Instance.new("CanvasGroup")
-		wrap.Name = "FooterWrap"
-		wrap.AnchorPoint = Vector2.new(0, 1)
-		wrap.Position = UDim2.new(0, 0, 1, 0)
-		wrap.Size = UDim2.new(1, 0, 0, height)
-		wrap.BorderSizePixel = 0
-		wrap.BackgroundTransparency = 1
-		wrap.ZIndex = 68
-		wrap.Parent = win
-		corner(wrap, winCorner)
+		local bgTransparency = runtimeConfig.BackgroundTransparency or 0.35
 
 		local bar = Instance.new("Frame")
 		bar.Name = "Footer"
-		bar.Size = UDim2.fromScale(1, 1)
+		bar.AnchorPoint = Vector2.new(0, 1)
+		bar.Position = UDim2.new(0, 0, 1, 0)
+		bar.Size = UDim2.new(1, 0, 0, height)
 		bar.BorderSizePixel = 0
 		bar.ZIndex = 68
 		bar.ClipsDescendants = true
-		bar.Parent = wrap
+		bar.Parent = win
 		reg(bar, "BackgroundColor3", "inact")
-		bar.BackgroundTransparency = runtimeConfig.BackgroundTransparency or 0.35
+		bar.BackgroundTransparency = bgTransparency
+		corner(bar, winCorner)
+		addTopSquarePatch(bar, Vector2.new(0, 0), UDim2.new(0, 0, 0, 0), bgTransparency)
+		addTopSquarePatch(bar, Vector2.new(1, 0), UDim2.new(1, 0, 0, 0), bgTransparency)
 		footerBar = bar
 
 		if runtimeConfig.ShowTopDivider ~= false then
