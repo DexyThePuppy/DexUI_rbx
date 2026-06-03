@@ -10,7 +10,8 @@
     Collect / gems / rebirth: real remotes (no teleport)
     Manual droppers: fireproximityprompt on MBD1 pad (all manual droppers listen to it)
 
-  Requires getgenv().DexUI (set by the DexUI scripts hub before execute).
+  Requires getgenv().DexUI (scripts hub). UI: CreateWindow + components; farm
+  toasts use lib:Notify (notifications.luau).
 ]]
 
 local DexUI = (getgenv and getgenv().DexUI) or nil
@@ -21,7 +22,6 @@ end
 local plrs = game:GetService("Players")
 local http = game:GetService("HttpService")
 local rs = game:GetService("RunService")
-local TweenService = game:GetService("TweenService")
 
 local G = (getgenv and getgenv()) or shared or _G
 local LEGACY_GUI = "M3_FabrikFarm"
@@ -121,6 +121,10 @@ local function stopSessionThreads(session)
 	end
 end
 
+local function getFarmUi()
+	return G.__FabrikFarmUI
+end
+
 local function shutdown(notify)
 	local s = Session or G.__FabrikFarmSession
 	local wasActive = s and s.alive
@@ -135,6 +139,10 @@ local function shutdown(notify)
 	destroyLegacyGui()
 	setPhase("unloaded")
 	if notify ~= false and wasActive then
+		local ui = getFarmUi()
+		if ui and ui.Notify then
+			ui:Notify({ Title = "Fabrik Farm", Content = "Unloaded — farm stopped", Duration = 2.5 })
+		end
 		logInfo("Unloaded — farm loops stopped, UI removed")
 	end
 end
@@ -397,336 +405,22 @@ local function hookGameCashDisplay()
 	updateGameCashDisplay()
 end
 
--- Terraria / MC-style feed: every farm action stacks on the right with rainbow text.
--- Scoped in an IIFE so main chunk stays under Luau's 200 local register cap.
-local pushFarmHistory, recordPurchaseHistory, startPurchaseHistoryJanitor
-;(function()
-local HISTORY_MAX = 8
-local HISTORY_LIFE = 4.2
-local HISTORY_FADE_IN = 0.22
-local HISTORY_FADE_OUT = 0.3
-local HISTORY_SLIDE = 0.24
-local HISTORY_TEXT_SIZE = 22
-local HISTORY_ROW = 36
-local HISTORY_GAP = 5
-local HISTORY_WIDTH = 440
-local HISTORY_PAD_RIGHT = 18
-local HISTORY_HUE_STEP = 0.06
-local HISTORY_FILL_HUE_SPAN = 0.045
-local HISTORY_FILL_STOPS = 6
-local HISTORY_STROKE_THICKNESS = 3.5
-local historyGui
-local historyStack
-local historyEntries = {}
-local historyRainbowCounter = 0
-local gameUiTextRef
+-- Farm action toasts via DexUI notifications (src/components/notifications.luau).
+local FARM_NOTIF_DURATION = 4.2
 
--- Wipe stuck feed rows from a prior inject (GUI may live under gethui, not PlayerGui).
-local function resetPurchaseHistoryFeed()
-	destroyNamedGui(HISTORY_GUI)
-	if historyGui and historyGui.Parent then
-		pcall(function() historyGui:Destroy() end)
-	end
-	historyGui = nil
-	historyStack = nil
-	for i = #historyEntries, 1, -1 do
-		local entry = historyEntries[i]
-		if entry.label and entry.label.Parent then
-			pcall(function() entry.label:Destroy() end)
-		end
-		table.remove(historyEntries, i)
-	end
-	historyRainbowCounter = 0
-end
-
-resetPurchaseHistoryFeed()
-
-local function historyRowStep()
-	return HISTORY_ROW + HISTORY_GAP
-end
-
-local function getGameUiTextRef()
-	if gameUiTextRef and gameUiTextRef.Parent then return gameUiTextRef end
-	gameUiTextRef = getGameCashLabel()
-	return gameUiTextRef
-end
-
-local function cloneColorSequence(seq)
-	local keypoints = {}
-	for _, kp in seq.Keypoints do
-		keypoints[#keypoints + 1] = ColorSequenceKeypoint.new(kp.Time, kp.Value)
-	end
-	return ColorSequence.new(keypoints)
-end
-
-local function cloneNumberSequence(seq)
-	local keypoints = {}
-	for _, kp in seq.Keypoints do
-		keypoints[#keypoints + 1] = NumberSequenceKeypoint.new(kp.Time, kp.Value, kp.Envelope)
-	end
-	return NumberSequence.new(keypoints)
-end
-
-local function cloneUIGradient(source, parent)
-	local grad = Instance.new("UIGradient")
-	grad.Color = cloneColorSequence(source.Color)
-	grad.Transparency = cloneNumberSequence(source.Transparency)
-	grad.Rotation = source.Rotation
-	grad.Enabled = source.Enabled
-	grad.Parent = parent
-	return grad
-end
-
--- Walk hue backward from red through magenta into purple, then the rest of the wheel.
-local function historyBaseHue(rainbowIndex)
-	return (1 - rainbowIndex * HISTORY_HUE_STEP) % 1
-end
-
-local function rainbowColor(hue, sat, val)
-	return Color3.fromHSV(hue % 1, math.clamp(sat, 0, 1), math.clamp(val, 0, 1))
-end
-
-local function makeRainbowFillGradient(baseHue)
-	local keypoints = {}
-	local stops = math.max(2, HISTORY_FILL_STOPS)
-	for i = 0, stops - 1 do
-		local t = i / (stops - 1)
-		local h = (baseHue + t * HISTORY_FILL_HUE_SPAN) % 1
-		local sat = 0.92 - t * 0.08
-		local val = 1 - t * 0.14
-		keypoints[#keypoints + 1] = ColorSequenceKeypoint.new(t, rainbowColor(h, sat, val))
-	end
-	return ColorSequence.new(keypoints)
-end
-
-local function makeRainbowStrokeGradient(baseHue)
-	return ColorSequence.new({
-		ColorSequenceKeypoint.new(0, rainbowColor(baseHue + 0.02, 0.85, 0.28)),
-		ColorSequenceKeypoint.new(1, rainbowColor(baseHue + HISTORY_FILL_HUE_SPAN, 0.9, 0.14)),
-	})
-end
-
--- Match game font (FredokaOne) but rainbow fill + thin dark-rainbow stroke.
-local function applyRainbowHistoryStyle(label, rainbowIndex)
-	local ref = getGameUiTextRef()
-	label.BackgroundTransparency = 1
-	label.TextColor3 = Color3.new(1, 1, 1)
-	label.TextStrokeTransparency = 1
-	label.RichText = false
-	label.TextXAlignment = Enum.TextXAlignment.Right
-	label.TextYAlignment = Enum.TextYAlignment.Center
-
-	if ref then
-		label.FontFace = ref.FontFace
-	else
-		label.Font = Enum.Font.FredokaOne
-	end
-	label.TextSize = HISTORY_TEXT_SIZE
-
-	local baseHue = historyBaseHue(rainbowIndex)
-	local fillGrad = Instance.new("UIGradient")
-	fillGrad.Rotation = 90
-	fillGrad.Color = makeRainbowFillGradient(baseHue)
-	fillGrad.Parent = label
-
-	local refStroke = ref and ref:FindFirstChildOfClass("UIStroke")
-	local stroke = Instance.new("UIStroke")
-	stroke.ApplyStrokeMode = refStroke and refStroke.ApplyStrokeMode or Enum.ApplyStrokeMode.Contextual
-	stroke.LineJoinMode = refStroke and refStroke.LineJoinMode or Enum.LineJoinMode.Round
-	stroke.Transparency = 0
-	stroke.Thickness = HISTORY_STROKE_THICKNESS
-	stroke.Parent = label
-
-	local strokeGrad = Instance.new("UIGradient")
-	strokeGrad.Rotation = 90
-	strokeGrad.Color = makeRainbowStrokeGradient(baseHue)
-	strokeGrad.Parent = stroke
-end
-
--- Match MainUI HUD Cash.Amount: FredokaOne, white fill + vertical green gradient,
--- UIStroke outline with its own dark-green gradient (same as in-game $ display).
-local function applyGameCurrencyStyle(label, textSize)
-	local ref = getGameUiTextRef()
-	local size = textSize or (ref and ref.TextSize) or 14
-	label.BackgroundTransparency = 1
-	label.TextColor3 = Color3.new(1, 1, 1)
-	label.TextStrokeTransparency = 1
-	label.RichText = ref and ref.RichText or false
-	label.TextXAlignment = Enum.TextXAlignment.Right
-	label.TextYAlignment = Enum.TextYAlignment.Center
-
-	if ref then
-		label.FontFace = ref.FontFace
-	else
-		label.Font = Enum.Font.FredokaOne
-	end
-	label.TextSize = size
-
-	local scale = size / math.max(1, ref and ref.TextSize or size)
-	local refFill = ref and ref:FindFirstChildOfClass("UIGradient")
-	if refFill then
-		cloneUIGradient(refFill, label)
-	end
-
-	local refStroke = ref and ref:FindFirstChildOfClass("UIStroke")
-	if refStroke then
-		local stroke = Instance.new("UIStroke")
-		stroke.ApplyStrokeMode = refStroke.ApplyStrokeMode
-		stroke.LineJoinMode = refStroke.LineJoinMode
-		stroke.Color = refStroke.Color
-		stroke.Transparency = refStroke.Transparency
-		stroke.Thickness = refStroke.Thickness * scale
-		stroke.Parent = label
-		local refStrokeGrad = refStroke:FindFirstChildOfClass("UIGradient")
-		if refStrokeGrad then
-			cloneUIGradient(refStrokeGrad, stroke)
-		end
-	end
-end
-
-local function applyGameUiLabelStyle(label, rainbowIndex)
-	applyRainbowHistoryStyle(label, rainbowIndex or 0)
-end
-
-local function fadeHistoryLabel(label, textTransparency, strokeTransparency, duration)
-	local info = TweenInfo.new(duration, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
-	TweenService:Create(label, info, { TextTransparency = textTransparency }):Play()
-	local stroke = label:FindFirstChildOfClass("UIStroke")
-	if stroke then
-		TweenService:Create(stroke, info, { Transparency = strokeTransparency }):Play()
-	end
-end
-
-local function getHistoryParent()
-	local ok, hui = pcall(function() return gethui() end)
-	if ok and hui then return hui end
-	return LP:WaitForChild("PlayerGui")
-end
-
-local function ensurePurchaseHistoryGui()
-	if historyGui and historyGui.Parent and historyStack and historyStack.Parent then
-		return historyStack
-	end
-	historyGui = nil
-	historyStack = nil
-	local gui = Instance.new("ScreenGui")
-	gui.Name = HISTORY_GUI
-	gui.ResetOnSpawn = false
-	gui.IgnoreGuiInset = true
-	gui.DisplayOrder = 45
-	gui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
-	gui.Parent = getHistoryParent()
-
-	local stack = Instance.new("Frame")
-	stack.Name = "Stack"
-	stack.BackgroundTransparency = 1
-	stack.ClipsDescendants = false
-	stack.Size = UDim2.fromOffset(HISTORY_WIDTH, HISTORY_MAX * historyRowStep())
-	stack.AnchorPoint = Vector2.new(1, 1)
-	stack.Position = UDim2.new(1, -8, 0.58, 0)
-	stack.Parent = gui
-
-	historyGui = gui
-	historyStack = stack
-	return stack
-end
-
-local HISTORY_BOTTOM_ROW = HISTORY_MAX - 1
-
-local function historyY(row)
-	return row * historyRowStep()
-end
-
-local function historyRowPos(row)
-	-- Inset from the stack's right edge so thick UIStroke isn't clipped.
-	return UDim2.new(1, -HISTORY_PAD_RIGHT, 0, historyY(row))
-end
-
-local function tweenHistoryLabel(label, targetPos, duration)
-	TweenService:Create(
-		label,
-		TweenInfo.new(duration or HISTORY_SLIDE, Enum.EasingStyle.Quad, Enum.EasingDirection.Out),
-		{ Position = targetPos }
-	):Play()
-end
-
-local function fadeOutHistoryEntry(entry, immediate, onDone)
-	if entry.removing then return end
-	entry.removing = true
-	local label = entry.label
-	if not label or not label.Parent then
-		if onDone then onDone() end
+local function pushFarmHistory(text)
+	if not text or text == "" then
 		return
 	end
-	local duration = immediate and 0.08 or HISTORY_FADE_OUT
-	local info = TweenInfo.new(duration, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
-	local fadeTween = TweenService:Create(label, info, { TextTransparency = 1 })
-	fadeTween:Play()
-	local stroke = label:FindFirstChildOfClass("UIStroke")
-	if stroke then
-		TweenService:Create(stroke, info, { Transparency = 1 }):Play()
-	end
-	fadeTween.Completed:Connect(function()
-		if label.Parent then label:Destroy() end
-		if onDone then onDone() end
-	end)
-end
-
--- Reassign rows so oldest sits highest and newest hugs the bottom slot.
-local function syncHistoryRows(animate, skipEntry)
-	local count = #historyEntries
-	for j, entry in ipairs(historyEntries) do
-		if entry ~= skipEntry and not entry.removing then
-			local label = entry.label
-			if label and label.Parent then
-				local targetRow = HISTORY_BOTTOM_ROW - (count - j)
-				entry.row = targetRow
-				if animate then
-					tweenHistoryLabel(label, historyRowPos(targetRow), HISTORY_SLIDE)
-				else
-					label.Position = historyRowPos(targetRow)
-				end
-			end
-		end
+	local ui = getFarmUi()
+	if ui and ui.Notify then
+		ui:Notify({
+			Content = text,
+			Duration = FARM_NOTIF_DURATION,
+		})
 	end
 end
 
--- Before inserting: slide every visible row up one slot; drop anything pushed off the top.
-local function shiftHistoryUp(animate)
-	local removeIdx = {}
-	for i, entry in ipairs(historyEntries) do
-		if not entry.removing then
-			local label = entry.label
-			if label and label.Parent then
-				local fromRow = entry.row
-				if fromRow == nil then
-					fromRow = HISTORY_BOTTOM_ROW - (#historyEntries - i)
-					entry.row = fromRow
-				end
-				local targetRow = fromRow - 1
-				entry.row = targetRow
-				if targetRow < 0 then
-					removeIdx[#removeIdx + 1] = i
-					fadeOutHistoryEntry(entry, false)
-				elseif animate then
-					tweenHistoryLabel(label, historyRowPos(targetRow), HISTORY_SLIDE)
-				else
-					label.Position = historyRowPos(targetRow)
-				end
-			end
-		end
-	end
-	for ri = #removeIdx, 1, -1 do
-		table.remove(historyEntries, removeIdx[ri])
-	end
-end
-
-local function trimHistoryOverflow()
-	while #historyEntries > HISTORY_MAX do
-		local oldest = table.remove(historyEntries, 1)
-		if oldest then fadeOutHistoryEntry(oldest, true) end
-	end
-end
 local function purchaseHistoryLine(btnModel)
 	local name = btnModel.Name
 	if btnModel:FindFirstChild("RebirthPrice") then
@@ -738,76 +432,17 @@ local function purchaseHistoryLine(btnModel)
 	return "+ " .. name
 end
 
-pushFarmHistory = function(text)
-	if not text or text == "" then return end
-	ensurePurchaseHistoryGui()
-
-	local label = Instance.new("TextLabel")
-	label.Name = "Entry"
-	label.BackgroundTransparency = 1
-	label.AnchorPoint = Vector2.new(1, 0)
-	label.Size = UDim2.fromOffset(HISTORY_WIDTH - HISTORY_PAD_RIGHT, HISTORY_ROW)
-	label.TextTransparency = 1
-	label.TextTruncate = Enum.TextTruncate.AtEnd
-	label.TextWrapped = false
-	label.Text = text
-	local rainbowIndex = historyRainbowCounter
-	historyRainbowCounter += 1
-	applyGameUiLabelStyle(label, rainbowIndex)
-	local stroke = label:FindFirstChildOfClass("UIStroke")
-	if stroke then stroke.Transparency = 1 end
-
-	if #historyEntries > 0 then
-		shiftHistoryUp(true)
-	end
-
-	local bottomY = historyY(HISTORY_BOTTOM_ROW)
-	label.Position = UDim2.new(1, 36, 0, bottomY + 12)
-	label.Parent = historyStack
-
-	local entry = {
-		label = label,
-		at = os.clock(),
-		removing = false,
-		row = HISTORY_BOTTOM_ROW,
-		rainbowIndex = rainbowIndex,
-	}
-	table.insert(historyEntries, entry)
-	trimHistoryOverflow()
-
-	tweenHistoryLabel(label, historyRowPos(HISTORY_BOTTOM_ROW), HISTORY_FADE_IN)
-	fadeHistoryLabel(label, 0, 0, HISTORY_FADE_IN)
-end
-
-recordPurchaseHistory = function(btnModel)
+local function recordPurchaseHistory(btnModel)
 	if btnModel then
 		pushFarmHistory(purchaseHistoryLine(btnModel))
 	end
 end
 
-startPurchaseHistoryJanitor = function()
-	resetPurchaseHistoryFeed()
-	track(rs.Heartbeat:Connect(function()
-		if #historyEntries == 0 then return end
-		local now = os.clock()
-		local needsSync = false
-		for i = #historyEntries, 1, -1 do
-			local entry = historyEntries[i]
-			if not entry.removing and now - entry.at >= HISTORY_LIFE then
-				fadeOutHistoryEntry(entry, false)
-				table.remove(historyEntries, i)
-				needsSync = true
-			elseif entry.removing and (not entry.label or not entry.label.Parent) then
-				table.remove(historyEntries, i)
-				needsSync = true
-			end
-		end
-		if needsSync then
-			syncHistoryRows(true)
-		end
-	end))
+local function cleanupLegacyHistoryGui()
+	destroyNamedGui(HISTORY_GUI)
 end
-end)()
+
+cleanupLegacyHistoryGui()
 
 local function getGems()
 	local df = LP:FindFirstChild("DataFolder")
@@ -2199,6 +1834,16 @@ local function buildDexUI()
 	local ui = DexUI.CreateWindow("Fabrik-Tycoon Farm")
 	G.__FabrikFarmUI = ui
 
+	-- Rainbow stacked toasts (Config.Notifications defaults; same feed as demo).
+	if ui.SetNotificationStyle then
+		ui:SetNotificationStyle({
+			Life = FARM_NOTIF_DURATION,
+			Text = { Gradient = "rainbow" },
+			TextStroke = { Gradient = "rainbow", Thickness = 3.5 },
+			StackPosition = UDim2.new(1, -16, 0.58, 0),
+		})
+	end
+
 	ui:AddTab("Farm", 4483362458)
 	ui:AddSection("Auto farm")
 	ui:AddSwitch("Master auto farm", Config.Enabled, function(v)
@@ -2310,7 +1955,7 @@ runStep("initSyncConfig", syncConfigFromFlags)
 runStep("initRebirthProgress", computeRebirthProgress)
 runStep("initStatus", updateStatusLabel)
 runStep("hookGameCash", hookGameCashDisplay)
-runStep("initPurchaseHistory", startPurchaseHistoryJanitor)
+runStep("cleanupLegacyHistory", cleanupLegacyHistoryGui)
 task.spawn(function()
 	for _ = 1, 20 do
 		if gameCashHooked then break end
