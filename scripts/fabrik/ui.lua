@@ -10,14 +10,12 @@ return function(ctx)
 	local ui = ctx.DexUI.CreateWindow(ctx.manifest.windowTitle or "Fabrik-Tycoon Farm")
 	ctx.dexui.publishUi(ui)
 	ctx.dexui.applyNotifyStyle(ui)
-	ctx.dexui.applyFooter(ui)
 
 	ui:AddTab("Farm", 4483362458)
 	ui:AddSection("Auto farm")
 	ui:AddSwitch("Master auto farm", Config.Enabled, function(v)
 		Config.Enabled = v
 		ctx.feedback.play(v and "toggleOn" or "toggleOff")
-		ctx.status.updateFooter()
 	end)
 
 	ui:AddSection("Include")

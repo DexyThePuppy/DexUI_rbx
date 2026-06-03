@@ -959,16 +959,6 @@ local function statsLine()
 	return string.format("Cycles %d · Errors %d · phase %s", stats.cycles, stats.errors, ctx.log.phase)
 end
 
-local function updateFooterStatus()
-	local ui = ctx.getUi()
-	if not ui or not ui.SetFooterSegmentText then
-		return
-	end
-	local master = if Config.Enabled then "Farm ON" else "Farm OFF"
-	ui:SetFooterSegmentText("farm", master)
-	ui:SetFooterSegmentText("phase", string.format("%s · c%d", ctx.log.phase, stats.cycles))
-end
-
 local function updateStatusLabel()
 	sampleIncomeRate()
 	updateGameCashDisplay()
@@ -978,7 +968,6 @@ local function updateStatusLabel()
 	if statsLabel and statsLabel.Set then
 		pcall(function() statsLabel:Set(statsLine()) end)
 	end
-	updateFooterStatus()
 	updateProgressLabel(false)
 end
 
@@ -1073,6 +1062,5 @@ end
 		line = statusLine,
 		statsLine = statsLine,
 		update = updateStatusLabel,
-		updateFooter = updateFooterStatus,
 	}
 end

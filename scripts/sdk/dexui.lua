@@ -14,14 +14,6 @@ return function(ctx)
 		ui:SetNotificationStyle(style)
 	end
 
-	function ctx.dexui.applyFooter(ui, footerConfig)
-		ui = ui or ctx.getUi()
-		if not ui or not ui.SetFooterConfig then
-			return
-		end
-		ui:SetFooterConfig(footerConfig or ctx.manifest.footer)
-	end
-
 	function ctx.dexui.publishUi(ui)
 		ctx.ui = ui
 		local genv = ctx.genv

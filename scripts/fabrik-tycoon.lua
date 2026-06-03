@@ -95,20 +95,6 @@ local manifest = {
 		StackPosition = UDim2.new(1, -16, 0.58, 0),
 	},
 
-	footer = {
-		Enabled = true,
-		Height = 28,
-		Layout = "split",
-		Left = {
-			{ id = "farm", kind = "text", text = "Farm OFF", muted = true },
-		},
-		Right = {
-			{ id = "phase", kind = "text", text = "boot", align = "right", muted = true },
-			{ id = "spacer", kind = "spacer" },
-			{ id = "version", kind = "version" },
-		},
-	},
-
 	ctxExtend = {
 		upgradeIds = { "OreLimit", "OreValue", "DropperSpeed", "ConveyorSpeed", "WalkSpeed", "ShinyOresChance" },
 	},
