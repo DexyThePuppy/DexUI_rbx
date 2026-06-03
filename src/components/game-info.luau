@@ -329,6 +329,9 @@ return function(ctx)
 				local label = if meta.badgeCountAtLeast
 					then tostring(meta.badgeCount) .. "+ badges"
 					else tostring(meta.badgeCount) .. " badges"
+				if meta.badgesClaimed then
+					label ..= string.format(" (%d claimed)", meta.badgesClaimed)
+				end
 				table.insert(parts, label)
 			end
 			if meta.groupMemberCount then
@@ -375,8 +378,151 @@ return function(ctx)
 
 		makeDivider(4)
 
+		local BADGE_COLS = 4
+		local BADGE_CELL_W = 84
+		local BADGE_CELL_H = 100
+		local BADGE_ICON = 52
+		local CLAIMED_GREEN = Color3.fromRGB(56, 170, 92)
+
+		local badgesSection = makeSection(5)
+		badgesSection.Visible = false
+
+		local badgesHeading = Instance.new("TextLabel")
+		badgesHeading.LayoutOrder = 0
+		badgesHeading.Size = UDim2.new(1, 0, 0, 20)
+		badgesHeading.BackgroundTransparency = 1
+		badgesHeading.Text = "Badges"
+		badgesHeading.FontFace = fontWeight(Enum.FontWeight.Medium)
+		badgesHeading.TextSize = 14
+		badgesHeading.TextXAlignment = Enum.TextXAlignment.Left
+		badgesHeading.Parent = badgesSection
+		reg(badgesHeading, "TextColor3", "pri")
+
+		local badgesStatusLbl = Instance.new("TextLabel")
+		badgesStatusLbl.LayoutOrder = 1
+		badgesStatusLbl.Size = UDim2.new(1, 0, 0, 0)
+		badgesStatusLbl.AutomaticSize = Enum.AutomaticSize.Y
+		badgesStatusLbl.BackgroundTransparency = 1
+		badgesStatusLbl.Text = ""
+		badgesStatusLbl.FontFace = m3Font
+		badgesStatusLbl.TextSize = 11
+		badgesStatusLbl.TextXAlignment = Enum.TextXAlignment.Left
+		badgesStatusLbl.TextWrapped = true
+		badgesStatusLbl.Visible = false
+		badgesStatusLbl.Parent = badgesSection
+		reg(badgesStatusLbl, "TextColor3", "out")
+
+		local badgeGrid = Instance.new("Frame")
+		badgeGrid.Name = "BadgeGrid"
+		badgeGrid.LayoutOrder = 2
+		badgeGrid.Size = UDim2.new(1, 0, 0, 0)
+		badgeGrid.AutomaticSize = Enum.AutomaticSize.Y
+		badgeGrid.BackgroundTransparency = 1
+		badgeGrid.Parent = badgesSection
+
+		local badgeGridLayout = Instance.new("UIGridLayout")
+		badgeGridLayout.CellSize = UDim2.fromOffset(BADGE_CELL_W, BADGE_CELL_H)
+		badgeGridLayout.CellPadding = UDim2.fromOffset(6, 6)
+		badgeGridLayout.SortOrder = Enum.SortOrder.LayoutOrder
+		badgeGridLayout.HorizontalAlignment = Enum.HorizontalAlignment.Left
+		badgeGridLayout.Parent = badgeGrid
+
+		local function badgeThumbUri(iconImageId: number): string
+			if iconImageId > 0 then
+				return string.format("rbxthumb://type=BadgeAsset&id=%d&w=150&h=150", iconImageId)
+			end
+			return ""
+		end
+
+		local function clearBadgeGrid()
+			for _, ch in badgeGrid:GetChildren() do
+				if ch:IsA("Frame") and ch.Name:find("Badge", 1, true) == 1 then
+					ch:Destroy()
+				end
+			end
+		end
+
+		local function renderBadgeGrid(badges: { any }, badgeAtLeast: boolean?)
+			clearBadgeGrid()
+			local count = if badges then #badges else 0
+			if count == 0 then
+				badgesSection.Visible = false
+				return
+			end
+			badgesSection.Visible = true
+
+			local claimed = 0
+			for _, badge in badges do
+				if badge.claimed then
+					claimed += 1
+				end
+			end
+
+			local totalLabel = if badgeAtLeast then tostring(count) .. "+" else tostring(count)
+			badgesHeading.Text = string.format("Badges · %d / %s claimed", claimed, totalLabel)
+
+			for i, badge in badges do
+				local cell = Instance.new("Frame")
+				cell.Name = "Badge" .. tostring(badge.id)
+				cell.LayoutOrder = i
+				cell.Size = UDim2.fromOffset(BADGE_CELL_W, BADGE_CELL_H)
+				cell.BackgroundTransparency = if badge.claimed then 0.35 else 0.55
+				cell.BorderSizePixel = 0
+				cell.Parent = badgeGrid
+				corner(cell, 10)
+				reg(cell, "BackgroundColor3", "bg")
+
+				local icon = Instance.new("ImageLabel")
+				icon.Name = "Icon"
+				icon.Size = UDim2.fromOffset(BADGE_ICON, BADGE_ICON)
+				icon.Position = UDim2.new(0.5, 0, 0, 6)
+				icon.AnchorPoint = Vector2.new(0.5, 0)
+				icon.BackgroundTransparency = 1
+				icon.ScaleType = Enum.ScaleType.Fit
+				icon.ImageTransparency = if badge.claimed then 0 else 0.45
+				icon.Parent = cell
+				local uri = badgeThumbUri(badge.iconImageId)
+				if uri ~= "" then
+					icon.Image = formatImage(uri)
+				end
+
+				if badge.claimed then
+					local tick = Instance.new("TextLabel")
+					tick.Name = "Claimed"
+					tick.Size = UDim2.fromOffset(18, 18)
+					tick.Position = UDim2.new(1, -4, 0, 4)
+					tick.AnchorPoint = Vector2.new(1, 0)
+					tick.BackgroundColor3 = CLAIMED_GREEN
+					tick.Text = "✓"
+					tick.FontFace = fontWeight(Enum.FontWeight.Bold)
+					tick.TextSize = 12
+					tick.TextColor3 = VIP_BADGE_ON
+					tick.Parent = cell
+					corner(tick, 999)
+				end
+
+				local nameLbl = Instance.new("TextLabel")
+				nameLbl.Name = "Name"
+				nameLbl.Size = UDim2.new(1, -8, 0, 32)
+				nameLbl.Position = UDim2.new(0, 4, 1, -34)
+				nameLbl.BackgroundTransparency = 1
+				nameLbl.Text = badge.name
+				nameLbl.FontFace = m3Font
+				nameLbl.TextSize = 10
+				nameLbl.TextWrapped = true
+				nameLbl.TextYAlignment = Enum.TextYAlignment.Top
+				nameLbl.TextColor3 = if badge.claimed then curTheme.fg else curTheme.out
+				nameLbl.Parent = cell
+			end
+
+			local rows = math.max(1, math.ceil(count / BADGE_COLS))
+			badgeGrid.Size = UDim2.new(1, 0, 0, rows * (BADGE_CELL_H + 6) - 6)
+		end
+
+		makeDivider(6)
+
 		-- Public servers (sorted low → high, paged like Media tab)
-		local serversSection = makeSection(5)
+		local serversSection = makeSection(7)
 
 		local serversHeading = Instance.new("TextLabel")
 		serversHeading.LayoutOrder = 0
@@ -865,6 +1011,7 @@ return function(ctx)
 				titleLbl.Text = "Current experience"
 				bodyLbl.Text = "Could not load game metadata. Check HttpService / executor request support."
 				serversStatusLbl.Text = "Public servers unavailable."
+				badgesSection.Visible = false
 				return
 			end
 
@@ -905,6 +1052,7 @@ return function(ctx)
 
 			renderGameSettings(meta)
 			bodyLbl.Text = description
+			renderBadgeGrid(meta.badges, meta.badgeCountAtLeast)
 
 			local images: { string } = {}
 			if entry and entry.images then

@@ -8,6 +8,8 @@ local Util = require("../core/util")
 
 local HttpService = Services.HttpService
 local MarketplaceService = game:GetService("MarketplaceService")
+local BadgeService = game:GetService("BadgeService")
+local Players = game:GetService("Players")
 
 export type GameMetadata = {
 	placeId: number,
@@ -28,8 +30,10 @@ export type GameMetadata = {
 	genre: string?,
 	created: string?,
 	updated: string?,
+	badges: { GameBadgeEntry },
 	badgeCount: number?,
 	badgeCountAtLeast: boolean?,
+	badgesClaimed: number?,
 	groupMemberCount: number?,
 	copyingAllowed: boolean?,
 	createVipServersAllowed: boolean?,
@@ -40,6 +44,15 @@ export type GameMetadata = {
 	serverLabel: string?,
 	images: { string },
 	privateServersEnabled: boolean?,
+}
+
+export type GameBadgeEntry = {
+	id: number,
+	name: string,
+	displayName: string?,
+	description: string?,
+	iconImageId: number,
+	claimed: boolean,
 }
 
 export type PublicServerEntry = {
@@ -258,15 +271,80 @@ local function fetchGroupMemberCount(groupId: number): number?
 	return nil
 end
 
-local function fetchBadgeCount(universeId: number): (number?, boolean)
-	local data = httpGetJson(
-		"https://badges.roblox.com/v1/universes/" .. tostring(universeId) .. "/badges?limit=100&sortOrder=Asc"
-	)
-	if type(data) ~= "table" or type(data.data) ~= "table" then
-		return nil, false
+local MAX_BADGE_PAGES = 5
+
+local function userHasBadge(userId: number, badgeId: number): boolean
+	local ok, has = pcall(function()
+		return BadgeService:UserHasBadgeAsync(userId, badgeId)
+	end)
+	return ok and has == true
+end
+
+local function fetchUniverseBadges(universeId: number, userId: number?): ({ GameBadgeEntry }, boolean)
+	local raw: { GameBadgeEntry } = {}
+	local cursor: string? = nil
+	local atLeast = false
+
+	for page = 1, MAX_BADGE_PAGES do
+		local url = string.format(
+			"https://badges.roblox.com/v1/universes/%d/badges?limit=100&sortOrder=Asc",
+			universeId
+		)
+		if cursor then
+			url ..= "&cursor=" .. HttpService:UrlEncode(cursor)
+		end
+
+		local data = httpGetJson(url)
+		if type(data) ~= "table" or type(data.data) ~= "table" then
+			break
+		end
+
+		for _, row in data.data do
+			if type(row) == "table" and type(row.id) == "number" then
+				local iconId = if type(row.displayIconImageId) == "number" then row.displayIconImageId
+					elseif type(row.iconImageId) == "number" then row.iconImageId
+					else 0
+				table.insert(raw, {
+					id = row.id,
+					name = if type(row.displayName) == "string" and row.displayName ~= "" then row.displayName
+						elseif type(row.name) == "string" then row.name
+						else "Badge",
+					displayName = if type(row.displayName) == "string" then row.displayName else nil,
+					description = if type(row.displayDescription) == "string" then row.displayDescription
+						elseif type(row.description) == "string" then row.description
+						else nil,
+					iconImageId = iconId,
+					claimed = false,
+				})
+			end
+		end
+
+		cursor = if type(data.nextPageCursor) == "string" and data.nextPageCursor ~= "" then data.nextPageCursor else nil
+		if not cursor then
+			break
+		end
+		if page == MAX_BADGE_PAGES then
+			atLeast = true
+		end
 	end
-	local atLeast = type(data.nextPageCursor) == "string" and data.nextPageCursor ~= ""
-	return #data.data, atLeast
+
+	if userId then
+		for i, badge in raw do
+			raw[i] = {
+				id = badge.id,
+				name = badge.name,
+				displayName = badge.displayName,
+				description = badge.description,
+				iconImageId = badge.iconImageId,
+				claimed = userHasBadge(userId, badge.id),
+			}
+			if i % 8 == 0 then
+				task.wait()
+			end
+		end
+	end
+
+	return raw, atLeast
 end
 
 local function fetchMediaAssetIds(universeId: number): { number }
@@ -470,7 +548,15 @@ local function fetchCurrentGameMetadata(): GameMetadata
 	end
 
 	local upVotes, downVotes = fetchVotes(universeId)
-	local badgeCount, badgeAtLeast = fetchBadgeCount(universeId)
+	local userId = if Players.LocalPlayer then Players.LocalPlayer.UserId else nil
+	local badges, badgeAtLeast = fetchUniverseBadges(universeId, userId)
+	local badgeCount = #badges
+	local badgesClaimed = 0
+	for _, badge in badges do
+		if badge.claimed then
+			badgesClaimed += 1
+		end
+	end
 	local groupMemberCount: number? = nil
 	if creatorType == "Group" and creatorId then
 		groupMemberCount = fetchGroupMemberCount(creatorId)
@@ -514,8 +600,10 @@ local function fetchCurrentGameMetadata(): GameMetadata
 		genre = genre,
 		created = created,
 		updated = updated,
+		badges = badges,
 		badgeCount = badgeCount,
 		badgeCountAtLeast = badgeAtLeast,
+		badgesClaimed = badgesClaimed,
 		groupMemberCount = groupMemberCount,
 		copyingAllowed = copyingAllowed,
 		createVipServersAllowed = createVipServersAllowed,
