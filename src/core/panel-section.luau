@@ -54,7 +54,11 @@ local function create(parent: Instance, layoutOrder: number, deps: SectionDeps, 
 		heading.BackgroundTransparency = 1
 		heading.Text = opts.title
 		heading.FontFace = deps.fontTitle
-		heading.TextSize = deps.textSize("lg")
+		heading.TextSize = math.max(9, deps.textSize("lg"))
+		heading.TextScaled = false
+		heading.RichText = false
+		heading.TextStrokeTransparency = 1
+		heading.LineHeight = 1
 		heading.TextXAlignment = Enum.TextXAlignment.Left
 		heading.Parent = block
 		deps.reg(heading, "TextColor3", "pri")

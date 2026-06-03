@@ -9,11 +9,12 @@ return {
 
 	-- MUI/M3-style type scale: fixed tiers + per-role weights (see core/typography.luau).
 	-- WeightAdjustment mirrors Android accessibility Bold text (+300, clamped 1–1000).
-	-- Family: Poppins cloud asset (real per-weight masters). Set UseCustomFamilyFiles to
-	-- download Google Fonts TTFs in the executor instead (see core/fonts.luau).
+	-- Family: Poppins (cloud id). Executors auto-download local TTFs (see core/fonts.luau).
+	-- ChromeWeight: "regular" for tabs/small UI (crisp); "medium" for slightly heavier chrome.
 	Typography = {
 		Family = "rbxassetid://11702779409",
-		UseCustomFamilyFiles = false,
+		ChromeWeight = "regular",
+		-- false = cloud only; true = force local TTFs; nil = auto (local when executor has writefile)
 		Small = 12, -- caption / helper
 		Medium = 14, -- body (MUI default)
 		Large = 22, -- section titles (M3 Title Large)

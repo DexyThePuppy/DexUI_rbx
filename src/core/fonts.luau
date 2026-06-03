@@ -23,9 +23,33 @@ local GLYPH_FILES = {
 	black = { file = "Poppins-Black.ttf", url = GLYPH_BASE .. "/Poppins-Black.ttf" },
 }
 
+-- Standard OpenType weights stored in family JSON (not the Android-adjusted role targets).
+local SLOT_WEIGHT = {
+	regular = 400,
+	medium = 500,
+	bold = 700,
+	extrabold = 800,
+	black = 900,
+}
+
 local function parseCloudFamilyId(uri: string): number?
 	local id = string.match(uri, "^rbxassetid://(%d+)$")
 	return if id then tonumber(id) else nil
+end
+
+local function hasExecutorFilesystem(): boolean
+	return isfolder and makefolder and isfile and writefile and getcustomasset
+end
+
+-- Cloud fonts (rbxassetid) often fail or look synthetic in executors; default to local TTFs there.
+local function wantCustomFamily(): boolean
+	if TYPO.UseCustomFamilyFiles == false then
+		return false
+	end
+	if TYPO.UseCustomFamilyFiles == true then
+		return hasExecutorFilesystem()
+	end
+	return hasExecutorFilesystem()
 end
 
 local function glyphSlot(numeric: number): string
@@ -44,15 +68,6 @@ local function glyphSlot(numeric: number): string
 	return "regular"
 end
 
-local function canLoadCustomFamily(): boolean
-	return TYPO.UseCustomFamilyFiles == true
-		and isfolder
-		and makefolder
-		and isfile
-		and writefile
-		and getcustomasset
-end
-
 local function ensureGlyph(folder: string, spec: { file: string, url: string }): string?
 	local path = folder .. "/" .. spec.file
 	if not isfile(path) then
@@ -68,7 +83,7 @@ local function ensureGlyph(folder: string, spec: { file: string, url: string }):
 end
 
 local function loadCustomFamilyUri(): string?
-	if not canLoadCustomFamily() then
+	if not wantCustomFamily() then
 		return nil
 	end
 
@@ -90,11 +105,10 @@ local function loadCustomFamilyUri(): string?
 	local faces = {}
 	local roleOrder = { "body", "emphasis", "title", "display" }
 	for _, role in roleOrder do
-		local weight = NumericWeight[role]
-		local slot = glyphSlot(weight)
+		local slot = glyphSlot(NumericWeight[role])
 		table.insert(faces, {
 			name = string.upper(string.sub(role, 1, 1)) .. string.sub(role, 2),
-			weight = weight,
+			weight = SLOT_WEIGHT[slot],
 			style = "normal",
 			assetId = assets[slot],
 		})
@@ -110,16 +124,9 @@ local function loadCustomFamilyUri(): string?
 	return getcustomasset(jsonPath)
 end
 
-local function resolveFamilyUri(): string
-	local custom = loadCustomFamilyUri()
-	if custom then
-		return custom
-	end
-	return BUILTIN_FAMILY
-end
-
-local familyUri = resolveFamilyUri()
-local cloudFamilyId = parseCloudFamilyId(BUILTIN_FAMILY) or parseCloudFamilyId(familyUri)
+local customUri = loadCustomFamilyUri()
+local familyUri = customUri or BUILTIN_FAMILY
+local cloudFamilyId = if customUri then nil else parseCloudFamilyId(BUILTIN_FAMILY)
 
 local function makeFont(weight: Enum.FontWeight): Font
 	if cloudFamilyId then
@@ -140,8 +147,12 @@ local function fontRole(role: "body" | "emphasis" | "title" | "display"): Font
 	return fontFromNumeric(NumericWeight[role])
 end
 
--- Dense UI (tabs, lists): Medium at native size — not WeightAdjustment-heavy body.
-local fontChrome = makeFont(Enum.FontWeight.Medium)
+-- Tabs / dense chrome: Regular at fixed TextSize (Bold faces look broken when cloud font fails).
+local chromeWeight = TYPO.ChromeWeight
+local fontChrome = if chromeWeight == "medium"
+	then makeFont(Enum.FontWeight.Medium)
+	else makeFont(Enum.FontWeight.Regular)
+
 local fontBody = fontRole("body")
 local fontEmphasis = fontRole("emphasis")
 local fontTitle = fontRole("title")
@@ -151,6 +162,7 @@ local fontLarge = fontTitle
 
 return {
 	familyUri = familyUri,
+	usesCustomFamily = customUri ~= nil,
 	cloudFamilyId = cloudFamilyId,
 	m3Font = m3Font,
 	fontChrome = fontChrome,
