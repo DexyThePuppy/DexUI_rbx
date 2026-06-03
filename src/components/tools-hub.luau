@@ -18,7 +18,7 @@ return function(ctx)
 	local tooltip = ctx.tooltip
 	local trySetClipboard = ctx.trySetClipboard
 	local textSize = ctx.textSize
-	local HubGrid = ctx.hubGrid
+	local Grid = ctx.grid
 
 	local gridDeps = { corner = corner, reg = reg, fontWeight = fontWeight, textSize = textSize }
 	local launching: { [string]: boolean } = {}
@@ -71,9 +71,9 @@ return function(ctx)
 	function lib:PopulateToolsHub(entries: { ToolEntry }?)
 		local list = entries or ToolsRegistry.load()
 
-		local _, mount = HubGrid.buildSection(beginCardRow(nil, true), gridDeps, {
+		local _, mount = Grid.buildSection(beginCardRow(nil, true), gridDeps, {
 			title = "Developer tools — click a card to load",
-			maxHeight = HubGrid.spec.maxViewport,
+			maxHeight = Grid.spec.maxViewport,
 		})
 
 		local sorted = table.clone(list)

@@ -17,7 +17,7 @@ return function(ctx)
 	local fontWeight = ctx.fontWeight
 	local tooltip = ctx.tooltip
 	local textSize = ctx.textSize
-	local HubGrid = ctx.hubGrid
+	local Grid = ctx.grid
 
 	local gridDeps = { corner = corner, reg = reg, fontWeight = fontWeight, textSize = textSize }
 	local activeSessions: { any } = {}
@@ -116,9 +116,9 @@ return function(ctx)
 			then ("Recognised: " .. recognized.name .. " — pick a script or launch yours")
 			else "Scripts hub — select a game"
 
-		local _, mount = HubGrid.buildSection(beginCardRow(nil, true), gridDeps, {
+		local _, mount = Grid.buildSection(beginCardRow(nil, true), gridDeps, {
 			title = title,
-			maxHeight = HubGrid.spec.maxViewport,
+			maxHeight = Grid.spec.maxViewport,
 		})
 
 		local sorted = table.clone(list)

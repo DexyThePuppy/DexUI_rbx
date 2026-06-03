@@ -29,7 +29,7 @@ return function(ctx)
 	local win, gui = ctx.win, ctx.gui
 	local tooltip = ctx.tooltip
 	local textSize = ctx.textSize
-	local HubGrid = ctx.hubGrid
+	local Grid = ctx.grid
 	type Palette = { bg: Color3, fg: Color3, pri: Color3, onpri: Color3, inact: Color3, out: Color3 }
 	type Callback = (...any) -> ()
 	type MediaHit = { id: number, title: string, subtitle: string? }
@@ -98,7 +98,7 @@ return function(ctx)
 		gridHost.BackgroundTransparency = 1
 		gridHost.Parent = holder
 
-		local grid = HubGrid.buildScroll(gridHost, {
+		local gridMount = Grid.buildScroll(gridHost, {
 			corner = corner,
 			reg = reg,
 			fontWeight = fontWeight,
@@ -149,7 +149,7 @@ return function(ctx)
 		end
 
 		local function makeIconCell(icon: { name: string, id: number }, order: number)
-			local card = grid.addCard(order)
+			local card = gridMount.addCard(order)
 			card.root.Name = icon.name
 			reg(card.root, "BackgroundColor3", "inact")
 
@@ -215,7 +215,7 @@ return function(ctx)
 			end
 
 			applyFilter()
-			grid.sync()
+			gridMount.sync()
 		end)
 	end
 

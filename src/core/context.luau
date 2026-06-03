@@ -39,7 +39,7 @@ return function(deps: Deps)
 	local tween = Util.tween
 	local corner = Util.corner
 	local textSize = Util.textSize
-	local HubGrid = require("./hub-grid")
+	local Grid = require("./grid")
 	local fontWeight = Fonts.fontWeight
 	local m3Font = Fonts.m3Font
 
@@ -458,7 +458,7 @@ return function(deps: Deps)
 		fontWeight = fontWeight,
 		textSize = textSize,
 		TextSizes = Util.TextSizes,
-		hubGrid = HubGrid,
+		grid = Grid,
 
 		-- sound
 		playFeedback = Sound.playFeedback,

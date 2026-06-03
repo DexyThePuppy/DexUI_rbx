@@ -1,9 +1,9 @@
 --!nonstrict
--- Modular hub grid for Scripts, Tools, Icons, and Game Info badges.
--- One cell layout (thumb + title band), responsive columns, tight scroll metrics.
+-- Modular grid layout: card cells (thumb + title), responsive columns, scroll or inline hosts.
+-- Reusable anywhere in DexUI (tabs, panels, hubs, game info, etc.).
 
 local Config = require("../config")
-local G = Config.HubGrid or {}
+local G = Config.Grid or Config.HubGrid or {}
 
 export type GridSpec = {
 	cellW: number,
@@ -16,7 +16,6 @@ export type GridSpec = {
 	cardCorner: number,
 	thumbCorner: number,
 	maxViewport: number,
-	badgeIcon: number,
 	thumbScale: Enum.ScaleType?,
 	thumbFillBackground: boolean?,
 	thumbFillToken: string?,
@@ -52,7 +51,6 @@ local SPEC: GridSpec = {
 	cardCorner = G.CardCorner or 10,
 	thumbCorner = G.ThumbCorner or 8,
 	maxViewport = G.MaxViewport or 320,
-	badgeIcon = G.BadgeIcon or 36,
 	thumbFillBackground = G.ThumbFillBackground ~= false,
 	thumbFillToken = G.ThumbBackground or "bg",
 }
@@ -66,7 +64,7 @@ local function columnCount(viewportW: number, spec: GridSpec): number
 	return math.max(1, math.floor((innerW + spec.cellGap) / (spec.cellW + spec.cellGap)))
 end
 
-type GridDeps = {
+export type GridDeps = {
 	corner: (Instance, number) -> UICorner,
 	reg: (Instance, string, string) -> (),
 	fontWeight: (weight: Enum.FontWeight) -> Font,
@@ -139,7 +137,6 @@ local function createCard(
 	btn.Parent = parent
 	deps.corner(btn, spec.cardCorner)
 
-	-- CanvasGroup + UICorner actually clips the image to a round rect (Frame/ClipsDescendants does not).
 	local thumbX = if spec.thumbSquare then inset + math.floor((innerW - thumbW) / 2) else inset
 	local thumb = Instance.new("CanvasGroup")
 	thumb.Name = "Thumb"
@@ -208,7 +205,6 @@ local function createCard(
 	}
 end
 
--- Scrolling grid (Scripts / Tools / Icons tabs).
 local function buildScroll(parent: Instance, deps: GridDeps, maxHeight: number?): GridMount
 	local spec = table.clone(SPEC) :: GridSpec
 	if maxHeight then
@@ -216,7 +212,7 @@ local function buildScroll(parent: Instance, deps: GridDeps, maxHeight: number?)
 	end
 
 	local scroll = Instance.new("ScrollingFrame")
-	scroll.Name = "HubGridScroll"
+	scroll.Name = "GridScroll"
 	scroll.Size = UDim2.new(1, 0, 0, spec.cellH + spec.scrollPad * 2)
 	scroll.BackgroundTransparency = 1
 	scroll.BorderSizePixel = 0
@@ -235,7 +231,7 @@ local function buildScroll(parent: Instance, deps: GridDeps, maxHeight: number?)
 	pad.Parent = scroll
 
 	local inner = Instance.new("Frame")
-	inner.Name = "HubGridInner"
+	inner.Name = "GridInner"
 	inner.Size = UDim2.new(1, 0, 0, 0)
 	inner.BackgroundTransparency = 1
 	inner.BorderSizePixel = 0
@@ -264,7 +260,6 @@ local function buildScroll(parent: Instance, deps: GridDeps, maxHeight: number?)
 	return mount
 end
 
--- Inline grid (Game Info badges — no scroll wrapper).
 local function buildInline(parent: Instance, deps: GridDeps): GridMount
 	local spec = table.clone(SPEC) :: GridSpec
 	spec.thumbScale = Enum.ScaleType.Fit
@@ -272,7 +267,7 @@ local function buildInline(parent: Instance, deps: GridDeps): GridMount
 	spec.thumbPad = 4
 
 	local layout = Instance.new("UIGridLayout")
-	layout.Name = "HubGridLayout"
+	layout.Name = "GridLayout"
 	layout.CellSize = UDim2.fromOffset(spec.cellW, spec.cellH)
 	layout.CellPadding = UDim2.fromOffset(spec.cellGap, spec.cellGap)
 	layout.SortOrder = Enum.SortOrder.LayoutOrder
@@ -295,7 +290,6 @@ local function buildInline(parent: Instance, deps: GridDeps): GridMount
 	return mount
 end
 
--- Section shell: optional title + scroll grid inside a vertical holder.
 local function buildSection(
 	holderParent: Instance,
 	deps: GridDeps,
@@ -305,7 +299,7 @@ local function buildSection(
 	}
 ): (Frame, GridMount)
 	local holder = Instance.new("Frame")
-	holder.Name = "HubGridSection"
+	holder.Name = "GridSection"
 	holder.Size = UDim2.new(1, 0, 0, 0)
 	holder.AutomaticSize = Enum.AutomaticSize.Y
 	holder.BackgroundTransparency = 1
@@ -354,16 +348,4 @@ return {
 	buildScroll = buildScroll,
 	buildInline = buildInline,
 	buildSection = buildSection,
-	-- Legacy aliases (icons / old imports)
-	specForCell = function(_cell: { number }?): GridSpec
-		return SPEC
-	end,
-	scriptsCell = SPEC.cellW and { SPEC.cellW, SPEC.cellH } or { 96, 104 },
-	toolsCell = SPEC.cellW and { SPEC.cellW, SPEC.cellH } or { 96, 104 },
-	iconsCell = SPEC.cellW and { SPEC.cellW, SPEC.cellH } or { 96, 104 },
-	badgeCell = SPEC.cellW and { SPEC.cellW, SPEC.cellH } or { 96, 104 },
-	badgeIcon = SPEC.badgeIcon,
-	badgeCols = G.BadgeCols or 4,
-	scrollPad = SPEC.scrollPad,
-	cellGap = SPEC.cellGap,
 }

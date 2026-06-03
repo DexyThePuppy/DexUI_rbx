@@ -18,7 +18,7 @@ return function(ctx)
 	local trySetClipboard = ctx.trySetClipboard
 	local tooltip = ctx.tooltip
 	local textSize = ctx.textSize
-	local HubGrid = ctx.hubGrid
+	local Grid = ctx.grid
 	local MEDIA_PAGE_SIZE, MEDIA_PAGE_COUNT = ctx.MEDIA_PAGE_SIZE, ctx.MEDIA_PAGE_COUNT
 	local ContentProvider = Services.ContentProvider or game:GetService("ContentProvider")
 	local Players = game:GetService("Players")
@@ -499,7 +499,7 @@ return function(ctx)
 		badgeGrid.BackgroundTransparency = 1
 		badgeGrid.Parent = badgesSection
 
-		local badgeMount = HubGrid.buildInline(badgeGrid, badgeGridDeps)
+		local badgeMount = Grid.buildInline(badgeGrid, badgeGridDeps)
 
 		local function badgeThumbUri(badge: any): string?
 			if type(badge.iconUri) == "string" and badge.iconUri ~= "" then

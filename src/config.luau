@@ -14,8 +14,8 @@ return {
 		Large = 18,
 	},
 
-	-- Modular hub grid (scripts, tools, icons, game info badges — same cell layout).
-	HubGrid = {
+	-- Modular grid layout (card cells; used across tabs and panels).
+	Grid = {
 		Cell = { 96, 104 },
 		ScrollPad = 6,
 		CellGap = 8,
