@@ -29,6 +29,7 @@ local componentFactories = {
 	require("../components/media"),
 	require("../components/icons"),
 	require("../components/notifications"),
+	require("../components/footer"),
 	require("../components/tooltip"),
 	require("../components/scripts-hub"),
 	require("../components/tools-hub"),
@@ -74,6 +75,10 @@ export type Window = {
 	IsNotificationRandomPitch: (self: Window) -> boolean,
 	PreviewNotificationSound: (self: Window) -> (),
 	PlayFeedback: (self: Window, pattern: string) -> (),
+	SetFooterConfig: (self: Window, config: any?) -> (),
+	SetFooterSegmentText: (self: Window, id: string, text: string) -> (),
+	SetFooterSegmentVisible: (self: Window, id: string, visible: boolean) -> (),
+	RefreshFooter: (self: Window) -> (),
 }
 
 type MakeUIOptions = { hub: boolean? }
@@ -413,8 +418,15 @@ local function makeUI(titleText: string?, options: MakeUIOptions?): Window
 	local TITLE_BAR_H = 55
 	local TAB_SIDEBAR_W = 172
 
+	local footerDefaults = Config.Footer
+	local FOOTER_H = if type(footerDefaults) == "table" and footerDefaults.Enabled ~= false
+		then (footerDefaults.Height or 28)
+		else 0
+	local BODY_V_INSET = TITLE_BAR_H + FOOTER_H
+	ctx.FooterHeight = FOOTER_H
+
 	local tabArea = Instance.new("Frame")
-	tabArea.Size = UDim2.new(0, TAB_SIDEBAR_W, 1, -TITLE_BAR_H)
+	tabArea.Size = UDim2.new(0, TAB_SIDEBAR_W, 1, -BODY_V_INSET)
 	tabArea.Position = UDim2.new(0, 0, 0, TITLE_BAR_H)
 	tabArea.BackgroundTransparency = 1
 	tabArea.ClipsDescendants = true
@@ -553,13 +565,13 @@ local function makeUI(titleText: string?, options: MakeUIOptions?): Window
 	end
 
 	local defaultCont = Instance.new("ScrollingFrame")
-	defaultCont.Size = UDim2.new(1, 0, 1, -TITLE_BAR_H)
+	defaultCont.Size = UDim2.new(1, 0, 1, -BODY_V_INSET)
 	defaultCont.Position = UDim2.new(0, 0, 0, TITLE_BAR_H)
 	defaultCont.Parent = win
 	styleContainer(defaultCont)
 
 	local contClip = Instance.new("Frame")
-	contClip.Size = UDim2.new(1, -TAB_SIDEBAR_W, 1, -TITLE_BAR_H)
+	contClip.Size = UDim2.new(1, -TAB_SIDEBAR_W, 1, -BODY_V_INSET)
 	contClip.Position = UDim2.new(0, TAB_SIDEBAR_W, 0, TITLE_BAR_H)
 	contClip.BackgroundTransparency = 1
 	contClip.BorderSizePixel = 0
@@ -699,7 +711,7 @@ local function makeUI(titleText: string?, options: MakeUIOptions?): Window
 		label.Parent = btn
 
 		local c = Instance.new("ScrollingFrame")
-        c.Size = UDim2.new(1, 0, 1, 0)
+		c.Size = UDim2.new(1, 0, 1, 0)
         c.Visible = false
 		c.Parent = contClip
 		styleContainer(c)

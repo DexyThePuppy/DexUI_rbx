@@ -59,4 +59,31 @@ return {
 	FeedbackSound = {
 		AssetId = 0,
 	},
+
+	-- Bottom status bar (see components/footer.luau). Override via lib:SetFooterConfig().
+	Footer = {
+		Enabled = true,
+		Height = 28,
+		BackgroundTransparency = 0.35,
+		ShowTopDivider = true,
+		PaddingX = 14,
+		TextSize = 11,
+		Layout = "split",
+		Clock = {
+			Enabled = true,
+			Format = "%H:%M:%S",
+			UpdateInterval = 1,
+		},
+		Version = {
+			Enabled = true,
+			Prefix = "v",
+		},
+		Left = {
+			{ id = "brand", kind = "text", text = "DexUI" },
+			{ id = "version", kind = "version" },
+		},
+		Right = {
+			{ id = "clock", kind = "clock" },
+		},
+	},
 }
