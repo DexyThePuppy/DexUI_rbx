@@ -29,7 +29,7 @@ local FALLBACK_INDEX = {
 			"rbxthumb://type=Place&id=95206881&w=768&h=432",
 		},
 		description = "Example script shipped with DexUI.",
-		script = "dexui-demo.lua",
+		script = "tools/dexui-demo.lua",
 	},
 }
 

@@ -24,6 +24,6 @@ return {
 			"rbxthumb://type=Place&id=95206881&w=768&h=432",
 		},
 		description = "Example script shipped with DexUI. Opens a small Material 3 window with a notify button.",
-		script = "dexui-demo.lua",
+		script = "tools/dexui-demo.lua",
 	},
 }
