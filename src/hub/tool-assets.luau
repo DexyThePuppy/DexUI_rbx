@@ -2,6 +2,7 @@
 -- Resolves tool thumbnails: rbxassetid, GitHub/raw https (cached via getcustomasset), or bundled PNGs.
 
 local Util = require("../core/util")
+local EmbeddedAssets = require("./tool-assets-embedded")
 
 local REMOTE_CACHE_FOLDER = "DexUI/tool-assets"
 local ASSET_CACHE_FOLDER = REMOTE_CACHE_FOLDER
@@ -19,7 +20,14 @@ local SEARCH_PREFIXES = {
 	"DexUI/",
 }
 
+-- Used when local/embedded bytes are unavailable (e.g. dist-only load without assets/).
+local ASSET_REMOTE_FALLBACK: { [string]: string } = {
+	dexplusplus = "https://github.com/AZYsGithub/DexPlusPlus/blob/main/preview.png",
+	cobalt = "https://github.com/notpoiu/cobalt/blob/main/Assets/Logo.png",
+}
+
 local PLACEHOLDER = "rbxasset://textures/ui/GuiImagePlaceholder.png"
+local MIN_IMAGE_BYTES = 64
 
 local function canCacheFiles(): boolean
 	return writefile ~= nil and getcustomasset ~= nil and isfolder ~= nil and makefolder ~= nil
@@ -45,12 +53,12 @@ local function httpGetRaw(url: string): string?
 		local ok, body = pcall(function()
 			return httpGet(url)
 		end)
-		if ok and type(body) == "string" and #body > 128 then
+		if ok and type(body) == "string" and #body > MIN_IMAGE_BYTES then
 			return body
 		end
 	end
 	local ok, res = Util.httpRequest({ Url = url, Method = "GET" })
-	if not ok or not res or res.StatusCode ~= 200 or type(res.Body) ~= "string" or #res.Body < 128 then
+	if not ok or not res or res.StatusCode ~= 200 or type(res.Body) ~= "string" or #res.Body < MIN_IMAGE_BYTES then
 		return nil
 	end
 	return res.Body
@@ -133,6 +141,37 @@ local function remoteUrlToLoadable(url: string): string?
 	return uri
 end
 
+local function decodeBase64(data: string): string?
+	local g = (getgenv and getgenv()) or _G
+	if type((g :: any).base64decode) == "function" then
+		local ok, out = pcall((g :: any).base64decode, data)
+		if ok and type(out) == "string" then
+			return out
+		end
+	end
+	if type((g :: any).base64_decode) == "function" then
+		local ok, out = pcall((g :: any).base64_decode, data)
+		if ok and type(out) == "string" then
+			return out
+		end
+	end
+	if crypt and crypt.base64 and crypt.base64.decode then
+		local ok, out = pcall(crypt.base64.decode, data)
+		if ok and type(out) == "string" then
+			return out
+		end
+	end
+	return nil
+end
+
+local function readEmbeddedBytes(assetKey: string): string?
+	local encoded = EmbeddedAssets[assetKey]
+	if type(encoded) ~= "string" or encoded == "" then
+		return nil
+	end
+	return decodeBase64(encoded)
+end
+
 local function readAssetBytes(relativePath: string): string?
 	if not readfile or not isfile then
 		return nil
@@ -157,8 +196,12 @@ local function resolveAssetKey(assetKey: string): string?
 	if not relative then
 		return nil
 	end
-	local body = readAssetBytes(relative)
+	local body = readAssetBytes(relative) or readEmbeddedBytes(assetKey)
 	if not body then
+		local fallbackUrl = ASSET_REMOTE_FALLBACK[assetKey]
+		if fallbackUrl then
+			return remoteUrlToLoadable(fallbackUrl)
+		end
 		return nil
 	end
 	local uri = bodyToLoadable("bundled_" .. assetKey, body, extensionForUrl(relative))
@@ -194,6 +237,13 @@ local function resolveToolThumbnail(thumbnail: string): string
 		if resolved then
 			return resolved
 		end
+		local fallbackUrl = ASSET_REMOTE_FALLBACK[assetKey]
+		if fallbackUrl then
+			local remote = remoteUrlToLoadable(fallbackUrl)
+			if remote then
+				return remote
+			end
+		end
 	end
 	local digits = string.match(thumbnail, "(%d+)")
 	if digits then
@@ -202,8 +252,19 @@ local function resolveToolThumbnail(thumbnail: string): string
 	return PLACEHOLDER
 end
 
+local function resolveToolThumbnailAsync(thumbnail: string, callback: (string) -> ())
+	task.spawn(function()
+		local uri = resolveToolThumbnail(thumbnail)
+		if callback then
+			callback(uri)
+		end
+	end)
+end
+
 return {
 	resolveToolThumbnail = resolveToolThumbnail,
+	resolveToolThumbnailAsync = resolveToolThumbnailAsync,
 	normalizeGithubImageUrl = normalizeGithubImageUrl,
 	ASSET_FILES = ASSET_FILES,
+	PLACEHOLDER = PLACEHOLDER,
 }

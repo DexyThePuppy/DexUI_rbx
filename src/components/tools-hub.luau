@@ -171,6 +171,11 @@ return function(ctx)
 			thumb.BackgroundTransparency = 1
 			thumb.Image = formatThumb(entry.thumbnail)
 			thumb.ScaleType = Enum.ScaleType.Crop
+			ToolAssets.resolveToolThumbnailAsync(entry.thumbnail, function(uri)
+				if thumb.Parent and uri and uri ~= ToolAssets.PLACEHOLDER then
+					thumb.Image = uri
+				end
+			end)
 			thumb.ZIndex = 3
 			thumb.Active = false
 			thumb.Selectable = false
