@@ -1745,8 +1745,11 @@ local function updateProgressLabel(force)
 	if not (progressLabel and progressLabel.Set) then return end
 	if not force and os.clock() - lastProgressAt < 0.5 then return end
 	lastProgressAt = os.clock()
-	pcall(function()
-		progressLabel:Set({ Title = "Progression", Content = progressionContent() })
+	task.defer(function()
+		if not ctx.isAlive() then return end
+		pcall(function()
+			progressLabel:Set({ Title = "Progression", Content = progressionContent() })
+		end)
 	end)
 end
 
@@ -1776,15 +1779,22 @@ end
 local function updateStatusLabel()
 	sampleIncomeRate()
 	updateGameCashDisplay()
-	local statusLabel = ctx.widgets.status
-	local statsLabel = ctx.widgets.stats
-	if statusLabel and statusLabel.Set then
-		pcall(function() statusLabel:Set(statusLine()) end)
-	end
-	if statsLabel and statsLabel.Set then
-		pcall(function() statsLabel:Set(statsLine()) end)
-	end
-	updateProgressLabel(false)
+	task.defer(function()
+		if not ctx.isAlive() then return end
+		local statusLabel = ctx.widgets.status
+		local statsLabel = ctx.widgets.stats
+		if statusLabel and statusLabel.Set then
+			pcall(function()
+				statusLabel:Set({ Content = statusLine() })
+			end)
+		end
+		if statsLabel and statsLabel.Set then
+			pcall(function()
+				statsLabel:Set({ Content = statsLine() })
+			end)
+		end
+		updateProgressLabel(false)
+	end)
 end
 
 local function farmOnce()
@@ -2291,14 +2301,22 @@ end
 	ui:AddSection("Live status")
 	local statusPara = ui:AddParagraph("Status", ctx.status.line())
 	ctx.widgets.status = {
-		Set = function(_, text)
-			statusPara:Set({ Content = text })
+		Set = function(_, opts)
+			if type(opts) == "string" then
+				statusPara:Set({ Content = opts })
+			elseif type(opts) == "table" then
+				statusPara:Set(opts)
+			end
 		end,
 	}
 	local statsPara = ui:AddParagraph("Stats", ctx.status.statsLine())
 	ctx.widgets.stats = {
-		Set = function(_, text)
-			statsPara:Set({ Content = text })
+		Set = function(_, opts)
+			if type(opts) == "string" then
+				statsPara:Set({ Content = opts })
+			elseif type(opts) == "table" then
+				statsPara:Set(opts)
+			end
 		end,
 	}
 
@@ -2307,6 +2325,7 @@ end
 	local progressPara = ui:AddParagraph("Progression", ctx.progress.content())
 	ctx.widgets.progress = progressPara
 	ui:AddButton("Refresh now", function()
+		ctx.status.update()
 		ctx.progress.update(true)
 		ctx.feedback.play("selection")
 	end)
