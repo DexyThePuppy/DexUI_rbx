@@ -51,6 +51,11 @@ if ($Stage) {
 		New-Item -ItemType Directory -Force -Path $scriptsDest | Out-Null
 		Copy-Item scripts\* $scriptsDest -Recurse -Force
 	}
+	if (Test-Path "scripts/tools") {
+		$toolsDest = Join-Path $StageDir "scripts/tools"
+		New-Item -ItemType Directory -Force -Path $toolsDest | Out-Null
+		Copy-Item scripts/tools\* $toolsDest -Recurse -Force
+	}
 }
 
 Write-Host "Done."

@@ -31,6 +31,7 @@ local componentFactories = {
 	require("../components/notifications"),
 	require("../components/tooltip"),
 	require("../components/scripts-hub"),
+	require("../components/tools-hub"),
 	require("../components/game-info"),
 }
 
@@ -56,6 +57,7 @@ export type Window = {
 	AddMediaBrowser: (self: Window) -> (),
 	AddIconBrowser: (self: Window) -> (),
 	PopulateScriptsHub: (self: Window, entries: { any }?) -> (),
+	PopulateToolsHub: (self: Window, entries: { any }?) -> (),
 	AddGameInfo: (self: Window) -> (),
 	Notify: (self: Window, opts: { Title: string?, Content: string?, Duration: number?, Style: any? }) -> (),
 	SetNotificationStyle: (self: Window, style: any?) -> (),

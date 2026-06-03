@@ -63,11 +63,19 @@ local function buildDemo(withIntro: boolean?)
 	)
 	ui:PopulateScriptsHub()
 
-	--// Tab 5: Game info -----------------------------------------------------
+	--// Tab 5: Tools ---------------------------------------------------------
+	ui:AddTab("Tools", 6034767804)
+	ui:AddParagraph(
+		"Tools",
+		"External developer utilities. Click a card to download and run the latest release. Right-click a card to copy its GitHub link."
+	)
+	ui:PopulateToolsHub()
+
+	--// Tab 6: Game info -----------------------------------------------------
 	ui:AddTab("Game Info", 6034509993)
 	ui:AddGameInfo()
 
-	--// Tab 6: Icons (Material Icons library) --------------------------------
+	--// Tab 7: Icons (Material Icons library) --------------------------------
 	ui:AddTab("Icons", 6031302950)
 	ui:AddParagraph(
 		"Material Icons",
