@@ -144,18 +144,58 @@ return function(ctx)
 			end)
 		end)
 
-		local metaLbl = Instance.new("TextLabel")
-		metaLbl.LayoutOrder = 1
-		metaLbl.Size = UDim2.new(1, 0, 0, 0)
-		metaLbl.AutomaticSize = Enum.AutomaticSize.Y
-		metaLbl.BackgroundTransparency = 1
-		metaLbl.Text = ""
-		metaLbl.FontFace = m3Font
-		metaLbl.TextSize = 12
-		metaLbl.TextXAlignment = Enum.TextXAlignment.Left
-		metaLbl.TextWrapped = true
-		metaLbl.Parent = headerSection
-		reg(metaLbl, "TextColor3", "out")
+		local function makeBadgeRow(parent: Frame, layoutOrder: number, name: string): Frame
+			local row = Instance.new("Frame")
+			row.Name = name
+			row.LayoutOrder = layoutOrder
+			row.Size = UDim2.new(1, 0, 0, 0)
+			row.AutomaticSize = Enum.AutomaticSize.Y
+			row.BackgroundTransparency = 1
+			row.Parent = parent
+			local rowLayout = Instance.new("UIListLayout")
+			rowLayout.FillDirection = Enum.FillDirection.Horizontal
+			rowLayout.Padding = UDim.new(0, 6)
+			rowLayout.SortOrder = Enum.SortOrder.LayoutOrder
+			rowLayout.Wraps = true
+			rowLayout.Parent = row
+			return row
+		end
+
+		local function clearBadgeRow(row: Frame)
+			for _, ch in row:GetChildren() do
+				if ch:IsA("Frame") and ch.Name == "Badge" then
+					ch:Destroy()
+				end
+			end
+		end
+
+		local function addInfoBadge(row: Frame, label: string, bg: Color3?, fg: Color3?)
+			local badge = Instance.new("Frame")
+			badge.Name = "Badge"
+			badge.Size = UDim2.fromOffset(0, 22)
+			badge.AutomaticSize = Enum.AutomaticSize.X
+			badge.BackgroundColor3 = bg or curTheme.bg
+			badge.BorderSizePixel = 0
+			badge.Parent = row
+			corner(badge, 6)
+
+			local pad = Instance.new("UIPadding")
+			pad.PaddingLeft = UDim.new(0, 8)
+			pad.PaddingRight = UDim.new(0, 8)
+			pad.Parent = badge
+
+			local lbl = Instance.new("TextLabel")
+			lbl.Size = UDim2.fromOffset(0, 22)
+			lbl.AutomaticSize = Enum.AutomaticSize.X
+			lbl.BackgroundTransparency = 1
+			lbl.Text = label
+			lbl.FontFace = fontWeight(Enum.FontWeight.Medium)
+			lbl.TextSize = 11
+			lbl.TextColor3 = fg or curTheme.out
+			lbl.Parent = badge
+		end
+
+		local metaBadgeRow = makeBadgeRow(headerSection, 1, "MetaBadges")
 
 		-- Carousel
 		local carouselSection = makeSection(1)
@@ -233,56 +273,14 @@ return function(ctx)
 		local VIP_BADGE_ON = Color3.fromRGB(255, 255, 255)
 		local BADGE_VERIFIED = Color3.fromRGB(0, 162, 255)
 
-		local settingsRow = Instance.new("Frame")
-		settingsRow.Name = "Settings"
-		settingsRow.LayoutOrder = 0
-		settingsRow.Size = UDim2.new(1, 0, 0, 0)
-		settingsRow.AutomaticSize = Enum.AutomaticSize.Y
-		settingsRow.BackgroundTransparency = 1
-		settingsRow.Parent = descSection
-
-		local settingsLayout = Instance.new("UIListLayout")
-		settingsLayout.FillDirection = Enum.FillDirection.Horizontal
-		settingsLayout.Padding = UDim.new(0, 6)
-		settingsLayout.SortOrder = Enum.SortOrder.LayoutOrder
-		settingsLayout.Parent = settingsRow
-
-		local function clearSettingBadges()
-			for _, ch in settingsRow:GetChildren() do
-				if ch:IsA("Frame") and ch.Name == "Badge" then
-					ch:Destroy()
-				end
-			end
-		end
+		local settingsRow = makeBadgeRow(descSection, 0, "Settings")
 
 		local function addSettingBadge(label: string, bg: Color3, fg: Color3)
-			local badge = Instance.new("Frame")
-			badge.Name = "Badge"
-			badge.Size = UDim2.fromOffset(0, 22)
-			badge.AutomaticSize = Enum.AutomaticSize.X
-			badge.BackgroundColor3 = bg
-			badge.BorderSizePixel = 0
-			badge.Parent = settingsRow
-			corner(badge, 6)
-
-			local pad = Instance.new("UIPadding")
-			pad.PaddingLeft = UDim.new(0, 8)
-			pad.PaddingRight = UDim.new(0, 8)
-			pad.Parent = badge
-
-			local lbl = Instance.new("TextLabel")
-			lbl.Size = UDim2.fromOffset(0, 22)
-			lbl.AutomaticSize = Enum.AutomaticSize.X
-			lbl.BackgroundTransparency = 1
-			lbl.Text = label
-			lbl.FontFace = fontWeight(Enum.FontWeight.Medium)
-			lbl.TextSize = 11
-			lbl.TextColor3 = fg
-			lbl.Parent = badge
+			addInfoBadge(settingsRow, label, bg, fg)
 		end
 
 		local function renderGameSettings(meta: any)
-			clearSettingBadges()
+			clearBadgeRow(settingsRow)
 			if meta.createVipServersAllowed == true or meta.privateServersEnabled == true then
 				addSettingBadge("VIP server", VIP_BADGE_RED, VIP_BADGE_ON)
 			end
@@ -300,36 +298,29 @@ return function(ctx)
 			settingsRow.Visible = settingsRow:FindFirstChild("Badge") ~= nil
 		end
 
-		local statsLbl = Instance.new("TextLabel")
-		statsLbl.Name = "Stats"
-		statsLbl.LayoutOrder = 1
-		statsLbl.Size = UDim2.new(1, 0, 0, 0)
-		statsLbl.AutomaticSize = Enum.AutomaticSize.Y
-		statsLbl.BackgroundTransparency = 1
-		statsLbl.Text = ""
-		statsLbl.FontFace = m3Font
-		statsLbl.TextSize = 12
-		statsLbl.TextXAlignment = Enum.TextXAlignment.Left
-		statsLbl.TextWrapped = true
-		statsLbl.Parent = descSection
-		reg(statsLbl, "TextColor3", "out")
+		local statsBadgeRow = makeBadgeRow(descSection, 1, "StatsBadges")
 
-		local function renderGameStats(meta: any)
-			local parts: { string } = {}
+		local function addStatBadges(meta: any)
+			clearBadgeRow(statsBadgeRow)
 			if meta.genre then
-				table.insert(parts, meta.genre)
+				for segment in string.gmatch(meta.genre, "([^·]+)") do
+					local trimmed = string.match(segment, "^%s*(.-)%s*$")
+					if trimmed and trimmed ~= "" then
+						addInfoBadge(statsBadgeRow, trimmed)
+					end
+				end
 			end
 			if meta.maxPlayers then
-				table.insert(parts, meta.maxPlayers .. " players / server")
+				addInfoBadge(statsBadgeRow, meta.maxPlayers .. " players / server")
 			end
 			if meta.upVotes then
 				local down = meta.downVotes or 0
 				local total = meta.upVotes + down
 				local pct = if total > 0 then math.floor(meta.upVotes / total * 100 + 0.5) else 0
-				table.insert(parts, string.format("%s likes (%d%%)", formatNumber(meta.upVotes), pct))
+				addInfoBadge(statsBadgeRow, string.format("%s likes (%d%%)", formatNumber(meta.upVotes), pct))
 			end
 			if meta.favoritedCount then
-				table.insert(parts, formatNumber(meta.favoritedCount) .. " favorites")
+				addInfoBadge(statsBadgeRow, formatNumber(meta.favoritedCount) .. " favorites")
 			end
 			if meta.badgeCount and meta.badgeCount > 0 then
 				local label = if meta.badgeCountAtLeast
@@ -338,21 +329,45 @@ return function(ctx)
 				if meta.badgesClaimed then
 					label ..= string.format(" (%d claimed)", meta.badgesClaimed)
 				end
-				table.insert(parts, label)
+				addInfoBadge(statsBadgeRow, label)
 			end
 			if meta.groupMemberCount then
-				table.insert(parts, formatNumber(meta.groupMemberCount) .. " group members")
+				addInfoBadge(statsBadgeRow, formatNumber(meta.groupMemberCount) .. " group members")
 			end
 			local created = formatShortDate(meta.created)
 			if created then
-				table.insert(parts, "Created " .. created)
+				addInfoBadge(statsBadgeRow, "Created " .. created)
 			end
 			local updated = formatShortDate(meta.updated)
 			if updated and updated ~= created then
-				table.insert(parts, "Updated " .. updated)
+				addInfoBadge(statsBadgeRow, "Updated " .. updated)
 			end
-			statsLbl.Text = if #parts > 0 then table.concat(parts, " · ") else ""
-			statsLbl.Visible = statsLbl.Text ~= ""
+			statsBadgeRow.Visible = statsBadgeRow:FindFirstChild("Badge") ~= nil
+		end
+
+		local function renderMetaBadges(meta: any)
+			clearBadgeRow(metaBadgeRow)
+			addInfoBadge(metaBadgeRow, string.format("Place %d", meta.placeId))
+			addInfoBadge(metaBadgeRow, string.format("Universe %d", meta.universeId))
+			if meta.rootPlaceId then
+				addInfoBadge(metaBadgeRow, "Root place " .. tostring(meta.rootPlaceId))
+			end
+			if meta.creatorName then
+				addInfoBadge(metaBadgeRow, "By " .. meta.creatorName)
+			end
+			if meta.playing then
+				addInfoBadge(metaBadgeRow, formatNumber(meta.playing) .. " playing")
+			end
+			if meta.visits then
+				addInfoBadge(metaBadgeRow, formatNumber(meta.visits) .. " visits")
+			end
+			if meta.creatorType then
+				addInfoBadge(metaBadgeRow, meta.creatorType)
+			end
+			if entry and Registry.entryMatchesCurrent(entry) then
+				addInfoBadge(metaBadgeRow, "Recognised in hub")
+			end
+			metaBadgeRow.Visible = metaBadgeRow:FindFirstChild("Badge") ~= nil
 		end
 
 		local bodyLbl = Instance.new("TextLabel")
@@ -369,18 +384,27 @@ return function(ctx)
 		bodyLbl.Parent = descSection
 		reg(bodyLbl, "TextColor3", "fg")
 
-		local extraLbl = Instance.new("TextLabel")
-		extraLbl.LayoutOrder = 3
-		extraLbl.Size = UDim2.new(1, 0, 0, 0)
-		extraLbl.AutomaticSize = Enum.AutomaticSize.Y
-		extraLbl.BackgroundTransparency = 1
-		extraLbl.Text = ""
-		extraLbl.FontFace = m3Font
-		extraLbl.TextSize = 11
-		extraLbl.TextXAlignment = Enum.TextXAlignment.Left
-		extraLbl.TextWrapped = true
-		extraLbl.Parent = descSection
-		reg(extraLbl, "TextColor3", "out")
+		local extraBadgeRow = makeBadgeRow(descSection, 3, "ExtraBadges")
+
+		local function renderExtraBadges(meta: any)
+			clearBadgeRow(extraBadgeRow)
+			if meta.serverLabel then
+				addInfoBadge(extraBadgeRow, meta.serverLabel)
+			end
+			if meta.placeVersion then
+				addInfoBadge(extraBadgeRow, "Place v" .. tostring(meta.placeVersion))
+			end
+			if meta.jobId then
+				addInfoBadge(extraBadgeRow, "Job " .. string.sub(meta.jobId, 1, 8) .. "…")
+			end
+			if meta.canonicalPath then
+				addInfoBadge(extraBadgeRow, "roblox.com" .. meta.canonicalPath)
+			end
+			if entry then
+				addInfoBadge(extraBadgeRow, "Hub script: " .. entry.script)
+			end
+			extraBadgeRow.Visible = extraBadgeRow:FindFirstChild("Badge") ~= nil
+		end
 
 		makeDivider(4)
 
@@ -1031,30 +1055,8 @@ return function(ctx)
 			end
 			titleLbl.Text = titleText
 
-			local metaParts = {
-				string.format("Place %d · Universe %d", meta.placeId, meta.universeId),
-			}
-			if meta.rootPlaceId then
-				table.insert(metaParts, "Root place " .. tostring(meta.rootPlaceId))
-			end
-			if meta.creatorName then
-				table.insert(metaParts, "By " .. meta.creatorName)
-			end
-			if meta.playing then
-				table.insert(metaParts, formatNumber(meta.playing) .. " playing")
-			end
-			if meta.visits then
-				table.insert(metaParts, formatNumber(meta.visits) .. " visits")
-			end
-			if meta.creatorType then
-				table.insert(metaParts, meta.creatorType)
-			end
-			if entry and Registry.entryMatchesCurrent(entry) then
-				table.insert(metaParts, "Recognised in hub")
-			end
-			metaLbl.Text = table.concat(metaParts, " · ")
-
-			renderGameStats(meta)
+			renderMetaBadges(meta)
+			addStatBadges(meta)
 
 			local description = if entry and entry.description and entry.description ~= ""
 				then entry.description
@@ -1086,27 +1088,12 @@ return function(ctx)
 			renderBadgeGrid(meta.badges, meta.badgeCountAtLeast)
 
 			if #slideUris == 0 and #images > 0 then
-				extraLbl.Text = "Thumbnails could not load. Executor needs request + getcustomasset, or rbxthumb support."
+				clearBadgeRow(extraBadgeRow)
+				addInfoBadge(extraBadgeRow, "Thumbnails could not load")
+				extraBadgeRow.Visible = true
+			else
+				renderExtraBadges(meta)
 			end
-
-			local extraParts: { string } = {}
-			if meta.serverLabel then
-				table.insert(extraParts, meta.serverLabel)
-			end
-			if meta.placeVersion then
-				table.insert(extraParts, "Place v" .. tostring(meta.placeVersion))
-			end
-			if meta.jobId then
-				table.insert(extraParts, "Job " .. string.sub(meta.jobId, 1, 8) .. "…")
-			end
-			if meta.canonicalPath then
-				table.insert(extraParts, "roblox.com" .. meta.canonicalPath)
-			end
-			if entry then
-				table.insert(extraParts, "Hub script: " .. entry.script)
-			end
-			extraLbl.Text = table.concat(extraParts, " · ")
-			extraLbl.Visible = extraLbl.Text ~= ""
 
 			joinPlaceId = meta.rootPlaceId or meta.placeId
 			local servers, serversErr = GameMetadata.fetchPublicServers(joinPlaceId)
