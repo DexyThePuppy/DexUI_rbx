@@ -245,6 +245,59 @@ return function(ctx)
 		})
 	end
 
+	local TextService = game:GetService("TextService")
+
+	local function measureTextWidth(text: string, textSize: number, fontFace: Font): number
+		local ok, bounds = pcall(function()
+			return TextService:GetTextBoundsAsync({
+				Text = text,
+				Font = fontFace,
+				Size = textSize,
+				Width = 10000,
+			})
+		end)
+		if ok and bounds then
+			return math.ceil(bounds.X)
+		end
+		local legacy = TextService:GetTextSize(text, textSize, Enum.Font.GothamBold, Vector2.new(10000, textSize))
+		return math.ceil(legacy.X)
+	end
+
+	local function cardContentWidth(text: string, style: ResolvedStyle, fontFace: Font): number
+		local textW = measureTextWidth(text, style.TextSize, fontFace)
+		local strokePad = if style.TextStroke.Thickness > 0 then style.TextStroke.Thickness * 2 else 0
+		local inner = textW + strokePad + style.PadInner * 2
+		local maxW = style.Width - style.PadRight
+		return math.min(inner, maxW)
+	end
+
+	local function dimColorSequence(seq: ColorSequence, satMul: number, valMul: number): ColorSequence
+		local keypoints = {}
+		for _, kp in seq.Keypoints do
+			local h, s, v = kp.Value:ToHSV()
+			keypoints[#keypoints + 1] = ColorSequenceKeypoint.new(
+				kp.Time,
+				Color3.fromHSV(h, math.clamp(s * satMul, 0, 1), math.clamp(v * valMul, 0, 1))
+			)
+		end
+		return ColorSequence.new(keypoints)
+	end
+
+	local function clearCardGradients(card: Frame, cardStroke: UIStroke?)
+		for _, child in card:GetChildren() do
+			if child:IsA("UIGradient") then
+				child:Destroy()
+			end
+		end
+		if cardStroke then
+			for _, child in cardStroke:GetChildren() do
+				if child:IsA("UIGradient") then
+					child:Destroy()
+				end
+			end
+		end
+	end
+
 	local function resolveGradient(
 		mode: StyleGradient?,
 		style: ResolvedStyle,
@@ -281,10 +334,44 @@ return function(ctx)
 		end
 	end
 
-	local function applyCardTheme(card: Frame, cardStroke: UIStroke, style: ResolvedStyle, theme: Palette)
-		card.BackgroundColor3 = resolveColor(style.Background.Color, theme)
-		cardStroke.Color = resolveColor(style.Border.Color, theme)
+	local function applyCardTheme(
+		card: Frame,
+		cardStroke: UIStroke,
+		style: ResolvedStyle,
+		rainbowIndex: number,
+		theme: Palette
+	)
+		clearCardGradients(card, cardStroke)
 		cardStroke.Thickness = style.Border.Thickness
+
+		local textGradient = style.Text.Gradient
+		local fillSeq = if textGradient and textGradient ~= false
+			then resolveGradient(textGradient, style, rainbowIndex, theme, false)
+			else nil
+
+		if fillSeq then
+			card.BackgroundColor3 = Color3.new(1, 1, 1)
+			local bgGrad = Instance.new("UIGradient")
+			bgGrad.Rotation = 90
+			bgGrad.Color = dimColorSequence(fillSeq, 0.42, 0.16)
+			bgGrad.Parent = card
+
+			cardStroke.Color = Color3.new(1, 1, 1)
+			local borderSeq = resolveGradient(style.TextStroke.Gradient, style, rainbowIndex, theme, true) or fillSeq
+			local borderGrad = Instance.new("UIGradient")
+			borderGrad.Rotation = 90
+			borderGrad.Color = dimColorSequence(borderSeq, 0.92, 0.78)
+			borderGrad.Parent = cardStroke
+		else
+			local textColor = resolveColor(style.Text.Color, theme)
+			card.BackgroundColor3 = resolveColor(style.Background.Color, theme)
+			cardStroke.Color = resolveColor(style.Border.Color, theme)
+			if style.Background.Color == "inact" and style.Border.Color == "pri" then
+				local h, s, _v = textColor:ToHSV()
+				card.BackgroundColor3 = Color3.fromHSV(h, math.min(s, 0.35), 0.14)
+				cardStroke.Color = Color3.fromHSV(h, math.min(s * 0.85, 0.8), 0.72)
+			end
+		end
 	end
 
 	local function applyTextTheme(
@@ -417,11 +504,22 @@ return function(ctx)
 		end
 	end
 
+	local function stackContentWidth(style: ResolvedStyle): number
+		local maxCard = 0
+		for _, entry in notifEntries do
+			local card = entry.card
+			if card and card.Parent and not entry.removing then
+				maxCard = math.max(maxCard, card.AbsoluteSize.X)
+			end
+		end
+		return math.max(maxCard + style.PadRight, style.PadRight)
+	end
+
 	local function refreshNotifStackLayout(style: ResolvedStyle)
 		if not notifStack or not notifStack.Parent then
 			return
 		end
-		notifStack.Size = UDim2.fromOffset(style.Width, style.Max * rowStep(style))
+		notifStack.Size = UDim2.fromOffset(stackContentWidth(style), style.Max * rowStep(style))
 		notifStack.AnchorPoint = style.StackAnchor
 		notifStack.Position = style.StackPosition
 		notifStack.ZIndex = style.StackZIndex
@@ -496,10 +594,16 @@ return function(ctx)
 		local style = resolveStyle(styleOverride)
 		local stack = ensureNotifStack(style)
 
+		local rainbowIndex = notifRainbowCounter
+		notifRainbowCounter += 1
+
+		local labelFont = fontWeight(Enum.FontWeight.Bold)
+		local cardW = cardContentWidth(text, style, labelFont)
+
 		local card = Instance.new("Frame")
 		card.Name = "Entry"
 		card.AnchorPoint = Vector2.new(1, 0)
-		card.Size = UDim2.fromOffset(style.Width - style.PadRight, style.Height)
+		card.Size = UDim2.fromOffset(cardW, style.Height)
 		card.BackgroundTransparency = 1
 		card.ClipsDescendants = true
 		card.Parent = stack
@@ -507,7 +611,7 @@ return function(ctx)
 
 		local cardStroke = Instance.new("UIStroke")
 		cardStroke.Parent = card
-		applyCardTheme(card, cardStroke, style, curTheme)
+		applyCardTheme(card, cardStroke, style, rainbowIndex, curTheme)
 		cardStroke.Transparency = 1
 
 		local label = Instance.new("TextLabel")
@@ -528,8 +632,6 @@ return function(ctx)
 			textStroke.Parent = label
 		end
 
-		local rainbowIndex = notifRainbowCounter
-		notifRainbowCounter += 1
 		applyTextTheme(label, textStroke, style, rainbowIndex, curTheme)
 		if not label:FindFirstChildOfClass("UIStroke") then
 			textStroke = nil
@@ -557,6 +659,7 @@ return function(ctx)
 		}
 		table.insert(notifEntries, entry)
 		trimNotifOverflow(style)
+		refreshNotifStackLayout(style)
 
 		local target = rowPos(style, spawnRow)
 		tweenCard(card, target, style.FadeIn)
@@ -595,14 +698,7 @@ return function(ctx)
 			local borderTrans = entry.cardStroke and entry.cardStroke.Transparency or 1
 			local textTrans = entry.label.TextTransparency
 			local strokeTrans = entry.textStroke and entry.textStroke.Transparency or 1
-			if dur > 0 then
-				tween(entry.card, "BackgroundColor3", resolveColor(style.Background.Color, theme), dur)
-				if entry.cardStroke then
-					tween(entry.cardStroke, "Color", resolveColor(style.Border.Color, theme), dur)
-				end
-			else
-				applyCardTheme(entry.card, entry.cardStroke, style, theme)
-			end
+			applyCardTheme(entry.card, entry.cardStroke, style, entry.rainbowIndex, theme)
 			applyTextTheme(entry.label, entry.textStroke, style, entry.rainbowIndex, theme)
 			entry.card.BackgroundTransparency = bgTrans
 			if entry.cardStroke then

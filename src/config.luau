@@ -36,6 +36,8 @@ return {
 		StackAnchor = Vector2.new(1, 0.5),
 		StackPosition = UDim2.new(1, -16, 0.5, 0),
 		StackZIndex = 50,
+		-- Background/Border tokens apply when Text.Gradient is false; with "rainbow" the card
+		-- tint and outline are derived from the same per-toast hue as the label.
 		Background = { Color = "inact", Transparency = 0.18 },
 		Border = { Color = "pri", Thickness = 1.5, Transparency = 0.35 },
 		Text = { Color = "fg", Gradient = "rainbow" },
