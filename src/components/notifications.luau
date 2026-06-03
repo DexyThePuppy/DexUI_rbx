@@ -263,12 +263,28 @@ return function(ctx)
 		return math.ceil(legacy.X)
 	end
 
-	local function cardContentWidth(text: string, style: ResolvedStyle, fontFace: Font): number
-		local textW = measureTextWidth(text, style.TextSize, fontFace)
-		local strokePad = if style.TextStroke.Thickness > 0 then style.TextStroke.Thickness * 2 else 0
+	local function maxCardWidth(style: ResolvedStyle): number
+		return style.Width - style.PadRight
+	end
+
+	local function sizeCardFromLabel(card: Frame, label: TextLabel, style: ResolvedStyle, textStroke: UIStroke?)
+		local bounds = label.TextBounds
+		local textW = math.ceil(bounds.X)
+		if textW <= 0 then
+			return
+		end
+		local strokePad = if textStroke then math.ceil(textStroke.Thickness * 2) else 0
 		local inner = textW + strokePad + style.PadInner * 2
-		local maxW = style.Width - style.PadRight
-		return math.min(inner, maxW)
+		local cap = maxCardWidth(style)
+		local cardW = math.min(inner, cap)
+		card.Size = UDim2.fromOffset(cardW, style.Height)
+		if inner > cap then
+			label.Size = UDim2.new(1, -style.PadInner * 2, 1, 0)
+			label.TextTruncate = Enum.TextTruncate.AtEnd
+		else
+			label.Size = UDim2.fromOffset(textW, style.Height)
+			label.TextTruncate = Enum.TextTruncate.None
+		end
 	end
 
 	local function dimColorSequence(seq: ColorSequence, satMul: number, valMul: number): ColorSequence
@@ -384,7 +400,7 @@ return function(ctx)
 		clearGradients(label)
 		label.FontFace = fontWeight(Enum.FontWeight.Bold)
 		label.TextSize = style.TextSize
-		label.TextXAlignment = Enum.TextXAlignment.Right
+		label.TextXAlignment = Enum.TextXAlignment.Left
 		label.TextYAlignment = Enum.TextYAlignment.Center
 		label.TextStrokeTransparency = 1
 		label.RichText = false
@@ -598,12 +614,12 @@ return function(ctx)
 		notifRainbowCounter += 1
 
 		local labelFont = fontWeight(Enum.FontWeight.Bold)
-		local cardW = cardContentWidth(text, style, labelFont)
-
+		local strokePadEst = if style.TextStroke.Thickness > 0 then style.TextStroke.Thickness * 2 else 0
+		local estW = measureTextWidth(text, style.TextSize, labelFont) + strokePadEst + style.PadInner * 2
 		local card = Instance.new("Frame")
 		card.Name = "Entry"
 		card.AnchorPoint = Vector2.new(1, 0)
-		card.Size = UDim2.fromOffset(cardW, style.Height)
+		card.Size = UDim2.fromOffset(math.min(estW, maxCardWidth(style)), style.Height)
 		card.BackgroundTransparency = 1
 		card.ClipsDescendants = true
 		card.Parent = stack
@@ -620,7 +636,7 @@ return function(ctx)
 		label.Position = UDim2.new(0, style.PadInner, 0, 0)
 		label.BackgroundTransparency = 1
 		label.TextTransparency = 1
-		label.TextTruncate = Enum.TextTruncate.AtEnd
+		label.TextTruncate = Enum.TextTruncate.None
 		label.TextWrapped = false
 		label.Text = text
 		label.Parent = card
@@ -636,6 +652,20 @@ return function(ctx)
 		if not label:FindFirstChildOfClass("UIStroke") then
 			textStroke = nil
 		end
+
+		local function refreshCardWidth()
+			sizeCardFromLabel(card, label, style, textStroke)
+			refreshNotifStackLayout(style)
+		end
+		task.defer(refreshCardWidth)
+		local boundsConn: RBXScriptConnection? = nil
+		boundsConn = label:GetPropertyChangedSignal("TextBounds"):Connect(function()
+			if boundsConn then
+				boundsConn:Disconnect()
+				boundsConn = nil
+			end
+			refreshCardWidth()
+		end)
 
 		if #notifEntries > 0 then
 			shiftNotifUp(true, style)
