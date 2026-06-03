@@ -1,11 +1,8 @@
 --[[
-  DexUI Script SDK — run any hub game script from a manifest + module pipeline.
+  DexUI Script SDK — session + loop + dexui from a manifest table.
 
-  Game folder layout:
-    scripts/<entry>.lua               — manifest + SDK.run + UI/loop wiring
-    scripts/games/<id>/<module>.lua   — return function(ctx) ... end (logic only)
-
-  See scripts/games/_template/ for a minimal starter.
+  Single-file game scripts (e.g. fabrik-tycoon.lua) pass manifest only.
+  Multi-module games may set manifest.prefixes + manifest.pipeline.
 ]]
 
 local SDK_PREFIXES = {
@@ -40,27 +37,27 @@ return function(manifest, DexUI)
 		error("[sdk] manifest must be a table", 0)
 	end
 
-	local modulePrefixes = manifest.prefixes or manifest.modulePrefixes
-	if not modulePrefixes then
-		error("[sdk] manifest.prefixes required (folders that hold game modules)", 0)
-	end
-
-	local loadGame = makeLoader(modulePrefixes)
 	local ctx = createSession(manifest, DexUI)
 	attachLoop(ctx)
 	attachDexui(ctx)
 
-	local pipeline = manifest.pipeline or { "main" }
-	local abortAfter = manifest.abortAfter or {}
-
-	for _, moduleName in pipeline do
-		local init = loadGame(moduleName)
-		if type(init) == "function" then
-			init(ctx)
+	local pipeline = manifest.pipeline
+	if pipeline and #pipeline > 0 then
+		local modulePrefixes = manifest.prefixes or manifest.modulePrefixes
+		if not modulePrefixes then
+			error("[sdk] manifest.prefixes required when pipeline is set", 0)
 		end
-		for _, gate in abortAfter do
-			if gate == moduleName and not ctx.isAlive() then
-				return ctx
+		local loadGame = makeLoader(modulePrefixes)
+		local abortAfter = manifest.abortAfter or {}
+		for _, moduleName in pipeline do
+			local init = loadGame(moduleName)
+			if type(init) == "function" then
+				init(ctx)
+			end
+			for _, gate in abortAfter do
+				if gate == moduleName and not ctx.isAlive() then
+					return ctx
+				end
 			end
 		end
 	end

@@ -1,12 +1,8 @@
 --[[
-  Template hub entry — copy to scripts/<your-game>.lua and scripts/games/<id>/ modules.
+  Template hub entry — copy to scripts/<your-game>.lua
 
-  Pattern (same as scripts/fabrik-tycoon.lua):
-    1. Inline manifest; prefixes → scripts/games/<id>/
-    2. SDK(manifest, DexUI)  → ctx + session + ctx.loop / ctx.dexui
-    3. pipeline modules in games/<id>/ (game, farm, …)
-    4. loadModule("ui", ctx)  → DexUI layout
-    5. Startup + loop in the hub entry file
+  Simplest pattern (Fabrik): one script file + optional scripts/<helper>.lua
+  Multi-module pattern: scripts/games/<id>/*.lua + manifest.prefixes + pipeline
 ]]
 
 local DexUI = (getgenv and getgenv().DexUI) or nil

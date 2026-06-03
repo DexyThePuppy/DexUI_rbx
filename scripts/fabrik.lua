@@ -1,6 +1,48 @@
--- Fabrik helper: tycoon getters, buyable pads, HUD cash mirror (needs ctx.lp, ctx.fmt, ctx.track).
+--[[
+  Bare Fabrik-Tycoon helpers (shared tycoon accessors + number formatting).
+  Loaded by scripts/fabrik-tycoon.lua — not a hub entry on its own.
+]]
 return function(ctx)
 	local LP = ctx.lp
+	local RS = game:GetService("ReplicatedStorage")
+
+	local ok, Other = pcall(require, RS.Scripts.Other)
+	ctx.other = ok and Other or nil
+	if not ctx.other then
+		return false
+	end
+
+	ctx.formatGameValue = ctx.other.format_value
+	if type(ctx.formatGameValue) ~= "function" then
+		ctx.formatGameValue = function(n)
+			return tostring(math.floor((n or 0) + 0.5))
+		end
+	end
+
+	ctx.getUpgradeData = ctx.other.GetDataBasedOnUpgrade
+	if type(ctx.getUpgradeData) ~= "function" then
+		ctx.getUpgradeData = function()
+			return {
+				isMaxReached = true,
+				nextUpgrade_Price = 0,
+				nextUpgrade_ValueBoost = 0,
+				currentUpgrade_ValueBoost = 0,
+			}
+		end
+	end
+
+	function ctx.fmt.money(n)
+		n = math.floor((n or 0) + 0.5)
+		return "$" .. ctx.formatGameValue(n)
+	end
+
+	function ctx.fmt.incomeRate(n)
+		n = math.floor((n or 0) + 0.5)
+		if n <= 0 then
+			return "($0/s)"
+		end
+		return "(" .. ctx.fmt.money(n) .. "/s)"
+	end
 
 	function ctx.game.getClientValues()
 		local pg = LP:FindFirstChild("PlayerGui")
@@ -203,4 +245,6 @@ return function(ctx)
 		end
 		ctx.game.updateCashHud()
 	end
+
+	return true
 end
