@@ -21,8 +21,8 @@ return function(ctx)
 
 	local launching: { [string]: boolean } = {}
 
-	local function formatThumb(url: string): string
-		return ToolAssets.resolveToolThumbnail(url)
+	local function formatThumb(url: string, fallback: string?): string
+		return ToolAssets.resolveToolThumbnail(url, fallback)
 	end
 
 	local function buildToolTooltip(entry: ToolEntry): any

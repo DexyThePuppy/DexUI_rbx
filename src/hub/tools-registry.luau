@@ -12,6 +12,7 @@ local FALLBACK_TOOLS = {
 		name = "Dex++",
 		description = "Extended Moon Dex explorer — decompiler, save instance, model viewer, console, and mobile input.",
 		thumbnail = "https://github.com/AZYsGithub/DexPlusPlus/blob/main/preview.png",
+		thumbnailFallback = "asset:dexplusplus",
 		url = "https://github.com/AZYsGithub/DexPlusPlus/releases/latest/download/out.lua",
 		repo = "https://github.com/AZYsGithub/DexPlusPlus",
 	},
@@ -19,7 +20,8 @@ local FALLBACK_TOOLS = {
 		id = "cobalt",
 		name = "Cobalt",
 		description = "Remote spy — monitor and intercept incoming/outgoing network traffic with replay and blocking.",
-		thumbnail = "https://github.com/notpoiu/cobalt/blob/main/Assets/Logo.png",
+		thumbnail = "asset:cobalt",
+		thumbnailFallback = "https://github.com/notpoiu/cobalt/blob/main/Assets/Logo.png",
 		url = "https://github.com/notpoiu/cobalt/releases/latest/download/Cobalt.luau",
 		repo = "https://github.com/notpoiu/cobalt",
 	},
@@ -30,6 +32,7 @@ export type ToolEntry = {
 	name: string,
 	description: string?,
 	thumbnail: string,
+	thumbnailFallback: string?,
 	url: string,
 	repo: string?,
 }
@@ -63,11 +66,13 @@ local function normalizeEntry(raw: any): ToolEntry?
 	elseif type(thumb) ~= "string" or thumb == "" then
 		thumb = "rbxasset://textures/ui/GuiImagePlaceholder.png"
 	end
+	local thumbFallback = raw.thumbnailFallback or raw.imageFallback
 	return {
 		id = raw.id,
 		name = raw.name,
 		description = if type(raw.description) == "string" then raw.description else nil,
 		thumbnail = thumb,
+		thumbnailFallback = if type(thumbFallback) == "string" and thumbFallback ~= "" then thumbFallback else nil,
 		url = raw.url,
 		repo = if type(raw.repo) == "string" then raw.repo else nil,
 	}

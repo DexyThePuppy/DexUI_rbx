@@ -168,9 +168,9 @@ local function resolveAssetKey(assetKey: string): string?
 	return uri
 end
 
-local function resolveToolThumbnail(thumbnail: string): string
+local function resolveOneThumbnail(thumbnail: string): string?
 	if not thumbnail or thumbnail == "" then
-		return PLACEHOLDER
+		return nil
 	end
 	if string.find(thumbnail, "rbxasset://", 1, true) then
 		return thumbnail
@@ -179,25 +179,32 @@ local function resolveToolThumbnail(thumbnail: string): string
 		return thumbnail
 	end
 	if isRemoteImageUrl(thumbnail) then
-		local loaded = remoteUrlToLoadable(thumbnail)
-		if loaded then
-			return loaded
-		end
-		return PLACEHOLDER
+		return remoteUrlToLoadable(thumbnail)
 	end
 	local assetKey = string.match(thumbnail, "^asset:(.+)$")
 	if not assetKey then
 		assetKey = string.match(thumbnail, "^assets/tools/([^/]+)%.%w+$")
 	end
 	if assetKey then
-		local resolved = resolveAssetKey(assetKey)
-		if resolved then
-			return resolved
-		end
+		return resolveAssetKey(assetKey)
 	end
 	local digits = string.match(thumbnail, "(%d+)")
 	if digits then
 		return "rbxassetid://" .. digits
+	end
+	return nil
+end
+
+local function resolveToolThumbnail(thumbnail: string, fallback: string?): string
+	local resolved = resolveOneThumbnail(thumbnail)
+	if resolved then
+		return resolved
+	end
+	if fallback and fallback ~= "" and fallback ~= thumbnail then
+		resolved = resolveOneThumbnail(fallback)
+		if resolved then
+			return resolved
+		end
 	end
 	return PLACEHOLDER
 end
