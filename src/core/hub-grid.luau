@@ -61,7 +61,9 @@ end
 
 type GridDeps = {
 	corner: (Instance, number) -> UICorner,
-	reg: (Instance, string, string?) -> (),
+	reg: (Instance, string, string) -> (),
+	fontWeight: (weight: Enum.FontWeight) -> Font,
+	textSize: (tier: string) -> number,
 }
 
 local function bindLayout(
@@ -140,6 +142,7 @@ local function createCard(
 	image.ScaleType = Enum.ScaleType.Crop
 	image.ZIndex = 2
 	image.Parent = thumb
+	deps.corner(image, spec.thumbCorner)
 
 	local title = Instance.new("TextLabel")
 	title.Name = "Title"
@@ -289,10 +292,12 @@ local function buildSection(
 		header.AutomaticSize = Enum.AutomaticSize.Y
 		header.BackgroundTransparency = 1
 		header.Text = opts.title
+		header.FontFace = deps.fontWeight(Enum.FontWeight.Medium)
+		header.TextSize = deps.textSize("sm")
 		header.TextXAlignment = Enum.TextXAlignment.Left
 		header.TextWrapped = true
 		header.Parent = holder
-		deps.reg(header, "TextColor3", "out")
+		deps.reg(header, "TextColor3", "pri")
 	end
 
 	local gridHost = Instance.new("Frame")

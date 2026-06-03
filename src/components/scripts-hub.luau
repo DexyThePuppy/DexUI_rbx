@@ -19,7 +19,7 @@ return function(ctx)
 	local textSize = ctx.textSize
 	local HubGrid = ctx.hubGrid
 
-	local gridDeps = { corner = corner, reg = reg }
+	local gridDeps = { corner = corner, reg = reg, fontWeight = fontWeight, textSize = textSize }
 	local activeSessions: { any } = {}
 
 	local function formatThumb(url: string): string

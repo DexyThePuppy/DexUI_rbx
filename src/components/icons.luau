@@ -98,7 +98,12 @@ return function(ctx)
 		gridHost.BackgroundTransparency = 1
 		gridHost.Parent = holder
 
-		local grid = HubGrid.buildScroll(gridHost, { corner = corner, reg = reg }, 360)
+		local grid = HubGrid.buildScroll(gridHost, {
+			corner = corner,
+			reg = reg,
+			fontWeight = fontWeight,
+			textSize = textSize,
+		}, 360)
 
 		type IconCell = { root: TextButton, name: string, nameLower: string, id: number }
 		local cells: { IconCell } = {}

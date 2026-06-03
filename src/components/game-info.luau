@@ -460,7 +460,7 @@ return function(ctx)
 			extraBadgeRow.Visible = extraBadgeRow:FindFirstChild("Badge") ~= nil
 		end
 
-		local badgeGridDeps = { corner = corner, reg = reg }
+		local badgeGridDeps = { corner = corner, reg = reg, fontWeight = fontWeight, textSize = textSize }
 		local BADGE_ICON = HubGrid.spec.badgeIcon
 		local CLAIMED_GREEN = Color3.fromRGB(56, 170, 92)
 
