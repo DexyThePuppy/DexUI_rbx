@@ -9,7 +9,7 @@ export type AchievementGridDeps = {
 	gridDeps: any,
 	curTheme: { fg: Color3, out: Color3 },
 	m3Font: Font,
-	fontWeight: (Enum.FontWeight) -> Font,
+	fontTitle: Font,
 	textSize: (string) -> number,
 	reg: (Instance, string, string) -> (),
 	corner: (Instance, number) -> (),
@@ -115,7 +115,7 @@ local function build(deps: AchievementGridDeps)
 				tick.AnchorPoint = Vector2.new(1, 0)
 				tick.BackgroundColor3 = CLAIMED_GREEN
 				tick.Text = "✓"
-				tick.FontFace = deps.fontWeight(Enum.FontWeight.Bold)
+				tick.FontFace = deps.fontTitle
 				tick.TextSize = deps.textSize("sm")
 				tick.TextColor3 = VIP_BADGE_ON
 				tick.ZIndex = 5

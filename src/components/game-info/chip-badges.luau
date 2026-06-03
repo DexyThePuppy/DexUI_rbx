@@ -3,7 +3,7 @@ export type ChipDeps = {
 	lib: any,
 	curTheme: { bg: Color3, fg: Color3, out: Color3, pri: Color3, onpri: Color3, inact: Color3 },
 	corner: (Instance, number) -> (),
-	fontWeight: (Enum.FontWeight) -> Font,
+	fontEmphasis: Font,
 	textSize: (string) -> number,
 	playFeedback: (string) -> (),
 	trySetClipboard: ((string) -> boolean)?,
@@ -75,7 +75,7 @@ local function create(deps: ChipDeps)
 		lbl.AutomaticSize = Enum.AutomaticSize.X
 		lbl.BackgroundTransparency = 1
 		lbl.Text = label
-		lbl.FontFace = deps.fontWeight(Enum.FontWeight.Medium)
+		lbl.FontFace = deps.fontEmphasis
 		lbl.TextSize = deps.textSize("sm")
 		lbl.TextColor3 = fg or deps.curTheme.out
 		lbl.Active = false

@@ -3,7 +3,7 @@ export type ServersDeps = {
 	section: Frame,
 	curTheme: { pri: Color3, fg: Color3, onpri: Color3, inact: Color3 },
 	m3Font: Font,
-	fontWeight: (Enum.FontWeight) -> Font,
+	fontEmphasis: Font,
 	textSize: (string) -> number,
 	reg: (Instance, string, string) -> (),
 	corner: (Instance, number) -> (),
@@ -106,7 +106,7 @@ local function build(deps: ServersDeps)
 		rowTitle.Position = UDim2.new(0, 12, 0, 4)
 		rowTitle.BackgroundTransparency = 1
 		rowTitle.Text = ""
-		rowTitle.FontFace = deps.fontWeight(Enum.FontWeight.Medium)
+		rowTitle.FontFace = deps.fontEmphasis
 		rowTitle.TextSize = deps.textSize("md")
 		rowTitle.TextXAlignment = Enum.TextXAlignment.Left
 		rowTitle.TextTruncate = Enum.TextTruncate.AtEnd
@@ -136,7 +136,7 @@ local function build(deps: ServersDeps)
 		joinBtn.AnchorPoint = Vector2.new(1, 0.5)
 		joinBtn.Position = UDim2.new(1, -10, 0.5, 0)
 		joinBtn.Text = "Join"
-		joinBtn.FontFace = deps.fontWeight(Enum.FontWeight.Medium)
+		joinBtn.FontFace = deps.fontEmphasis
 		joinBtn.TextSize = deps.textSize("sm")
 		joinBtn.AutoButtonColor = false
 		joinBtn.ZIndex = 4
@@ -250,7 +250,7 @@ local function build(deps: ServersDeps)
 		btn.Name = "Page" .. pageNum
 		btn.Size = UDim2.fromOffset(28, 28)
 		btn.Text = tostring(pageNum)
-		btn.FontFace = deps.fontWeight(Enum.FontWeight.Medium)
+		btn.FontFace = deps.fontEmphasis
 		btn.TextSize = deps.textSize("sm")
 		btn.AutoButtonColor = false
 		btn.Visible = false
@@ -280,7 +280,7 @@ local function build(deps: ServersDeps)
 	pageNextBtn.Name = "PageNext"
 	pageNextBtn.Size = UDim2.fromOffset(28, 28)
 	pageNextBtn.Text = ">"
-	pageNextBtn.FontFace = deps.fontWeight(Enum.FontWeight.Medium)
+	pageNextBtn.FontFace = deps.fontEmphasis
 	pageNextBtn.TextSize = deps.textSize("sm")
 	pageNextBtn.AutoButtonColor = false
 	pageNextBtn.Parent = pagerRow

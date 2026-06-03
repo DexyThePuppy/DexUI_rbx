@@ -16,14 +16,14 @@ return function(ctx)
 	local tween, corner, ripple = ctx.tween, ctx.corner, ctx.ripple
 	local nextCardItemOrder = ctx.nextCardItemOrder
 	local playFeedback = ctx.playFeedback
-	local fontWeight = ctx.fontWeight
-	local fontLarge = ctx.fontLarge
+	local fontEmphasis = ctx.fontEmphasis
+	local fontTitle = ctx.fontTitle
 	local tooltip = ctx.tooltip
 	local trySetClipboard = ctx.trySetClipboard
 	local textSize = ctx.textSize
 	local Grid = ctx.grid
 
-	local gridDeps = { corner = corner, reg = reg, fontWeight = fontWeight, textSize = textSize }
+	local gridDeps = { corner = corner, reg = reg, fontEmphasis = fontEmphasis, textSize = textSize }
 	local launching: { [string]: boolean } = {}
 
 	local function formatThumb(url: string): string
@@ -77,7 +77,7 @@ return function(ctx)
 		local panelDeps = {
 			corner = corner,
 			reg = reg,
-			fontLarge = fontLarge,
+			fontTitle = fontTitle,
 			textSize = textSize,
 			padding = SL.SectionPadding or 14,
 			innerGap = SL.InnerGap or 8,
@@ -114,7 +114,7 @@ return function(ctx)
 			end)
 
 			card.title.Text = entry.name
-			card.title.FontFace = fontWeight(Enum.FontWeight.Medium)
+			card.title.FontFace = fontEmphasis
 			card.title.TextSize = textSize("sm")
 			reg(card.title, "TextColor3", "fg")
 
@@ -124,7 +124,7 @@ return function(ctx)
 			extBadge.AnchorPoint = Vector2.new(1, 0)
 			extBadge.BackgroundTransparency = 0
 			extBadge.Text = "External"
-			extBadge.FontFace = fontWeight(Enum.FontWeight.Bold)
+			extBadge.FontFace = fontTitle
 			extBadge.TextSize = textSize("sm")
 			extBadge.ZIndex = 5
 			extBadge.Parent = card.thumb

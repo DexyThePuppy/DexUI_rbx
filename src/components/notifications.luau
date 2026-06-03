@@ -104,7 +104,7 @@ return function(ctx)
 	local regDynamic = ctx.regDynamic
 	local tween = ctx.tween
 	local corner = ctx.corner
-	local fontWeight = ctx.fontWeight
+	local fontTitle = ctx.fontTitle
 	local playFeedback = ctx.playFeedback
 	local playNotificationSound = ctx.playNotificationSound
 	local onHeartbeat = ctx.onHeartbeat
@@ -399,7 +399,7 @@ return function(ctx)
 		theme: Palette
 	)
 		clearGradients(label)
-		label.FontFace = fontWeight(Enum.FontWeight.Bold)
+		label.FontFace = fontTitle
 		label.TextSize = style.TextSize
 		label.TextXAlignment = Enum.TextXAlignment.Left
 		label.TextYAlignment = Enum.TextYAlignment.Center
@@ -614,7 +614,7 @@ return function(ctx)
 		local rainbowIndex = notifRainbowCounter
 		notifRainbowCounter += 1
 
-		local labelFont = fontWeight(Enum.FontWeight.Bold)
+		local labelFont = fontTitle
 		local strokePadEst = if style.TextStroke.Thickness > 0 then style.TextStroke.Thickness * 2 else 0
 		local estW = measureTextWidth(text, style.TextSize, labelFont) + strokePadEst + style.PadInner * 2
 		local card = Instance.new("Frame")

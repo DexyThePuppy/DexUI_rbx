@@ -6,7 +6,7 @@ return function(ctx)
 	local reg, regDynamic = ctx.reg, ctx.regDynamic
 	local tween, corner, ripple = ctx.tween, ctx.corner, ctx.ripple
 	local textSize = ctx.textSize
-	local fontWeight, m3Font = ctx.fontWeight, ctx.m3Font
+	local fontEmphasis, m3Font = ctx.fontEmphasis, ctx.m3Font
 	local beginBuildCard, beginCardRow, closeBuildCard = ctx.beginBuildCard, ctx.beginCardRow, ctx.closeBuildCard
 	local nextCardItemOrder, refreshCardRowCorners, styleGroupedSurfaces, tintRow = ctx.nextCardItemOrder, ctx.refreshCardRowCorners, ctx.styleGroupedSurfaces, ctx.tintRow
 	local indexElement, fillLabelColumn = ctx.indexElement, ctx.fillLabelColumn
@@ -56,7 +56,7 @@ return function(ctx)
 		chip.AnchorPoint = Vector2.new(1, 0.5)
 		chip.Position = UDim2.new(1, 0, 0.5, 0)
 		chip.Text = current ~= Enum.KeyCode.Unknown and current.Name or "None"
-		chip.FontFace = fontWeight(Enum.FontWeight.Medium)
+		chip.FontFace = fontEmphasis
 		chip.TextSize = textSize("md")
 		chip.AutoButtonColor = false
 		chip.BackgroundTransparency = 0

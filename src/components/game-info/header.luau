@@ -6,8 +6,8 @@ export type HeaderDeps = {
 	section: Frame,
 	chip: any,
 	entry: any?,
-	fontWeight: (Enum.FontWeight) -> Font,
-	fontLarge: Font,
+	fontEmphasis: Font,
+	fontTitle: Font,
 	textSize: (string) -> number,
 	reg: (Instance, string, string) -> (),
 	corner: (Instance, number) -> (),
@@ -32,7 +32,7 @@ local function build(deps: HeaderDeps)
 	titleLbl.AutomaticSize = Enum.AutomaticSize.Y
 	titleLbl.BackgroundTransparency = 1
 	titleLbl.Text = "Loading experience…"
-	titleLbl.FontFace = deps.fontLarge
+	titleLbl.FontFace = deps.fontTitle
 	titleLbl.TextSize = deps.textSize("lg")
 	titleLbl.TextXAlignment = Enum.TextXAlignment.Left
 	titleLbl.TextWrapped = true
@@ -45,7 +45,7 @@ local function build(deps: HeaderDeps)
 	rejoinBtn.AnchorPoint = Vector2.new(1, 0)
 	rejoinBtn.Position = UDim2.new(1, 0, 0, 0)
 	rejoinBtn.Text = "Rejoin"
-	rejoinBtn.FontFace = deps.fontWeight(Enum.FontWeight.Medium)
+	rejoinBtn.FontFace = deps.fontEmphasis
 	rejoinBtn.TextSize = deps.textSize("sm")
 	rejoinBtn.AutoButtonColor = false
 	rejoinBtn.Parent = headerRow

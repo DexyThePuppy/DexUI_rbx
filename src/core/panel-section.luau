@@ -9,7 +9,7 @@ export type SectionOpts = {
 export type SectionDeps = {
 	corner: (Instance, number) -> (),
 	reg: (Instance, string, string) -> (),
-	fontLarge: Font?,
+	fontTitle: Font?,
 	textSize: ((string) -> number)?,
 	padding: number?,
 	innerGap: number?,
@@ -46,14 +46,14 @@ local function create(parent: Instance, layoutOrder: number, deps: SectionDeps, 
 	blockLayout.Parent = block
 
 	local heading: TextLabel? = nil
-	if opts and opts.title and opts.title ~= "" and deps.fontLarge and deps.textSize then
+	if opts and opts.title and opts.title ~= "" and deps.fontTitle and deps.textSize then
 		heading = Instance.new("TextLabel")
 		heading.Name = "SectionTitle"
 		heading.LayoutOrder = 0
 		heading.Size = UDim2.new(1, 0, 0, TITLE_HEIGHT)
 		heading.BackgroundTransparency = 1
 		heading.Text = opts.title
-		heading.FontFace = deps.fontLarge
+		heading.FontFace = deps.fontTitle
 		heading.TextSize = deps.textSize("lg")
 		heading.TextXAlignment = Enum.TextXAlignment.Left
 		heading.Parent = block

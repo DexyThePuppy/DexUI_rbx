@@ -112,7 +112,7 @@ local function makeUI(titleText: string?, options: MakeUIOptions?): Window
 	local reg, regDynamic = ctx.reg, ctx.regDynamic
 	local tween, corner, ripple = ctx.tween, ctx.corner, ctx.ripple
 	local textSize = ctx.textSize
-	local fontWeight, fontLarge, m3Font = ctx.fontWeight, ctx.fontLarge, ctx.m3Font
+	local fontWeight, fontEmphasis, fontTitle, fontDisplay, m3Font = ctx.fontWeight, ctx.fontEmphasis, ctx.fontTitle, ctx.fontDisplay, ctx.m3Font
 	local beginCardRow, closeBuildCard, tintRow = ctx.beginCardRow, ctx.closeBuildCard, ctx.tintRow
 	local playFeedback = ctx.playFeedback
 	local onRender, onInputChanged, onInputEnded = ctx.onRender, ctx.onInputChanged, ctx.onInputEnded
@@ -288,7 +288,7 @@ local function makeUI(titleText: string?, options: MakeUIOptions?): Window
 	top.Position = UDim2.new(0, 24, 0, 6)
     top.BackgroundTransparency = 1
     top.Text = appTitle
-	top.FontFace = fontLarge
+	top.FontFace = fontTitle
 	top.TextSize = textSize("lg")
     top.TextXAlignment = Enum.TextXAlignment.Left
 	top.TextTruncate = Enum.TextTruncate.AtEnd
@@ -914,7 +914,7 @@ local function makeUI(titleText: string?, options: MakeUIOptions?): Window
 		txl.Size = UDim2.fromScale(1, 1)
 		txl.BackgroundTransparency = 1
 		txl.Text = label
-		txl.FontFace = fontWeight(Enum.FontWeight.Medium)
+		txl.FontFace = fontEmphasis
 		txl.TextSize = textSize("md")
 		txl.ZIndex = 104
 		txl.Parent = b
@@ -1002,7 +1002,7 @@ local function makeUI(titleText: string?, options: MakeUIOptions?): Window
 		confirmTitle.Position = UDim2.new(0, 24, 0, 0)
 		confirmTitle.BackgroundTransparency = 1
 		confirmTitle.Text = "Confirm Close."
-		confirmTitle.FontFace = fontLarge
+		confirmTitle.FontFace = fontTitle
 		confirmTitle.TextSize = textSize("lg")
 		confirmTitle.TextXAlignment = Enum.TextXAlignment.Left
 		confirmTitle.TextYAlignment = Enum.TextYAlignment.Center
@@ -1053,7 +1053,7 @@ local function makeUI(titleText: string?, options: MakeUIOptions?): Window
 		h.Size = UDim2.new(1, 0, 0, 20)
 		h.BackgroundTransparency = 1
 		h.Text = text
-		h.FontFace = fontWeight(Enum.FontWeight.Medium)
+		h.FontFace = fontEmphasis
 		h.TextSize = textSize("sm")
 		h.TextXAlignment = Enum.TextXAlignment.Left
 		h.LayoutOrder = order
@@ -1601,6 +1601,7 @@ local function makeUI(titleText: string?, options: MakeUIOptions?): Window
 		mouse = mouse,
 		INTRO_BRAND = INTRO_BRAND,
 		fontWeight = fontWeight,
+		fontDisplay = fontDisplay,
 	})
 
 
@@ -1717,7 +1718,7 @@ end)
 			end)
 
 			local ok, err = pcall(function()
-				playWorldIntro(brand, curTheme.pri, fontWeight(Enum.FontWeight.Heavy), function()
+				playWorldIntro(brand, curTheme.pri, fontDisplay, function()
 					gui.Enabled = true
 					fadeInWin(0.45)
 

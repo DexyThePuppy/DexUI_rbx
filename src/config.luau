@@ -7,11 +7,17 @@ return {
 	GuiName = "DexUI",
 	Version = "1.0.0",
 
-	-- Universal text tiers (only sm / md / lg — no smaller than Small).
+	-- MUI/M3-style type scale: fixed tiers + per-role weights (see core/typography.luau).
 	Typography = {
-		Small = 12,
-		Medium = 14,
-		Large = 18,
+		Small = 12, -- caption / helper
+		Medium = 14, -- body (MUI default)
+		Large = 22, -- section titles (M3 Title Large)
+		Weight = {
+			Body = 400,
+			Emphasis = 500, -- buttons, chips, row titles
+			Title = 700, -- section headings, paragraph titles
+			Display = 900, -- intro / hero moments
+		},
 	},
 
 	-- Stacked section cards (Game Info, Media, etc.).

@@ -56,7 +56,8 @@ return function(ctx)
 	local reg = ctx.reg
 	local corner = ctx.corner
 	local m3Font = ctx.m3Font
-	local fontWeight = ctx.fontWeight
+	local fontEmphasis = ctx.fontEmphasis
+	local fontTitle = ctx.fontTitle
 	local textSize = ctx.textSize
 	local popupLayer = ctx.popupLayer
 	local track = ctx.track
@@ -152,7 +153,7 @@ return function(ctx)
 		end
 	end
 
-	local function addTextBlock(order: number, text: string, size: number, token: string, wrapped: boolean?)
+	local function addTextBlock(order: number, text: string, size: number, token: string, wrapped: boolean?, face: Font?)
 		local lbl = Instance.new("TextLabel")
 		lbl.Name = "Block"
 		lbl.LayoutOrder = order
@@ -160,7 +161,7 @@ return function(ctx)
 		lbl.AutomaticSize = Enum.AutomaticSize.Y
 		lbl.BackgroundTransparency = 1
 		lbl.Text = text
-		lbl.FontFace = if token == "fg" then fontWeight(Enum.FontWeight.Medium) else m3Font
+		lbl.FontFace = face or m3Font
 		lbl.TextSize = size
 		lbl.TextXAlignment = Enum.TextXAlignment.Left
 		lbl.TextYAlignment = Enum.TextYAlignment.Top
@@ -176,9 +177,11 @@ return function(ctx)
 		for _, block in content.blocks do
 			order += 1
 			if block.kind == "text" then
-				addTextBlock(order, block.text, textSize("sm"), if block.muted then "out" else "fg", true)
+				local token = if block.muted then "out" else "fg"
+				local face = if block.muted then nil else fontEmphasis
+				addTextBlock(order, block.text, textSize("sm"), token, true, face)
 			elseif block.kind == "title" then
-				addTextBlock(order, block.text, textSize("md"), "fg", false)
+				addTextBlock(order, block.text, textSize("md"), "fg", false, fontTitle)
 			elseif block.kind == "divider" then
 				local div = Instance.new("Frame")
 				div.Name = "Divider"
@@ -220,7 +223,7 @@ return function(ctx)
 				valueLbl.AutomaticSize = Enum.AutomaticSize.Y
 				valueLbl.BackgroundTransparency = 1
 				valueLbl.Text = block.value
-				valueLbl.FontFace = fontWeight(Enum.FontWeight.Medium)
+				valueLbl.FontFace = fontEmphasis
 				valueLbl.TextSize = textSize("sm")
 				valueLbl.TextWrapped = true
 				valueLbl.TextXAlignment = Enum.TextXAlignment.Left
@@ -261,7 +264,7 @@ return function(ctx)
 				valueLbl.AutomaticSize = Enum.AutomaticSize.Y
 				valueLbl.BackgroundTransparency = 1
 				valueLbl.Text = block.value
-				valueLbl.FontFace = fontWeight(Enum.FontWeight.Medium)
+				valueLbl.FontFace = fontEmphasis
 				valueLbl.TextSize = textSize("sm")
 				valueLbl.TextWrapped = true
 				valueLbl.TextXAlignment = Enum.TextXAlignment.Right

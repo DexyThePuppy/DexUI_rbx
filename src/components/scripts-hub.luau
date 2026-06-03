@@ -17,13 +17,13 @@ return function(ctx)
 	local m3Font = ctx.m3Font
 	local nextCardItemOrder = ctx.nextCardItemOrder
 	local playFeedback = ctx.playFeedback
-	local fontWeight = ctx.fontWeight
-	local fontLarge = ctx.fontLarge
+	local fontEmphasis = ctx.fontEmphasis
+	local fontTitle = ctx.fontTitle
 	local tooltip = ctx.tooltip
 	local textSize = ctx.textSize
 	local Grid = ctx.grid
 
-	local gridDeps = { corner = corner, reg = reg, fontWeight = fontWeight, textSize = textSize }
+	local gridDeps = { corner = corner, reg = reg, fontEmphasis = fontEmphasis, textSize = textSize }
 	local activeSessions: { any } = {}
 
 	local function formatThumb(url: string): string
@@ -123,7 +123,7 @@ return function(ctx)
 		local panelDeps = {
 			corner = corner,
 			reg = reg,
-			fontLarge = fontLarge,
+			fontTitle = fontTitle,
 			textSize = textSize,
 			padding = SL.SectionPadding or 14,
 			innerGap = SL.InnerGap or 8,
@@ -174,7 +174,7 @@ return function(ctx)
 				badge.Position = UDim2.fromOffset(4, 4)
 				badge.BackgroundTransparency = 0
 				badge.Text = "This game"
-				badge.FontFace = fontWeight(Enum.FontWeight.Bold)
+				badge.FontFace = fontTitle
 				badge.TextSize = textSize("sm")
 				badge.ZIndex = 5
 				badge.Parent = card.thumb

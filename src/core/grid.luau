@@ -67,7 +67,7 @@ end
 export type GridDeps = {
 	corner: (Instance, number) -> UICorner,
 	reg: (Instance, string, string) -> (),
-	fontWeight: (weight: Enum.FontWeight) -> Font,
+	fontEmphasis: Font,
 	textSize: (tier: string) -> number,
 }
 
@@ -319,7 +319,7 @@ local function buildSection(
 		header.AutomaticSize = Enum.AutomaticSize.Y
 		header.BackgroundTransparency = 1
 		header.Text = opts.title
-		header.FontFace = deps.fontWeight(Enum.FontWeight.Medium)
+		header.FontFace = deps.fontEmphasis
 		header.TextSize = deps.textSize("sm")
 		header.TextXAlignment = Enum.TextXAlignment.Left
 		header.TextWrapped = true

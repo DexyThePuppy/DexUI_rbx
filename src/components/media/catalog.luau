@@ -15,7 +15,7 @@ export type CatalogDeps = {
 	corner: (Instance, number) -> (),
 	tween: (Instance, string, any, number) -> (),
 	m3Font: Font,
-	fontWeight: (Enum.FontWeight) -> Font,
+	fontEmphasis: Font,
 	textSize: (string) -> number,
 	playFeedback: (string) -> (),
 	tooltip: any?,
@@ -35,7 +35,7 @@ local function build(deps: CatalogDeps)
 	local corner = deps.corner
 	local tween = deps.tween
 	local m3Font = deps.m3Font
-	local fontWeight = deps.fontWeight
+	local fontEmphasis = deps.fontEmphasis
 	local textSize = deps.textSize
 	local playFeedback = deps.playFeedback
 	local tooltip = deps.tooltip
@@ -244,7 +244,7 @@ local function build(deps: CatalogDeps)
 	searchBtn.AnchorPoint = Vector2.new(1, 0.5)
 	searchBtn.Position = UDim2.new(1, -8, 0.5, 0)
 	searchBtn.Text = "Search"
-	searchBtn.FontFace = fontWeight(Enum.FontWeight.Medium)
+	searchBtn.FontFace = fontEmphasis
 	searchBtn.TextSize = textSize("md")
 	searchBtn.AutoButtonColor = false
 	searchBtn.Parent = searchFrame
@@ -308,7 +308,7 @@ local function build(deps: CatalogDeps)
 		rowTitle.Position = UDim2.new(0, 12, 0, 4)
 		rowTitle.BackgroundTransparency = 1
 		rowTitle.Text = ""
-		rowTitle.FontFace = fontWeight(Enum.FontWeight.Medium)
+		rowTitle.FontFace = fontEmphasis
 		rowTitle.TextSize = textSize("md")
 		rowTitle.TextXAlignment = Enum.TextXAlignment.Left
 		rowTitle.TextTruncate = Enum.TextTruncate.AtEnd
@@ -419,7 +419,7 @@ local function build(deps: CatalogDeps)
 		btn.Name = "Page" .. pageNum
 		btn.Size = UDim2.new(0, 28, 0, 28)
 		btn.Text = tostring(pageNum)
-		btn.FontFace = fontWeight(Enum.FontWeight.Medium)
+		btn.FontFace = fontEmphasis
 		btn.TextSize = textSize("sm")
 		btn.AutoButtonColor = false
 		btn.Parent = pagerRow
@@ -439,7 +439,7 @@ local function build(deps: CatalogDeps)
 	nextBtn.Name = "PageNext"
 	nextBtn.Size = UDim2.new(0, 28, 0, 28)
 	nextBtn.Text = ">"
-	nextBtn.FontFace = fontWeight(Enum.FontWeight.Medium)
+	nextBtn.FontFace = fontEmphasis
 	nextBtn.TextSize = textSize("sm")
 	nextBtn.AutoButtonColor = false
 	nextBtn.Parent = pagerRow

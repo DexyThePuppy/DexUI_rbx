@@ -32,7 +32,7 @@ return function(deps: any)
 	local RunService = deps.RunService
 	local mouse = deps.mouse
 	local INTRO_BRAND = deps.INTRO_BRAND
-	local fontWeight = deps.fontWeight
+	local fontDisplay = deps.fontDisplay
 	-- Accent highlights: only the hovered edge OR corner lights up (never the whole frame).
 	local function glowBar(size: UDim2, pos: UDim2, anchor: Vector2): Frame
 		local bar = Instance.new("Frame")
@@ -398,7 +398,7 @@ return function(deps: any)
 	backLogo.BackgroundTransparency = 1
 	backLogo.Text = INTRO_BRAND
 	backLogo.TextScaled = true
-	backLogo.FontFace = fontWeight(Enum.FontWeight.Heavy)
+	backLogo.FontFace = fontDisplay
 	backLogo.ZIndex = 1
 	backLogo.Parent = backSurface
 

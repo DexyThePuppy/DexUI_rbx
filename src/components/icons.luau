@@ -10,7 +10,7 @@ return function(ctx)
 	local curTheme = ctx.theme
 	local reg, regDynamic = ctx.reg, ctx.regDynamic
 	local tween, corner, ripple = ctx.tween, ctx.corner, ctx.ripple
-	local fontWeight, fontLarge, m3Font = ctx.fontWeight, ctx.fontLarge, ctx.m3Font
+	local fontEmphasis, fontTitle, m3Font = ctx.fontEmphasis, ctx.fontTitle, ctx.m3Font
 	local beginBuildCard, beginCardRow, closeBuildCard = ctx.beginBuildCard, ctx.beginCardRow, ctx.closeBuildCard
 	local nextCardItemOrder, refreshCardRowCorners, styleGroupedSurfaces, tintRow = ctx.nextCardItemOrder, ctx.refreshCardRowCorners, ctx.styleGroupedSurfaces, ctx.tintRow
 	local indexElement, fillLabelColumn = ctx.indexElement, ctx.fillLabelColumn
@@ -43,7 +43,7 @@ return function(ctx)
 		local panelDeps = {
 			corner = corner,
 			reg = reg,
-			fontLarge = fontLarge,
+			fontTitle = fontTitle,
 			textSize = textSize,
 			padding = SL.SectionPadding or 14,
 			innerGap = SL.InnerGap or 8,
@@ -95,7 +95,7 @@ return function(ctx)
 		statusLbl.Size = UDim2.new(1, 0, 0, 16)
 		statusLbl.BackgroundTransparency = 1
 		statusLbl.Text = "Loading Material Icons…"
-		statusLbl.FontFace = fontWeight(Enum.FontWeight.Medium)
+		statusLbl.FontFace = fontEmphasis
 		statusLbl.TextSize = textSize("sm")
 		statusLbl.TextXAlignment = Enum.TextXAlignment.Left
 		statusLbl.Parent = card
@@ -111,7 +111,7 @@ return function(ctx)
 		local gridMount = Grid.buildScroll(gridHost, {
 			corner = corner,
 			reg = reg,
-			fontWeight = fontWeight,
+			fontEmphasis = fontEmphasis,
 			textSize = textSize,
 		}, 360)
 

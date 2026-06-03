@@ -3,21 +3,17 @@
 -- Creator Store media search, clipboard, the Material icon library, corners, ripples.
 
 local Services = require("../services")
-local Config = require("../config")
+local Typography = require("./typography")
 
 local TweenService = Services.TweenService
 local UserInputService = Services.UserInputService
 local HttpService = Services.HttpService
 local AssetService = Services.AssetService
 
+local Config = require("../config")
 local MEDIA_FETCH_LIMIT = Config.MediaFetchLimit
 local CREATOR_STORE_SEARCH = Config.CreatorStoreSearch
-local TYPO = Config.Typography or {}
-local TextSizes = {
-	sm = TYPO.Small or 12,
-	md = TYPO.Medium or 14,
-	lg = TYPO.Large or 18,
-}
+local TextSizes = Typography.TextSizes
 
 local function tierFromNumber(size: number): string
 	-- Map legacy pixel sizes onto the three tiers (minimum readable = sm).

@@ -54,8 +54,8 @@ local function mount(ctx)
 
 	local m3Font = ctx.m3Font
 
-	local fontWeight = ctx.fontWeight
-	local fontLarge = ctx.fontLarge
+	local fontEmphasis = ctx.fontEmphasis
+	local fontTitle = ctx.fontTitle
 
 	local onHeartbeat = ctx.onHeartbeat
 
@@ -91,7 +91,7 @@ local function mount(ctx)
 
 		reg = reg,
 
-		fontLarge = fontLarge,
+		fontTitle = fontTitle,
 
 		textSize = textSize,
 
@@ -141,7 +141,7 @@ local function mount(ctx)
 
 		corner = corner,
 
-		fontWeight = fontWeight,
+		fontEmphasis = fontEmphasis,
 
 		textSize = textSize,
 
@@ -171,9 +171,9 @@ local function mount(ctx)
 
 		entry = entry,
 
-		fontWeight = fontWeight,
+		fontEmphasis = fontEmphasis,
 
-		fontLarge = fontLarge,
+		fontTitle = fontTitle,
 
 		textSize = textSize,
 
@@ -245,7 +245,7 @@ local function mount(ctx)
 
 		m3Font = m3Font,
 
-		fontWeight = fontWeight,
+		fontEmphasis = fontEmphasis,
 
 		textSize = textSize,
 
@@ -273,13 +273,13 @@ local function mount(ctx)
 
 		Grid = Grid,
 
-		gridDeps = { corner = corner, reg = reg, fontWeight = fontWeight, textSize = textSize },
+		gridDeps = { corner = corner, reg = reg, fontEmphasis = fontEmphasis, textSize = textSize },
 
 		curTheme = curTheme,
 
 		m3Font = m3Font,
 
-		fontWeight = fontWeight,
+		fontTitle = fontTitle,
 
 		textSize = textSize,
 
@@ -309,7 +309,7 @@ local function mount(ctx)
 
 		m3Font = m3Font,
 
-		fontWeight = fontWeight,
+		fontEmphasis = fontEmphasis,
 
 		textSize = textSize,
 

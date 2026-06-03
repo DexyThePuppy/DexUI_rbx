@@ -41,6 +41,11 @@ return function(deps: Deps)
 	local textSize = Util.textSize
 	local Grid = require("./grid")
 	local fontWeight = Fonts.fontWeight
+	local fontRole = Fonts.fontRole
+	local fontBody = Fonts.fontBody
+	local fontEmphasis = Fonts.fontEmphasis
+	local fontTitle = Fonts.fontTitle
+	local fontDisplay = Fonts.fontDisplay
 	local fontLarge = Fonts.fontLarge
 	local m3Font = Fonts.m3Font
 
@@ -457,6 +462,11 @@ return function(deps: Deps)
 		-- fonts / typography
 		m3Font = m3Font,
 		fontWeight = fontWeight,
+		fontRole = fontRole,
+		fontBody = fontBody,
+		fontEmphasis = fontEmphasis,
+		fontTitle = fontTitle,
+		fontDisplay = fontDisplay,
 		fontLarge = fontLarge,
 		textSize = textSize,
 		TextSizes = Util.TextSizes,
