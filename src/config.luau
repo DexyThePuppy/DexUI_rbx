@@ -13,7 +13,7 @@ return {
 		Small = 12, -- caption / helper
 		Medium = 14, -- body (MUI default)
 		Large = 22, -- section titles (M3 Title Large)
-		WeightAdjustment = 300,
+		WeightAdjustment = 800,
 		Weight = {
 			Body = 400,
 			Emphasis = 500, -- buttons, chips, row titles
