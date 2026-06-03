@@ -11,6 +11,9 @@ local SoundService = Services.SoundService
 
 local FEEDBACK_BASE = "rbxasset://sounds/switch.wav" -- short broadband click, not a tone
 
+local feedbackCfg = Config.FeedbackSound or {}
+local feedbackSoundId: number = feedbackCfg.AssetId or 0
+
 local soundCfg = Config.NotificationSound or {}
 local notificationSoundId: number = soundCfg.AssetId or 121045990444676
 local notificationVolume: number = soundCfg.Volume or 0.65
@@ -51,13 +54,20 @@ local soundsEnabled = true
 local masterVolume = 1
 local lastPlayed: { [string]: number } = {}
 
+local function feedbackSoundUrl(): string
+	if feedbackSoundId and feedbackSoundId > 0 then
+		return "rbxassetid://" .. tostring(feedbackSoundId)
+	end
+	return FEEDBACK_BASE
+end
+
 -- Shape a single click purely by intensity, mirroring web-haptics' playClick:
 -- louder + slightly brighter as the tap gets harder, with a touch of random
 -- jitter so repeats don't sound robotic. Pitch stays near 1.0 (the sample is
 -- already a low, percussive click) so nothing turns into a squeaky beep.
 local function playTap(intensity: number)
 	local sound = Instance.new("Sound")
-	sound.SoundId = FEEDBACK_BASE
+	sound.SoundId = feedbackSoundUrl()
 	sound.Volume = math.clamp(intensity * 0.45 * masterVolume, 0, 1)
 	local brightness = 0.82 + intensity * 0.26 -- 0.82 (soft) .. 1.08 (hard)
 	sound.PlaybackSpeed = brightness * (1 + (math.random() - 0.5) * 0.08)
@@ -95,7 +105,7 @@ local function playSliderTick(pct: number)
 	lastSliderPct = pct
 
 	local sound = Instance.new("Sound")
-	sound.SoundId = FEEDBACK_BASE
+	sound.SoundId = feedbackSoundUrl()
 	sound.Volume = math.clamp(0.16 * masterVolume, 0, 1)
 	sound.PlaybackSpeed = SLIDER_PITCH_LOW + pct * (SLIDER_PITCH_HIGH - SLIDER_PITCH_LOW)
 	sound.Parent = SoundService
@@ -234,6 +244,33 @@ local function setNotificationSoundAssetId(id: number)
 	end
 end
 
+local function getFeedbackSoundAssetId(): number
+	return feedbackSoundId
+end
+
+local function setFeedbackSoundAssetId(id: number)
+	if typeof(id) == "number" and id <= 0 then
+		feedbackSoundId = 0
+		return
+	end
+	local normalized = normalizeAssetId(id)
+	if normalized then
+		feedbackSoundId = normalized
+	end
+end
+
+local function previewFeedbackSound()
+	if not soundsEnabled then
+		return
+	end
+	playFeedback("hover")
+	task.delay(0.12, function()
+		if soundsEnabled then
+			playFeedback("selection")
+		end
+	end)
+end
+
 local function isNotificationRandomPitch(): boolean
 	return notificationRandomPitch
 end
@@ -271,6 +308,9 @@ return {
 	normalizeAssetId = normalizeAssetId,
 	getNotificationSoundAssetId = getNotificationSoundAssetId,
 	setNotificationSoundAssetId = setNotificationSoundAssetId,
+	getFeedbackSoundAssetId = getFeedbackSoundAssetId,
+	setFeedbackSoundAssetId = setFeedbackSoundAssetId,
+	previewFeedbackSound = previewFeedbackSound,
 	isNotificationRandomPitch = isNotificationRandomPitch,
 	setNotificationRandomPitch = setNotificationRandomPitch,
 	getNotificationPitch = getNotificationPitch,

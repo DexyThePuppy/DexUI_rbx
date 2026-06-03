@@ -54,4 +54,9 @@ return {
 		PitchMax = 1.08,
 		Pitch = 1,
 	},
+
+	-- Hover / click / slider UI feedback (0 = built-in switch.wav).
+	FeedbackSound = {
+		AssetId = 0,
+	},
 }

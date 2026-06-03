@@ -43,6 +43,7 @@ end
 
 local function defaultsFromConfig(config: any): { any }
 	local notif = (config and config.NotificationSound) or {}
+	local feedback = (config and config.FeedbackSound) or {}
 	return {
 		version = STORE_VERSION,
 		soundsEnabled = true,
@@ -54,6 +55,9 @@ local function defaultsFromConfig(config: any): { any }
 			pitch = notif.Pitch or 1,
 			pitchMin = notif.PitchMin or 0.92,
 			pitchMax = notif.PitchMax or 1.08,
+		},
+		feedbackSound = {
+			assetId = feedback.AssetId or 0,
 		},
 		notificationStyle = nil,
 	}

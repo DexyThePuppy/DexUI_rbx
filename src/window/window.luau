@@ -131,6 +131,9 @@ local function makeUI(titleText: string?): Window
 			masterVolume = Sound.getMasterVolume(),
 			accentTint = SettingsStore.colorToTable(curTheme.pri),
 			notificationSound = ns,
+			feedbackSound = {
+				assetId = Sound.getFeedbackSoundAssetId(),
+			},
 			notificationStyle = notificationStyle,
 		}
 	end
@@ -172,6 +175,10 @@ local function makeUI(titleText: string?): Window
 			if type(ns.pitchMin) == "number" and type(ns.pitchMax) == "number" then
 				Sound.setNotificationPitchRange(ns.pitchMin, ns.pitchMax)
 			end
+		end
+		local fs = s.feedbackSound
+		if type(fs) == "table" and type(fs.assetId) == "number" then
+			Sound.setFeedbackSoundAssetId(fs.assetId)
 		end
 		local tint = SettingsStore.colorFromTable(s.accentTint)
 		if tint then
@@ -1160,94 +1167,146 @@ local function makeUI(titleText: string?): Window
 		end
 	end)
 
-	buildOverlayGroup(settingsScroll, 4, function()
-		local content = beginCardRow(56, false)
+	local function feedbackIdBoxText(): string
+		local id = Sound.getFeedbackSoundAssetId()
+		return if id > 0 then tostring(id) else ""
+	end
 
-		local lbl = Instance.new("TextLabel")
-		lbl.Size = UDim2.new(1, -108, 0, 20)
-		lbl.BackgroundTransparency = 1
-		lbl.Text = "Notification Sound ID"
-		lbl.FontFace = m3Font
-		lbl.TextSize = 11
-		lbl.TextXAlignment = Enum.TextXAlignment.Left
-		lbl.ZIndex = 2
-		lbl.Parent = content
-		reg(lbl, "TextColor3", "out")
+	local function applyFeedbackIdFromBox(text: string): string
+		local id = Sound.normalizeAssetId(text)
+		if id then
+			Sound.setFeedbackSoundAssetId(id)
+			return tostring(id)
+		end
+		if text == "" or text == "0" then
+			Sound.setFeedbackSoundAssetId(0)
+			return ""
+		end
+		return feedbackIdBoxText()
+	end
 
-		local idBox = Instance.new("TextBox")
-		idBox.Size = UDim2.new(1, -108, 0, 24)
-		idBox.Position = UDim2.new(0, 0, 0, 26)
-		idBox.BackgroundTransparency = 1
-		idBox.Text = tostring(Sound.getNotificationSoundAssetId())
-		idBox.PlaceholderText = "Roblox asset ID"
-		idBox.FontFace = m3Font
-		idBox.TextSize = 15
-		idBox.TextXAlignment = Enum.TextXAlignment.Left
-		idBox.ClearTextOnFocus = false
-		idBox.ZIndex = 2
-		idBox.Parent = content
-		reg(idBox, "TextColor3", "fg")
-		reg(idBox, "PlaceholderColor3", "out")
+	local function addSoundAssetIdRow(
+		order: number,
+		title: string,
+		placeholder: string,
+		initialText: string,
+		applyId: (string) -> string,
+		preview: () -> (),
+		afterRow: (() -> ())?
+	)
+		buildOverlayGroup(settingsScroll, order, function()
+			local content = beginCardRow(56, false)
 
-		local playBtn = Instance.new("TextButton")
-		playBtn.Name = "Preview"
-		playBtn.Size = UDim2.new(0, 40, 0, 40)
-		playBtn.AnchorPoint = Vector2.new(1, 0.5)
-		playBtn.Position = UDim2.new(1, 0, 0.5, 0)
-		playBtn.AutoButtonColor = false
-		playBtn.Text = ""
-		playBtn.ZIndex = 3
-		playBtn.Parent = content
-		reg(playBtn, "BackgroundColor3", "pri")
-		corner(playBtn, 999)
+			local lbl = Instance.new("TextLabel")
+			lbl.Size = UDim2.new(1, -108, 0, 20)
+			lbl.BackgroundTransparency = 1
+			lbl.Text = title
+			lbl.FontFace = m3Font
+			lbl.TextSize = 11
+			lbl.TextXAlignment = Enum.TextXAlignment.Left
+			lbl.ZIndex = 2
+			lbl.Parent = content
+			reg(lbl, "TextColor3", "out")
 
-		local playIcon = Instance.new("ImageLabel")
-		playIcon.Size = UDim2.new(0, 18, 0, 18)
-		playIcon.AnchorPoint = Vector2.new(0.5, 0.5)
-		playIcon.Position = UDim2.new(0.5, 1, 0.5, 0)
-		playIcon.BackgroundTransparency = 1
-		playIcon.Image = "rbxassetid://6026663699"
-		playIcon.ZIndex = 4
-		playIcon.Parent = playBtn
-		reg(playIcon, "ImageColor3", "onpri")
+			local idBox = Instance.new("TextBox")
+			idBox.Size = UDim2.new(1, -108, 0, 24)
+			idBox.Position = UDim2.new(0, 0, 0, 26)
+			idBox.BackgroundTransparency = 1
+			idBox.Text = initialText
+			idBox.PlaceholderText = placeholder
+			idBox.FontFace = m3Font
+			idBox.TextSize = 15
+			idBox.TextXAlignment = Enum.TextXAlignment.Left
+			idBox.ClearTextOnFocus = false
+			idBox.ZIndex = 2
+			idBox.Parent = content
+			reg(idBox, "TextColor3", "fg")
+			reg(idBox, "PlaceholderColor3", "out")
 
-		playBtn.MouseEnter:Connect(function()
-			tween(playBtn, "BackgroundColor3", curTheme.fg, 0.15)
+			local playBtn = Instance.new("TextButton")
+			playBtn.Name = "Preview"
+			playBtn.Size = UDim2.new(0, 40, 0, 40)
+			playBtn.AnchorPoint = Vector2.new(1, 0.5)
+			playBtn.Position = UDim2.new(1, 0, 0.5, 0)
+			playBtn.AutoButtonColor = false
+			playBtn.Text = ""
+			playBtn.ZIndex = 3
+			playBtn.Parent = content
+			reg(playBtn, "BackgroundColor3", "pri")
+			corner(playBtn, 999)
+
+			local playIcon = Instance.new("ImageLabel")
+			playIcon.Size = UDim2.new(0, 18, 0, 18)
+			playIcon.AnchorPoint = Vector2.new(0.5, 0.5)
+			playIcon.Position = UDim2.new(0.5, 1, 0.5, 0)
+			playIcon.BackgroundTransparency = 1
+			playIcon.Image = "rbxassetid://6026663699"
+			playIcon.ZIndex = 4
+			playIcon.Parent = playBtn
+			reg(playIcon, "ImageColor3", "onpri")
+
+			playBtn.MouseEnter:Connect(function()
+				tween(playBtn, "BackgroundColor3", curTheme.fg, 0.15)
+			end)
+			playBtn.MouseLeave:Connect(function()
+				tween(playBtn, "BackgroundColor3", curTheme.pri, 0.15)
+			end)
+			playBtn.MouseButton1Click:Connect(function()
+				idBox.Text = applyId(idBox.Text)
+				ripple(playBtn, curTheme.onpri)
+				preview()
+				scheduleSaveSettings()
+			end)
+
+			idBox.FocusLost:Connect(function()
+				idBox.Text = applyId(idBox.Text)
+				scheduleSaveSettings()
+			end)
+
+			if afterRow then
+				afterRow()
+			end
 		end)
-		playBtn.MouseLeave:Connect(function()
-			tween(playBtn, "BackgroundColor3", curTheme.pri, 0.15)
-		end)
-		playBtn.MouseButton1Click:Connect(function()
-			local id = Sound.normalizeAssetId(idBox.Text)
+	end
+
+	addSoundAssetIdRow(
+		4,
+		"Hover / Click Sound ID",
+		"Default UI click (empty)",
+		feedbackIdBoxText(),
+		applyFeedbackIdFromBox,
+		function()
+			Sound.previewFeedbackSound()
+		end
+	)
+
+	addSoundAssetIdRow(
+		5,
+		"Notification Sound ID",
+		"Roblox asset ID",
+		tostring(Sound.getNotificationSoundAssetId()),
+		function(text)
+			local id = Sound.normalizeAssetId(text)
 			if id then
 				Sound.setNotificationSoundAssetId(id)
-				idBox.Text = tostring(id)
+				return tostring(id)
 			end
-			ripple(playBtn, curTheme.onpri)
+			return tostring(Sound.getNotificationSoundAssetId())
+		end,
+		function()
 			Sound.previewNotificationSound()
-			scheduleSaveSettings()
-		end)
-
-		idBox.FocusLost:Connect(function()
-			local id = Sound.normalizeAssetId(idBox.Text)
-			if id then
-				Sound.setNotificationSoundAssetId(id)
-				idBox.Text = tostring(id)
-			else
-				idBox.Text = tostring(Sound.getNotificationSoundAssetId())
-			end
-			scheduleSaveSettings()
-		end)
-
-		lib:AddSwitch("Random Notification Pitch", Sound.isNotificationRandomPitch(), function(on)
-			Sound.setNotificationRandomPitch(on)
-			scheduleSaveSettings()
-		end, "Vary playback speed on each toast")
-	end)
+		end,
+		function()
+			lib:AddSwitch("Random Notification Pitch", Sound.isNotificationRandomPitch(), function(on)
+				Sound.setNotificationRandomPitch(on)
+				scheduleSaveSettings()
+			end, "Vary playback speed on each toast")
+		end
+	)
 
 	--//-------------- INTERFACE ACTIONS ----------------\\--
 
-	addOverlayHeading(settingsScroll, "Interface", 5)
+	addOverlayHeading(settingsScroll, "Interface", 6)
 
 	local function addSettingsAction(label: string, destructive: boolean?, onClick: () -> ())
 		local content = beginCardRow(44, false)
@@ -1290,7 +1349,7 @@ local function makeUI(titleText: string?): Window
 		end)
 	end
 
-	buildOverlayGroup(settingsScroll, 6, function()
+	buildOverlayGroup(settingsScroll, 7, function()
 		addSettingsAction("Reload UI", false, function()
 			hideOverlay(settingsOverlay)
 			lib:Reload()
