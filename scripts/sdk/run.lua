@@ -1,11 +1,12 @@
 --[[
-  DexUI Script SDK — run any hub game script from a manifest + module pipeline.
+  DexUI Script SDK — session + loops + dexui helpers for hub game scripts.
 
-  Game folder layout:
-    scripts/<entry>.lua               — manifest + SDK.run + UI/loop wiring
-    scripts/games/<id>/<module>.lua   — return function(ctx) ... end (logic only)
+  Typical layout:
+    scripts/<entry>.lua           — one file: manifest, SDK.run, all game logic
+    scripts/helpers/<game>/       — optional small shared helpers (not required)
+    scripts/sdk/                  — this package
 
-  See scripts/games/_template/ for a minimal starter.
+  Optional manifest.pipeline loads extra modules from manifest.prefixes.
 ]]
 
 local SDK_PREFIXES = {
@@ -40,27 +41,28 @@ return function(manifest, DexUI)
 		error("[sdk] manifest must be a table", 0)
 	end
 
+	local pipeline = manifest.pipeline or {}
+	local abortAfter = manifest.abortAfter or {}
 	local modulePrefixes = manifest.prefixes or manifest.modulePrefixes
-	if not modulePrefixes then
-		error("[sdk] manifest.prefixes required (folders that hold game modules)", 0)
-	end
 
-	local loadGame = makeLoader(modulePrefixes)
 	local ctx = createSession(manifest, DexUI)
 	attachLoop(ctx)
 	attachDexui(ctx)
 
-	local pipeline = manifest.pipeline or { "main" }
-	local abortAfter = manifest.abortAfter or {}
-
-	for _, moduleName in pipeline do
-		local init = loadGame(moduleName)
-		if type(init) == "function" then
-			init(ctx)
+	if #pipeline > 0 then
+		if not modulePrefixes then
+			error("[sdk] manifest.prefixes required when pipeline is non-empty", 0)
 		end
-		for _, gate in abortAfter do
-			if gate == moduleName and not ctx.isAlive() then
-				return ctx
+		local loadGame = makeLoader(modulePrefixes)
+		for _, moduleName in pipeline do
+			local init = loadGame(moduleName)
+			if type(init) == "function" then
+				init(ctx)
+			end
+			for _, gate in abortAfter do
+				if gate == moduleName and not ctx.isAlive() then
+					return ctx
+				end
 			end
 		end
 	end
