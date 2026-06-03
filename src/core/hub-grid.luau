@@ -21,7 +21,7 @@ export type GridSpec = {
 
 export type CardParts = {
 	root: TextButton,
-	thumb: Frame,
+	thumb: CanvasGroup,
 	image: ImageLabel,
 	title: TextLabel,
 	state: Frame,
@@ -124,13 +124,14 @@ local function createCard(
 	btn.Parent = parent
 	deps.corner(btn, spec.cardCorner)
 
-	local thumb = Instance.new("Frame")
+	-- CanvasGroup + UICorner actually clips the image to a round rect (Frame/ClipsDescendants does not).
+	local thumb = Instance.new("CanvasGroup")
 	thumb.Name = "Thumb"
 	thumb.Position = UDim2.fromOffset(inset, inset)
 	thumb.Size = UDim2.new(1, -inset * 2, 0, thumbH)
 	thumb.BackgroundTransparency = 1
 	thumb.BorderSizePixel = 0
-	thumb.ClipsDescendants = true
+	thumb.GroupTransparency = 0
 	thumb.ZIndex = 1
 	thumb.Parent = btn
 	deps.corner(thumb, spec.thumbCorner)
@@ -142,7 +143,6 @@ local function createCard(
 	image.ScaleType = Enum.ScaleType.Crop
 	image.ZIndex = 2
 	image.Parent = thumb
-	deps.corner(image, spec.thumbCorner)
 
 	local title = Instance.new("TextLabel")
 	title.Name = "Title"
