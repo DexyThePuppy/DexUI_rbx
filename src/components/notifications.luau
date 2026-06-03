@@ -136,7 +136,7 @@ return function(ctx)
 	end
 
 	local function buildDefaults(): ResolvedStyle
-		local cfg = Config.Notifications or {}
+		local cfg = (Config and Config.Notifications) or {}
 		return {
 			Max = cfg.Max or 8,
 			Life = cfg.Life or 4.2,

@@ -461,6 +461,9 @@ return function(deps: Deps)
 		playNotificationSound = Sound.playNotificationSound,
 		previewNotificationSound = Sound.previewNotificationSound,
 
+		-- config
+		config = Config,
+
 		-- config passthroughs
 		MEDIA_PAGE_SIZE = Config.MediaPageSize,
 		MEDIA_PAGE_COUNT = Config.MediaPageCount,
