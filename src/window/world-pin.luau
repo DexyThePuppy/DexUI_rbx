@@ -587,13 +587,21 @@ return function(deps: any)
 			worldBack.Adornee = nil
 			worldBack.Enabled = false
 			anchorPart.CanQuery = false
+			-- Restore screen size from saved pixel dims. Pinned parts are large in studs
+			-- with low PPS; studSize * 512 would blow up the overlay (e.g. 11st → 5k px).
+			local ppsPinned = worldFace.PixelsPerStud
+			local w = pinnedPixelW
+			local h = pinnedPixelH
+			if not w or not h then
+				w = math.floor(anchorPart.Size.X * ppsPinned + 0.5)
+				h = math.floor(anchorPart.Size.Y * ppsPinned + 0.5)
+			end
+			w = math.clamp(math.max(minW, w), minW, math.max(minW, cam.ViewportSize.X))
+			h = math.clamp(math.max(minH, h), minH, math.max(minH, cam.ViewportSize.Y))
 			worldFace.PixelsPerStud = WORLD_PIXELS_PER_STUD
 			worldBack.PixelsPerStud = WORLD_PIXELS_PER_STUD
 			pinnedPixelW, pinnedPixelH = nil, nil
 			local screenPos, onScreen = cam:WorldToViewportPoint(anchorPart.Position)
-			local pps = worldFace.PixelsPerStud
-			local w = math.floor(anchorPart.Size.X * pps + 0.5)
-			local h = math.floor(anchorPart.Size.Y * pps + 0.5)
 			win.Parent = gui
 			win.AnchorPoint = Vector2.new(0, 0)
 			win.Size = UDim2.fromOffset(w, h)
