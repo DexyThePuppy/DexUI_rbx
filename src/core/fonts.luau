@@ -160,7 +160,7 @@ local fontEmphasis = fontRole("emphasis")
 local fontTitle = fontRole("title")
 local fontDisplay = fontRole("display")
 
--- Tabs: lighter chrome; everything else via m3Font uses bold body.
+-- Tabs/chrome: Config.Typography.ChromeWeight (default emphasis = body tier).
 local chromeWeight = TYPO.ChromeWeight
 local function resolveChromeFont(): Font
 	if chromeWeight == "medium" then

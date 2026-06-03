@@ -10,19 +10,19 @@ return {
 	-- MUI/M3-style type scale: fixed tiers + per-role weights (see core/typography.luau).
 	-- WeightAdjustment: Android-style +N on each role (0 = off).
 	-- Family: Roblox built-in Builder Sans (per-weight masters; distinct from Roboto).
-	-- ChromeWeight: "regular" for tabs/small UI (crisp); "medium" for slightly heavier chrome.
+	-- ChromeWeight: tabs/small UI — emphasis matches body tier when everything is bold.
 	Typography = {
 		Family = "rbxasset://fonts/families/BuilderSans.json",
-		ChromeWeight = "regular", -- tabs: regular | medium | bold | emphasis
+		ChromeWeight = "emphasis", -- tabs: regular | medium | bold | emphasis
 		-- false = built-in family masters only; true = force legacy TTF download; nil = auto
 		Small = 12, -- caption / helper
 		Medium = 14, -- body (MUI default)
 		Large = 22, -- section titles (M3 Title Large)
-		WeightAdjustment = 300,
+		WeightAdjustment = 400,
 		Weight = {
-			Body = 500, -- 800 with WeightAdjustment (+300)
-			Emphasis = 500, -- buttons, chips, row titles
-			Title = 700, -- section headings, paragraph titles
+			Body = 600, -- → Heavy (900) with +400
+			Emphasis = 600, -- buttons, chips, row titles
+			Title = 800, -- section headings, paragraph titles
 			Display = 900, -- intro / hero moments
 		},
 	},
