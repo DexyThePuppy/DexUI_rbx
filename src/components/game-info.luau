@@ -3,6 +3,7 @@
 
 local Registry = require("../hub/registry")
 local GameMetadata = require("../hub/game-metadata")
+local Services = require("../services")
 
 return function(ctx)
 	local lib = ctx.lib
@@ -14,19 +15,21 @@ return function(ctx)
 	local fontWeight = ctx.fontWeight
 	local onHeartbeat = ctx.onHeartbeat
 	local playFeedback = ctx.playFeedback
+	local ContentProvider = Services.ContentProvider or game:GetService("ContentProvider")
 
-	local function formatImage(url: string): string
-		if string.find(url, "rbxassetid://", 1, true)
-			or string.find(url, "rbxthumb://", 1, true)
-			or string.find(url, "http", 1, true)
+	local function formatImage(uri: string): string
+		if string.find(uri, "rbxassetid://", 1, true)
+			or string.find(uri, "rbxthumb://", 1, true)
+			or string.find(uri, "rbxasset://", 1, true)
 		then
-			return url
+			return uri
 		end
-		local digits = string.match(url, "(%d+)")
+		-- Never pass CDN https URLs straight to ImageLabel (they will not render).
+		local digits = string.match(uri, "(%d+)")
 		if digits then
 			return "rbxassetid://" .. digits
 		end
-		return url
+		return uri
 	end
 
 	local function formatNumber(n: number?): string
@@ -198,6 +201,28 @@ return function(ctx)
 			end
 		end
 
+		local function applySlideImage(slide: ImageLabel, uri: string)
+			slide.Image = formatImage(uri)
+			slide.ImageTransparency = 0.4
+			task.spawn(function()
+				pcall(function()
+					ContentProvider:PreloadAsync({ slide })
+				end)
+				for _ = 1, 20 do
+					if not slide.Parent then
+						return
+					end
+					if slide.IsLoaded then
+						break
+					end
+					task.wait(0.15)
+				end
+				if slide.Parent then
+					slide.ImageTransparency = 0
+				end
+			end)
+		end
+
 		local function rebuildCarousel(images: { string })
 			for _, ch in carouselScroll:GetChildren() do
 				if ch:IsA("ImageLabel") then
@@ -223,10 +248,11 @@ return function(ctx)
 				slide.Size = UDim2.new(0, 384, 1, -16)
 				slide.Position = UDim2.new(0, 0, 0, 8)
 				slide.BackgroundTransparency = 1
-				slide.Image = formatImage(imgUrl)
 				slide.ScaleType = Enum.ScaleType.Crop
 				slide.Parent = carouselScroll
 				corner(slide, 10)
+				reg(slide, "BackgroundColor3", "bg")
+				applySlideImage(slide, imgUrl)
 			end
 
 			for i = 1, count do
@@ -324,6 +350,15 @@ return function(ctx)
 			end
 
 			rebuildCarousel(images)
+
+			if #images > 0 and carouselScroll:FindFirstChildWhichIsA("ImageLabel") then
+				local first = carouselScroll:FindFirstChildWhichIsA("ImageLabel") :: ImageLabel
+				task.delay(3, function()
+					if first.Parent and not first.IsLoaded then
+						extraLbl.Text = "Thumbnails could not load. Executor needs request + getcustomasset, or rbxthumb support."
+					end
+				end)
+			end
 
 			if entry then
 				extraLbl.Text = "Hub script: " .. entry.script

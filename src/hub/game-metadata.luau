@@ -1,7 +1,7 @@
 --!nonstrict
 -- Fetches metadata for the experience the client is currently in.
--- Use game.GameId (universe), not the /games/ URL place id alone — sub-places often
--- have no description on MarketplaceService Product lookups.
+-- ImageLabel cannot display raw https:// CDN URLs — we resolve thumbnails to
+-- rbxassetid:// (from API targetId) or executor getcustomasset caches.
 
 local Services = require("../services")
 local Util = require("../core/util")
@@ -21,16 +21,23 @@ export type GameMetadata = {
 	images: { string },
 }
 
+local CDN_CACHE_FOLDER = "DexUI/thumbnails"
+local cdnAssetCache: { [string]: string } = {}
+
 local function placeThumb(placeId: number, w: number, h: number): string
 	return string.format("rbxthumb://type=Place&id=%d&w=%d&h=%d", placeId, w, h)
 end
 
-local function addImage(list: { string }, seen: { [string]: boolean }, url: string?)
-	if not url or url == "" or seen[url] then
+local function canCacheFiles(): boolean
+	return writefile ~= nil and getcustomasset ~= nil and isfolder ~= nil and makefolder ~= nil
+end
+
+local function addImage(list: { string }, seen: { [string]: boolean }, uri: string?)
+	if not uri or uri == "" or seen[uri] then
 		return
 	end
-	seen[url] = true
-	table.insert(list, url)
+	seen[uri] = true
+	table.insert(list, uri)
 end
 
 local function decodeJson(body: string): any?
@@ -43,7 +50,7 @@ local function decodeJson(body: string): any?
 	return nil
 end
 
-local function httpGet(url: string): any?
+local function httpGetJson(url: string): any?
 	local ok, res = Util.httpRequest({ Url = url, Method = "GET" })
 	if not ok or not res or res.StatusCode ~= 200 or not res.Body then
 		return nil
@@ -51,10 +58,93 @@ local function httpGet(url: string): any?
 	return decodeJson(res.Body)
 end
 
-local function fetchFromMarketplace(universeId: number, placeId: number): (string?, string?, string?)
+local function httpGetRaw(url: string): string?
+	-- Prefer binary HttpGet (executor); JSON APIs still use Util.httpRequest above.
+	local httpGet = (game :: any).HttpGet
+	if type(httpGet) == "function" then
+		local ok, body = pcall(function()
+			return httpGet(url, true)
+		end)
+		if ok and type(body) == "string" and #body > 128 then
+			return body
+		end
+	end
+	local ok, res = Util.httpRequest({ Url = url, Method = "GET" })
+	if not ok or not res or res.StatusCode ~= 200 or type(res.Body) ~= "string" or #res.Body < 128 then
+		return nil
+	end
+	return res.Body
+end
+
+local function hashSlug(text: string): string
+	local h = 0
+	for i = 1, #text do
+		h = (h * 31 + string.byte(text, i)) % 2147483647
+	end
+	return tostring(h)
+end
+
+-- Roblox ImageLabel rejects https://tr.rbxcdn.com/... ; cache PNG via executor filesystem.
+local function cdnUrlToLoadable(cdnUrl: string): string?
+	if cdnAssetCache[cdnUrl] then
+		return cdnAssetCache[cdnUrl]
+	end
+	if not canCacheFiles() then
+		return nil
+	end
+	local body = httpGetRaw(cdnUrl)
+	if not body then
+		return nil
+	end
+	if not isfolder("DexUI") then
+		pcall(makefolder, "DexUI")
+	end
+	if not isfolder(CDN_CACHE_FOLDER) then
+		pcall(makefolder, CDN_CACHE_FOLDER)
+	end
+	local path = CDN_CACHE_FOLDER .. "/" .. hashSlug(cdnUrl) .. ".png"
+	local writeOk = pcall(writefile, path, body)
+	if not writeOk then
+		return nil
+	end
+	local assetOk, asset = pcall(getcustomasset, path)
+	if not assetOk or type(asset) ~= "string" or asset == "" then
+		return nil
+	end
+	cdnAssetCache[cdnUrl] = asset
+	return asset
+end
+
+local function targetIdToAssetId(targetId: any, universeId: number): string?
+	if type(targetId) ~= "number" or targetId <= 0 or targetId == universeId then
+		return nil
+	end
+	-- Universe ids are small (~1e9); thumbnail content ids are much larger.
+	if targetId < 1_000_000_000_000 then
+		return nil
+	end
+	return "rbxassetid://" .. string.format("%.0f", targetId)
+end
+
+local function resolveThumbnailEntry(entry: any, universeId: number): string?
+	if type(entry) ~= "table" or entry.state ~= "Completed" then
+		return nil
+	end
+	if type(entry.imageUrl) == "string" then
+		local cached = cdnUrlToLoadable(entry.imageUrl)
+		if cached then
+			return cached
+		end
+	end
+	-- targetId on icons is often the universe id, not an rbxasset; multiget ids rarely render as rbxassetid in executors.
+	return targetIdToAssetId(entry.targetId, universeId)
+end
+
+local function fetchFromMarketplace(universeId: number, placeId: number): (string?, string?, string?, number?)
 	local name: string? = nil
 	local description: string? = nil
 	local creatorName: string? = nil
+	local iconAssetId: number? = nil
 
 	local okGame, gameInfo = pcall(function()
 		return MarketplaceService:GetProductInfo(universeId, Enum.InfoType.Game)
@@ -70,6 +160,9 @@ local function fetchFromMarketplace(universeId: number, placeId: number): (strin
 			creatorName = gameInfo.Creator.Name
 		elseif type(gameInfo.CreatorName) == "string" then
 			creatorName = gameInfo.CreatorName
+		end
+		if type(gameInfo.IconImageAssetId) == "number" and gameInfo.IconImageAssetId > 0 then
+			iconAssetId = gameInfo.IconImageAssetId
 		end
 	end
 
@@ -87,11 +180,11 @@ local function fetchFromMarketplace(universeId: number, placeId: number): (strin
 		end
 	end
 
-	return name, description, creatorName
+	return name, description, creatorName, iconAssetId
 end
 
 local function fetchFromGamesApi(universeId: number): (string?, string?, string?, number?, number?, number?)
-	local data = httpGet("https://games.roblox.com/v1/games?universeIds=" .. tostring(universeId))
+	local data = httpGetJson("https://games.roblox.com/v1/games?universeIds=" .. tostring(universeId))
 	if type(data) ~= "table" or type(data.data) ~= "table" or #data.data == 0 then
 		return nil, nil, nil, nil, nil, nil
 	end
@@ -105,10 +198,15 @@ local function fetchFromGamesApi(universeId: number): (string?, string?, string?
 	return name, description, creatorName, playing, visits, rootPlaceId
 end
 
-local function fetchThumbnailUrls(universeId: number): { string }
-	local urls: { string } = {}
+local function fetchLoadableThumbnailUris(universeId: number, iconAssetId: number?): { string }
+	local uris: { string } = {}
+	local seen: { [string]: boolean } = {}
 
-	local multi = httpGet(
+	if iconAssetId and iconAssetId > 0 then
+		addImage(uris, seen, "rbxassetid://" .. tostring(iconAssetId))
+	end
+
+	local multi = httpGetJson(
 		"https://thumbnails.roblox.com/v1/games/multiget/thumbnails?universeIds="
 			.. tostring(universeId)
 			.. "&countPerUniverse=5&size=768x432&format=Png&isCircular=false"
@@ -117,35 +215,31 @@ local function fetchThumbnailUrls(universeId: number): { string }
 		for _, bucket in multi.data do
 			if type(bucket.thumbnails) == "table" then
 				for _, thumb in bucket.thumbnails do
-					if type(thumb.imageUrl) == "string" then
-						table.insert(urls, thumb.imageUrl)
-					end
+					addImage(uris, seen, resolveThumbnailEntry(thumb, universeId))
 				end
 			end
 		end
 	end
 
-	local icon = httpGet(
+	local icon = httpGetJson(
 		"https://thumbnails.roblox.com/v1/games/icons?universeIds="
 			.. tostring(universeId)
 			.. "&size=512x512&format=Png&isCircular=false"
 	)
 	if type(icon) == "table" and type(icon.data) == "table" then
 		for _, row in icon.data do
-			if type(row.imageUrl) == "string" then
-				table.insert(urls, row.imageUrl)
-			end
+			addImage(uris, seen, resolveThumbnailEntry(row, universeId))
 		end
 	end
 
-	return urls
+	return uris
 end
 
 local function fetchCurrentGameMetadata(): GameMetadata
 	local placeId = game.PlaceId
 	local universeId = game.GameId
 
-	local name, description, creator = fetchFromMarketplace(universeId, placeId)
+	local name, description, creator, iconAssetId = fetchFromMarketplace(universeId, placeId)
 	local playing, visits, rootPlaceId
 	local apiName, apiDesc, apiCreator, apiPlaying, apiVisits, apiRoot = fetchFromGamesApi(universeId)
 	if apiName then
@@ -167,15 +261,15 @@ local function fetchCurrentGameMetadata(): GameMetadata
 
 	local images: { string } = {}
 	local seen: { [string]: boolean } = {}
-	for _, url in fetchThumbnailUrls(universeId) do
-		addImage(images, seen, url)
+	for _, uri in fetchLoadableThumbnailUris(universeId, iconAssetId) do
+		addImage(images, seen, uri)
 	end
 	if rootPlaceId then
 		addImage(images, seen, placeThumb(rootPlaceId, 768, 432))
 	end
-	addImage(images, seen, placeThumb(placeId, 768, 432))
+	addImage(images, seen, placeThumb(placeId, 420, 420))
 	if #images == 0 then
-		addImage(images, seen, placeThumb(placeId, 420, 420))
+		addImage(images, seen, placeThumb(placeId, 768, 432))
 	end
 
 	return {
