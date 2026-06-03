@@ -123,9 +123,9 @@ local function makeUI(titleText: string?): Window
 
 	local win = Instance.new("Frame")
 	win.Name = "Window"
-	local finalWinSize = UDim2.new(0, 380, 0, 520)
+	local finalWinSize = UDim2.new(0, 560, 0, 520)
 	win.Size = finalWinSize
-    win.Position = UDim2.new(0.5, -190, 0.5, -260)
+    win.Position = UDim2.new(0.5, -280, 0.5, -260)
     win.BorderSizePixel = 0
     win.ClipsDescendants = true
 	win.Parent = gui
