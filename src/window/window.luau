@@ -27,6 +27,7 @@ local componentFactories = {
 	require("../components/colorpicker"),
 	require("../components/media"),
 	require("../components/icons"),
+	require("../components/notifications"),
 }
 
 type Palette = { bg: Color3, fg: Color3, pri: Color3, onpri: Color3, inact: Color3, out: Color3 }
@@ -50,7 +51,8 @@ export type Window = {
 	AddColorPicker: (self: Window, text: string, default: Color3?, callback: Callback?, subtitle: string?) -> (),
 	AddMediaBrowser: (self: Window) -> (),
 	AddIconBrowser: (self: Window) -> (),
-	Notify: (self: Window, opts: { Title: string?, Content: string?, Duration: number? }) -> (),
+	Notify: (self: Window, opts: { Title: string?, Content: string?, Duration: number?, Style: any? }) -> (),
+	SetNotificationStyle: (self: Window, style: any?) -> (),
 	PlayIntro: (self: Window, opts: { Brand: string?, OnComplete: (() -> ())? }?) -> (),
 	Show: (self: Window) -> (),
 	Destroy: (self: Window) -> (),
@@ -65,6 +67,8 @@ local function makeUI(titleText: string?): Window
 	local lib = {} :: any
 	local unloaded = false
 	local reloadCallback: (() -> ())? = nil
+	local appTitle = titleText or "M3 UI Library"
+	local confirmCloseLayer: Frame? = nil
 
 	local theme = {}
 	for k, v in Palettes.Blue do
@@ -176,7 +180,7 @@ local function makeUI(titleText: string?): Window
 	top.Size = UDim2.new(1, -198, 0, 45)
 	top.Position = UDim2.new(0, 24, 0, 6)
     top.BackgroundTransparency = 1
-    top.Text = titleText or "M3 UI Library"
+    top.Text = appTitle
 	top.FontFace = fontWeight(Enum.FontWeight.Medium)
     top.TextSize = 22
     top.TextXAlignment = Enum.TextXAlignment.Left
@@ -647,98 +651,6 @@ local function makeUI(titleText: string?): Window
 	--\\============================================================//--
 
 	--//============================================================\\--
-	--||                     NOTIFICATIONS                        ||--
-	--\\============================================================//--
-
-	local notifHolder = Instance.new("Frame")
-	notifHolder.Size = UDim2.new(0, 300, 1, -20)
-	notifHolder.AnchorPoint = Vector2.new(1, 1)
-	notifHolder.Position = UDim2.new(1, -16, 1, -10)
-	notifHolder.BackgroundTransparency = 1
-	notifHolder.Parent = gui
-
-	local notifLayout = Instance.new("UIListLayout")
-	notifLayout.SortOrder = Enum.SortOrder.LayoutOrder
-	notifLayout.VerticalAlignment = Enum.VerticalAlignment.Bottom
-	notifLayout.HorizontalAlignment = Enum.HorizontalAlignment.Right
-	notifLayout.Padding = UDim.new(0, 10)
-	notifLayout.Parent = notifHolder
-
-	function lib:Notify(opts: { Title: string?, Content: string?, Duration: number? })
-		playFeedback("selection")
-		local card = Instance.new("Frame")
-		card.Size = UDim2.new(1, 0, 0, 10)
-		card.AutomaticSize = Enum.AutomaticSize.Y
-		card.BackgroundColor3 = curTheme.inact
-		card.BackgroundTransparency = 1
-		card.BorderSizePixel = 0
-		card.Parent = notifHolder
-		corner(card, 14)
-
-		local stroke = Instance.new("UIStroke")
-		stroke.Color = curTheme.pri
-		stroke.Thickness = 1
-		stroke.Transparency = 1
-		stroke.Parent = card
-
-		local pad = Instance.new("UIPadding")
-		pad.PaddingTop = UDim.new(0, 12)
-		pad.PaddingBottom = UDim.new(0, 12)
-		pad.PaddingLeft = UDim.new(0, 16)
-		pad.PaddingRight = UDim.new(0, 16)
-		pad.Parent = card
-
-		local layout = Instance.new("UIListLayout")
-		layout.Padding = UDim.new(0, 4)
-		layout.SortOrder = Enum.SortOrder.LayoutOrder
-		layout.Parent = card
-
-		local title = Instance.new("TextLabel")
-		title.Size = UDim2.new(1, 0, 0, 18)
-		title.BackgroundTransparency = 1
-		title.Text = opts.Title or "Notification"
-		title.TextTransparency = 1
-		title.FontFace = fontWeight(Enum.FontWeight.Medium)
-		title.TextColor3 = curTheme.fg
-		title.TextSize = 15
-		title.TextXAlignment = Enum.TextXAlignment.Left
-		title.LayoutOrder = 1
-		title.Parent = card
-
-		local content = Instance.new("TextLabel")
-		content.Size = UDim2.new(1, 0, 0, 0)
-		content.AutomaticSize = Enum.AutomaticSize.Y
-		content.BackgroundTransparency = 1
-		content.Text = opts.Content or ""
-		content.TextTransparency = 1
-		content.FontFace = m3Font
-		content.TextColor3 = curTheme.out
-		content.TextSize = 13
-		content.TextWrapped = true
-		content.TextXAlignment = Enum.TextXAlignment.Left
-		content.TextYAlignment = Enum.TextYAlignment.Top
-		content.LayoutOrder = 2
-		content.Parent = card
-
-		-- Slide + fade in.
-		card.Position = UDim2.new(1, 0, 0, 0)
-		tween(card, "BackgroundTransparency", 0, 0.4)
-		tween(stroke, "Transparency", 0.4, 0.4)
-		tween(title, "TextTransparency", 0, 0.4)
-		tween(content, "TextTransparency", 0, 0.4)
-
-		task.delay(opts.Duration or 3, function()
-			tween(card, "BackgroundTransparency", 1, 0.4)
-			tween(stroke, "Transparency", 1, 0.4)
-			tween(title, "TextTransparency", 1, 0.4)
-			tween(content, "TextTransparency", 1, 0.4)
-			task.delay(0.45, function()
-				card:Destroy()
-			end)
-		end)
-	end
-
-	--//============================================================\\--
 	--||              TITLE-BAR OVERLAYS (SEARCH / SETTINGS)      ||--
 	--\\============================================================//--
 
@@ -800,6 +712,176 @@ local function makeUI(titleText: string?): Window
 		group.GroupTransparency = 1
 		tween(group, "Position", UDim2.new(0, 0, 0, 50), 0.3)
 		tween(group, "GroupTransparency", 0, 0.3)
+	end
+
+	local function dismissConfirmClose()
+		if confirmCloseLayer then
+			confirmCloseLayer:Destroy()
+			confirmCloseLayer = nil
+		end
+	end
+
+	local function makeDialogButton(
+		parent: Instance,
+		label: string,
+		order: number,
+		filled: boolean,
+		onClick: () -> ()
+	): TextButton
+		local b = Instance.new("TextButton")
+		b.Name = label
+		b.Size = UDim2.new(0, 96, 1, 0)
+		b.BackgroundTransparency = filled and 0 or 1
+		b.AutoButtonColor = false
+		b.Text = ""
+		b.LayoutOrder = order
+		b.ZIndex = 103
+		b.Parent = parent
+		corner(b, 999)
+		if filled then
+			reg(b, "BackgroundColor3", "pri")
+		else
+			local stroke = Instance.new("UIStroke")
+			stroke.Thickness = 1
+			stroke.Parent = b
+			reg(stroke, "Color", "out")
+		end
+
+		local txl = Instance.new("TextLabel")
+		txl.Size = UDim2.fromScale(1, 1)
+		txl.BackgroundTransparency = 1
+		txl.Text = label
+		txl.FontFace = fontWeight(Enum.FontWeight.Medium)
+		txl.TextSize = 15
+		txl.ZIndex = 104
+		txl.Parent = b
+		if filled then
+			reg(txl, "TextColor3", "onpri")
+		else
+			reg(txl, "TextColor3", "fg")
+		end
+
+		b.MouseEnter:Connect(function()
+			playFeedback("hover")
+			if filled then
+				tween(b, "BackgroundColor3", curTheme.fg, 0.15)
+			else
+				tween(b, "BackgroundTransparency", 0.92, 0.15)
+				b.BackgroundColor3 = curTheme.out
+			end
+		end)
+		b.MouseLeave:Connect(function()
+			if filled then
+				tween(b, "BackgroundColor3", curTheme.pri, 0.15)
+			else
+				tween(b, "BackgroundTransparency", 1, 0.15)
+			end
+		end)
+		b.MouseButton1Click:Connect(function()
+			ripple(b, filled and curTheme.onpri or curTheme.pri)
+			playFeedback(filled and "success" or "selection")
+			onClick()
+		end)
+		return b
+	end
+
+	local function showConfirmClose()
+		if confirmCloseLayer or unloaded then
+			return
+		end
+		if activeOverlay then
+			hideOverlay(activeOverlay)
+		end
+
+		local layer = Instance.new("Frame")
+		layer.Name = "ConfirmClose"
+		layer.Size = UDim2.fromScale(1, 1)
+		layer.BackgroundColor3 = Color3.new(0, 0, 0)
+		layer.BackgroundTransparency = 1
+		layer.BorderSizePixel = 0
+		layer.ZIndex = 100
+		layer.Parent = gui
+		confirmCloseLayer = layer
+		tween(layer, "BackgroundTransparency", 0.45, 0.2)
+
+		local DIALOG_W = 420
+		local DIALOG_H = 196
+		local CONFIRM_TITLE_H = 50
+		local BUTTON_H = 40
+
+		local dialog = Instance.new("Frame")
+		dialog.Name = "Dialog"
+		dialog.Size = UDim2.new(0, DIALOG_W, 0, DIALOG_H)
+		dialog.AnchorPoint = Vector2.new(0.5, 0.5)
+		dialog.Position = UDim2.fromScale(0.5, 0.5)
+		dialog.BorderSizePixel = 0
+		dialog.ClipsDescendants = true
+		dialog.ZIndex = 101
+		dialog.Parent = layer
+		reg(dialog, "BackgroundColor3", "bg")
+		corner(dialog, 16)
+
+		local dialogStroke = Instance.new("UIStroke")
+		dialogStroke.Thickness = 1.5
+		dialogStroke.Transparency = 0.35
+		dialogStroke.Parent = dialog
+		reg(dialogStroke, "Color", "out")
+
+		local confirmTitleBar = Instance.new("Frame")
+		confirmTitleBar.Name = "TitleBar"
+		confirmTitleBar.Size = UDim2.new(1, 0, 0, CONFIRM_TITLE_H)
+		confirmTitleBar.BackgroundTransparency = 1
+		confirmTitleBar.ZIndex = 102
+		confirmTitleBar.Parent = dialog
+
+		local confirmTitle = Instance.new("TextLabel")
+		confirmTitle.Size = UDim2.new(1, -48, 1, 0)
+		confirmTitle.Position = UDim2.new(0, 24, 0, 0)
+		confirmTitle.BackgroundTransparency = 1
+		confirmTitle.Text = "Confirm Close."
+		confirmTitle.FontFace = fontWeight(Enum.FontWeight.Medium)
+		confirmTitle.TextSize = 18
+		confirmTitle.TextXAlignment = Enum.TextXAlignment.Left
+		confirmTitle.TextYAlignment = Enum.TextYAlignment.Center
+		confirmTitle.ZIndex = 103
+		confirmTitle.Parent = confirmTitleBar
+		reg(confirmTitle, "TextColor3", "fg")
+
+		local body = Instance.new("TextLabel")
+		body.Size = UDim2.new(1, -48, 0, DIALOG_H - CONFIRM_TITLE_H - BUTTON_H - 40)
+		body.Position = UDim2.new(0, 24, 0, CONFIRM_TITLE_H + 8)
+		body.BackgroundTransparency = 1
+		body.Text = "Are you sure you want to quit " .. appTitle .. "?"
+		body.TextWrapped = true
+		body.TextYAlignment = Enum.TextYAlignment.Top
+		body.FontFace = m3Font
+		body.TextSize = 15
+		body.TextXAlignment = Enum.TextXAlignment.Left
+		body.ZIndex = 102
+		body.Parent = dialog
+		reg(body, "TextColor3", "fg")
+
+		local btnArea = Instance.new("Frame")
+		btnArea.Size = UDim2.new(1, -48, 0, BUTTON_H)
+		btnArea.AnchorPoint = Vector2.new(1, 1)
+		btnArea.Position = UDim2.new(1, -24, 1, -20)
+		btnArea.BackgroundTransparency = 1
+		btnArea.ZIndex = 102
+		btnArea.Parent = dialog
+
+		local btnLayout = Instance.new("UIListLayout")
+		btnLayout.FillDirection = Enum.FillDirection.Horizontal
+		btnLayout.HorizontalAlignment = Enum.HorizontalAlignment.Right
+		btnLayout.VerticalAlignment = Enum.VerticalAlignment.Center
+		btnLayout.Padding = UDim.new(0, 8)
+		btnLayout.SortOrder = Enum.SortOrder.LayoutOrder
+		btnLayout.Parent = btnArea
+
+		makeDialogButton(btnArea, "Cancel", 1, false, dismissConfirmClose)
+		makeDialogButton(btnArea, "OK", 2, true, function()
+			dismissConfirmClose()
+			lib:Destroy()
+		end)
 	end
 
 	-- Section heading used above each grouped card in the overlays.
@@ -987,7 +1069,7 @@ local function makeUI(titleText: string?): Window
 		end)
 		addSettingsAction("Quit", true, function()
 			hideOverlay(settingsOverlay)
-			lib:Destroy()
+			showConfirmClose()
 		end)
 	end)
 
@@ -1898,6 +1980,7 @@ local function makeUI(titleText: string?): Window
 		if activeOverlay then
 			hideOverlay(activeOverlay)
 		end
+		dismissConfirmClose()
 
 		for _, child in Workspace:GetChildren() do
 			if child.Name == "DexUIIntro" and child:IsA("Folder") then
@@ -1946,9 +2029,9 @@ end)
 		unloadUI(false)
 	end
 
-	-- Title-bar close behaves exactly like the Settings > Quit action.
+	-- Title-bar close opens the quit confirmation dialog.
 	closeBtn.MouseButton1Click:Connect(function()
-		lib:Destroy()
+		showConfirmClose()
 	end)
 
 	-- Fade the UI in without running the 3D intro (used after reload).
