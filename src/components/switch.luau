@@ -41,10 +41,17 @@ return function(ctx)
 		return theme.bg:Lerp(Color3.new(0, 0, 0), 0.38)
 	end
 
+	-- M3 compact switch: 46×28 track, 40px row (48px with card padding).
+	local SWITCH_ROW_H = 40
+	local SWITCH_ROW_SUB_H = 46
+	local TRACK_W, TRACK_H = 46, 28
+	local THUMB_OFF, THUMB_ON = 14, 20
+	local THUMB_X_OFF, THUMB_X_ON = 14, 32
+
 	function lib:AddSwitch(txt: string, def: boolean?, cb: Callback?, sub: string?)
         local st = def or false
 		local hasSub = sub ~= nil and sub ~= ""
-		local content = beginCardRow(hasSub and 54 or 48, false)
+		local content = beginCardRow(hasSub and SWITCH_ROW_SUB_H or SWITCH_ROW_H, false)
 		local r = content
 		indexElement(txt, r)
 
@@ -63,13 +70,13 @@ return function(ctx)
 		reg(l, "TextColor3", "fg")
 
 		if hasSub then
-			l.Size = UDim2.new(1, 0, 0, 20)
-			l.Position = UDim2.new(0, 0, 0, 7)
+			l.Size = UDim2.new(1, 0, 0, 18)
+			l.Position = UDim2.new(0, 0, 0, 5)
 			l.TextYAlignment = Enum.TextYAlignment.Bottom
 
 			local subLbl = Instance.new("TextLabel")
-			subLbl.Size = UDim2.new(1, 0, 0, 16)
-			subLbl.Position = UDim2.new(0, 0, 0, 29)
+			subLbl.Size = UDim2.new(1, 0, 0, 14)
+			subLbl.Position = UDim2.new(0, 0, 0, 24)
 			subLbl.BackgroundTransparency = 1
 			subLbl.Text = sub :: string
 			subLbl.FontFace = m3Font
@@ -88,7 +95,7 @@ return function(ctx)
 		end
 
 		local trk = Instance.new("TextButton")
-        trk.Size = UDim2.new(0, 52, 0, 32)
+        trk.Size = UDim2.fromOffset(TRACK_W, TRACK_H)
         trk.AnchorPoint = Vector2.new(1, 0.5)
         trk.Position = UDim2.new(1, 0, 0.5, 0)
         trk.Text = ""
@@ -99,8 +106,8 @@ return function(ctx)
 
 		local thm = Instance.new("Frame")
         thm.AnchorPoint = Vector2.new(0.5, 0.5)
-        thm.Size = st and UDim2.new(0, 24, 0, 24) or UDim2.new(0, 16, 0, 16)
-        thm.Position = st and UDim2.new(0, 36, 0.5, 0) or UDim2.new(0, 16, 0.5, 0)
+        thm.Size = UDim2.fromOffset(st and THUMB_ON or THUMB_OFF, st and THUMB_ON or THUMB_OFF)
+        thm.Position = UDim2.new(0, st and THUMB_X_ON or THUMB_X_OFF, 0.5, 0)
         thm.BackgroundColor3 = st and curTheme.onpri or curTheme.out
 		thm.Parent = trk
 		corner(thm, 999)
@@ -115,8 +122,8 @@ return function(ctx)
 			playFeedback(st and "toggleOn" or "toggleOff")
 			tween(trk, "BackgroundColor3", switchTrackColor(curTheme, st), 0.3)
 			TweenService:Create(thm, STD_TWEEN, {
-                Size = st and UDim2.new(0, 24, 0, 24) or UDim2.new(0, 16, 0, 16),
-                Position = st and UDim2.new(0, 36, 0.5, 0) or UDim2.new(0, 16, 0.5, 0),
+                Size = UDim2.fromOffset(st and THUMB_ON or THUMB_OFF, st and THUMB_ON or THUMB_OFF),
+                Position = UDim2.new(0, st and THUMB_X_ON or THUMB_X_OFF, 0.5, 0),
 				BackgroundColor3 = st and curTheme.onpri or curTheme.out,
             }):Play()
 			if cb then
