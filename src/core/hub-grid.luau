@@ -19,6 +19,7 @@ export type GridSpec = {
 	badgeIcon: number,
 	thumbScale: Enum.ScaleType?,
 	thumbFillBackground: boolean?,
+	thumbFillToken: string?,
 	thumbSquare: boolean?,
 	thumbPad: number?,
 }
@@ -52,6 +53,8 @@ local SPEC: GridSpec = {
 	thumbCorner = G.ThumbCorner or 8,
 	maxViewport = G.MaxViewport or 320,
 	badgeIcon = G.BadgeIcon or 36,
+	thumbFillBackground = G.ThumbFillBackground ~= false,
+	thumbFillToken = G.ThumbBackground or "bg",
 }
 
 local function thumbHeight(spec: GridSpec): number
@@ -151,7 +154,7 @@ local function createCard(
 
 	if spec.thumbFillBackground then
 		thumb.BackgroundTransparency = 0
-		deps.reg(thumb, "BackgroundColor3", "bg")
+		deps.reg(thumb, "BackgroundColor3", spec.thumbFillToken or "bg")
 	end
 
 	local thumbPad = spec.thumbPad or 0
@@ -265,7 +268,6 @@ end
 local function buildInline(parent: Instance, deps: GridDeps): GridMount
 	local spec = table.clone(SPEC) :: GridSpec
 	spec.thumbScale = Enum.ScaleType.Fit
-	spec.thumbFillBackground = false
 	spec.thumbSquare = true
 	spec.thumbPad = 4
 

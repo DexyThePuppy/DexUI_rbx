@@ -26,6 +26,8 @@ return {
 		ThumbCorner = 8,
 		MaxViewport = 320,
 		BadgeIcon = 36,
+		ThumbFillBackground = true,
+		ThumbBackground = "bg",
 	},
 
 	-- Intro
