@@ -1,0 +1,78 @@
+name: Build & Release
+
+# Builds the modular DexUI source into single-file, minified bundles and publishes
+# them as a GitHub Release. The release is marked "latest", so the download URL
+#   https://github.com/<owner>/<repo>/releases/latest/download/dexui.lua
+# always points at the newest build (see the loadstring snippet in the README).
+on:
+  push:
+    branches: [main]
+    paths:
+      - "src/**"
+      - ".darklua.json"
+      - "rokit.toml"
+      - ".github/workflows/release.yml"
+    tags: ["v*"]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: dexui-release
+  cancel-in-progress: false
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install rokit toolchain (darklua)
+        uses: CompeyDev/setup-rokit@v0.1.2
+        with:
+          cache: true
+
+      - name: Bundle + minify
+        run: |
+          mkdir -p release build
+          # Bundle the require()-based source tree into one file, then minify.
+          darklua process src/init.luau build/dexui.bundle.lua
+          darklua minify build/dexui.bundle.lua release/dexui.lua
+          darklua process src/demo.luau build/demo.bundle.lua
+          darklua minify build/demo.bundle.lua release/demo.lua
+          ls -la release
+
+      - name: Resolve version + tag
+        id: ver
+        run: |
+          VER=$(grep -oP 'Version\s*=\s*"\K[^"]+' src/config.luau || echo "0.0.0")
+          if [[ "${GITHUB_REF}" == refs/tags/* ]]; then
+            TAG="${GITHUB_REF#refs/tags/}"
+          else
+            TAG="v${VER}-build.${GITHUB_RUN_NUMBER}"
+          fi
+          echo "version=${VER}" >> "$GITHUB_OUTPUT"
+          echo "tag=${TAG}" >> "$GITHUB_OUTPUT"
+
+      - name: Publish release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.ver.outputs.tag }}
+          name: DexUI ${{ steps.ver.outputs.tag }}
+          make_latest: true
+          files: |
+            release/dexui.lua
+            release/demo.lua
+          body: |
+            Automated DexUI build (v${{ steps.ver.outputs.version }}).
+
+            **Library (always latest):**
+            ```lua
+            local DexUI = loadstring(game:HttpGet("https://github.com/${{ github.repository }}/releases/latest/download/dexui.lua"))()
+            ```
+
+            **Demo showcase:**
+            ```lua
+            loadstring(game:HttpGet("https://github.com/${{ github.repository }}/releases/latest/download/demo.lua"))()
+            ```

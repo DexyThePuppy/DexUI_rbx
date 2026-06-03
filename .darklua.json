@@ -1,0 +1,8 @@
+{
+	"bundle": {
+		"require_mode": "path"
+	},
+	"rules": [
+		"remove_comments"
+	]
+}

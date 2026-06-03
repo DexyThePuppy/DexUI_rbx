@@ -1,0 +1,6 @@
+# Rokit toolchain manifest (https://github.com/rojo-rbx/rokit)
+# Pins the darklua bundler used to flatten src/*.luau into dist/.
+# Install with: rokit install
+
+[tools]
+darklua = "seaofvoices/darklua@0.18.0"
