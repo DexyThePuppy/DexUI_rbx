@@ -1001,26 +1001,6 @@ return function(ctx)
 		end
 
 		local carouselLayoutQueued = false
-		local function refreshCarouselLayout()
-			if #slideUris == 0 then
-				return
-			end
-			applySlots(slideIndex)
-		end
-
-		local function scheduleCarouselLayout()
-			if carouselLayoutQueued then
-				return
-			end
-			carouselLayoutQueued = true
-			task.defer(function()
-				carouselLayoutQueued = false
-				game:GetService("RunService").RenderStepped:Wait()
-				if carouselTrack.Parent and carouselTrack.AbsoluteSize.X > 1 then
-					refreshCarouselLayout()
-				end
-			end)
-		end
 
 		local function refreshDots(active: number)
 			for i, dot in dotFrames do
@@ -1062,6 +1042,27 @@ return function(ctx)
 			setSlotImage(slotLeft, slideUris[prevIdx], 0.35)
 			setSlotImage(slotRight, slideUris[nextIdx], 0.35)
 			setSlotImage(slotCenter, slideUris[active], 0)
+		end
+
+		local function refreshCarouselLayout()
+			if #slideUris == 0 then
+				return
+			end
+			applySlots(slideIndex)
+		end
+
+		local function scheduleCarouselLayout()
+			if carouselLayoutQueued then
+				return
+			end
+			carouselLayoutQueued = true
+			task.defer(function()
+				carouselLayoutQueued = false
+				game:GetService("RunService").RenderStepped:Wait()
+				if carouselTrack.Parent and carouselTrack.AbsoluteSize.X > 1 then
+					refreshCarouselLayout()
+				end
+			end)
 		end
 
 		local function goToSlide(index: number)
