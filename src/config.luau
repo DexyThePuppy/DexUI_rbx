@@ -68,7 +68,7 @@ return {
 	-- 3D world-pin panel (SurfaceGui). Higher PixelsPerStud = sharper text (more GPU).
 	-- 256 is ~5× the old 50 default; try 320–512 if you still see blur at your view distance.
 	WorldPin = {
-		PixelsPerStud = 256,
+		PixelsPerStud = 512,
 	},
 
 	-- Media browser (Creator Store)

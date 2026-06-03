@@ -111,7 +111,7 @@ return function(deps: any)
 	local pinned = false
 	local worldPanelRotation = CFrame.identity
 	local WP = Config.WorldPin or {}
-	local WORLD_PIXELS_PER_STUD = WP.PixelsPerStud or 256
+	local WORLD_PIXELS_PER_STUD = WP.PixelsPerStud or 512
 	local pinViewDepth = 20
 	local anchorPart: Part
 	local keepUpright: AlignOrientation
