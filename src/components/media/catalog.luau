@@ -15,7 +15,9 @@ export type CatalogDeps = {
 	corner: (Instance, number) -> (),
 	tween: (Instance, string, any, number) -> (),
 	m3Font: Font,
+	fontChrome: Font,
 	fontEmphasis: Font,
+	applyTextLabel: (TextLabel, Font, number, string?) -> (),
 	textSize: (string) -> number,
 	playFeedback: (string) -> (),
 	tooltip: any?,
@@ -35,7 +37,9 @@ local function build(deps: CatalogDeps)
 	local corner = deps.corner
 	local tween = deps.tween
 	local m3Font = deps.m3Font
+	local fontChrome = deps.fontChrome
 	local fontEmphasis = deps.fontEmphasis
+	local applyTextLabel = deps.applyTextLabel
 	local textSize = deps.textSize
 	local playFeedback = deps.playFeedback
 	local tooltip = deps.tooltip
@@ -177,12 +181,8 @@ local function build(deps: CatalogDeps)
 		iconObj.Parent = btn
 
 		local label = Instance.new("TextLabel")
-		label.AutomaticSize = Enum.AutomaticSize.X
-		label.Size = UDim2.new(0, 0, 1, 0)
-		label.BackgroundTransparency = 1
 		label.Text = kind
-		label.FontFace = m3Font
-		label.TextSize = textSize("md")
+		applyTextLabel(label, fontChrome, textSize("md"), "autoX")
 		label.TextColor3 = curTheme.out
 		label.LayoutOrder = 1
 		label.ZIndex = 3

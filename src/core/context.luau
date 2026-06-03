@@ -47,7 +47,9 @@ return function(deps: Deps)
 	local fontTitle = Fonts.fontTitle
 	local fontDisplay = Fonts.fontDisplay
 	local fontLarge = Fonts.fontLarge
+	local fontChrome = Fonts.fontChrome
 	local m3Font = Fonts.m3Font
+	local applyTextLabel = Util.applyTextLabel
 
 	local RunService = Services.RunService
 	local UserInputService = Services.UserInputService
@@ -386,32 +388,31 @@ return function(deps: Deps)
 	-- Shared title + optional subtitle stack used by switch / keybind / colorpicker.
 	local function fillLabelColumn(col: Instance, txt: string, sub: string?): TextLabel
 		local hasSub = sub ~= nil and sub ~= ""
+		local md = textSize("md")
+		local sm = textSize("sm")
 		local l = Instance.new("TextLabel")
-		l.BackgroundTransparency = 1
 		l.Text = txt
-		l.FontFace = m3Font
-		l.TextSize = textSize("md")
 		l.TextXAlignment = Enum.TextXAlignment.Left
 		l.Parent = col
 		reg(l, "TextColor3", "fg")
 		if hasSub then
 			l.Size = UDim2.new(1, 0, 0, 20)
 			l.Position = UDim2.new(0, 0, 0, 7)
+			applyTextLabel(l, m3Font, md, "fill")
 			l.TextYAlignment = Enum.TextYAlignment.Bottom
 
 			local subLbl = Instance.new("TextLabel")
 			subLbl.Size = UDim2.new(1, 0, 0, 16)
 			subLbl.Position = UDim2.new(0, 0, 0, 29)
-			subLbl.BackgroundTransparency = 1
 			subLbl.Text = sub :: string
-			subLbl.FontFace = m3Font
-			subLbl.TextSize = textSize("sm")
+			applyTextLabel(subLbl, m3Font, sm, "fill")
 			subLbl.TextXAlignment = Enum.TextXAlignment.Left
 			subLbl.TextYAlignment = Enum.TextYAlignment.Top
 			subLbl.TextTruncate = Enum.TextTruncate.AtEnd
 			subLbl.Parent = col
 			reg(subLbl, "TextColor3", "out")
 		else
+			applyTextLabel(l, m3Font, md, "fill")
 			l.Size = UDim2.new(1, 0, 1, 0)
 		end
 		return l
@@ -468,6 +469,8 @@ return function(deps: Deps)
 		fontTitle = fontTitle,
 		fontDisplay = fontDisplay,
 		fontLarge = fontLarge,
+		fontChrome = fontChrome,
+		applyTextLabel = applyTextLabel,
 		textSize = textSize,
 		TextSizes = Util.TextSizes,
 		grid = Grid,

@@ -11,6 +11,7 @@ local HttpService = Services.HttpService
 local AssetService = Services.AssetService
 
 local Config = require("../config")
+local TextLabelUtil = require("./text-label")
 local MEDIA_FETCH_LIMIT = Config.MediaFetchLimit
 local CREATOR_STORE_SEARCH = Config.CreatorStoreSearch
 local TextSizes = Typography.TextSizes
@@ -384,4 +385,5 @@ return {
 	loadMaterialIconLibrary = loadMaterialIconLibrary,
 	corner = corner,
 	ripple = ripple,
+	applyTextLabel = TextLabelUtil.applyTextLabel,
 }

@@ -11,8 +11,8 @@ local TYPO = Config.Typography or {}
 local NumericWeight = Typography.NumericWeight
 local numericToFontWeight = Typography.numericToFontWeight
 
--- Poppins cloud family (Thin–Heavy). https://create.roblox.com/docs/reference/engine/datatypes/Font
-local BUILTIN_FAMILY = TYPO.Family or "rbxassetid://11702779409"
+local POPPINS_CLOUD_ID = 11702779409
+local BUILTIN_FAMILY = TYPO.Family or ("rbxassetid://" .. POPPINS_CLOUD_ID)
 
 local GLYPH_BASE = "https://github.com/google/fonts/raw/main/ofl/poppins"
 local GLYPH_FILES = {
@@ -22,6 +22,11 @@ local GLYPH_FILES = {
 	extrabold = { file = "Poppins-ExtraBold.ttf", url = GLYPH_BASE .. "/Poppins-ExtraBold.ttf" },
 	black = { file = "Poppins-Black.ttf", url = GLYPH_BASE .. "/Poppins-Black.ttf" },
 }
+
+local function parseCloudFamilyId(uri: string): number?
+	local id = string.match(uri, "^rbxassetid://(%d+)$")
+	return if id then tonumber(id) else nil
+end
 
 local function glyphSlot(numeric: number): string
 	if numeric >= 900 then
@@ -62,7 +67,6 @@ local function ensureGlyph(folder: string, spec: { file: string, url: string }):
 	return getcustomasset(path)
 end
 
--- Optional: offline executor build from Google Fonts TTFs (defaults to cloud Poppins).
 local function loadCustomFamilyUri(): string?
 	if not canLoadCustomFamily() then
 		return nil
@@ -115,29 +119,41 @@ local function resolveFamilyUri(): string
 end
 
 local familyUri = resolveFamilyUri()
+local cloudFamilyId = parseCloudFamilyId(BUILTIN_FAMILY) or parseCloudFamilyId(familyUri)
+
+local function makeFont(weight: Enum.FontWeight): Font
+	if cloudFamilyId then
+		return Font.fromId(cloudFamilyId, weight, Enum.FontStyle.Normal)
+	end
+	return Font.new(familyUri, weight, Enum.FontStyle.Normal)
+end
 
 local function fontFromNumeric(weight: number): Font
-	return Font.new(familyUri, numericToFontWeight(weight), Enum.FontStyle.Normal)
+	return makeFont(numericToFontWeight(weight))
 end
 
 local function fontWeight(weight: Enum.FontWeight): Font
-	return Font.new(familyUri, weight, Enum.FontStyle.Normal)
+	return makeFont(weight)
 end
 
 local function fontRole(role: "body" | "emphasis" | "title" | "display"): Font
 	return fontFromNumeric(NumericWeight[role])
 end
 
+-- Dense UI (tabs, lists): Medium at native size — not WeightAdjustment-heavy body.
+local fontChrome = makeFont(Enum.FontWeight.Medium)
 local fontBody = fontRole("body")
 local fontEmphasis = fontRole("emphasis")
 local fontTitle = fontRole("title")
 local fontDisplay = fontRole("display")
-local m3Font = fontBody
+local m3Font = fontChrome
 local fontLarge = fontTitle
 
 return {
 	familyUri = familyUri,
+	cloudFamilyId = cloudFamilyId,
 	m3Font = m3Font,
+	fontChrome = fontChrome,
 	fontWeight = fontWeight,
 	fontFromNumeric = fontFromNumeric,
 	fontRole = fontRole,

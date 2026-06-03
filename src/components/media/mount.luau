@@ -13,6 +13,8 @@ local function mount(ctx)
 	local tween = ctx.tween
 	local corner = ctx.corner
 	local m3Font = ctx.m3Font
+	local fontChrome = ctx.fontChrome
+	local applyTextLabel = ctx.applyTextLabel
 	local fontEmphasis = ctx.fontEmphasis
 	local fontTitle = ctx.fontTitle
 	local playFeedback = ctx.playFeedback
@@ -104,7 +106,9 @@ local function mount(ctx)
 		corner = corner,
 		tween = tween,
 		m3Font = m3Font,
+		fontChrome = fontChrome,
 		fontEmphasis = fontEmphasis,
+		applyTextLabel = applyTextLabel,
 		textSize = textSize,
 		playFeedback = playFeedback,
 		tooltip = tooltip,

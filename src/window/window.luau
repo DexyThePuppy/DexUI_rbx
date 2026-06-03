@@ -112,7 +112,8 @@ local function makeUI(titleText: string?, options: MakeUIOptions?): Window
 	local reg, regDynamic = ctx.reg, ctx.regDynamic
 	local tween, corner, ripple = ctx.tween, ctx.corner, ctx.ripple
 	local textSize = ctx.textSize
-	local fontWeight, fontEmphasis, fontTitle, fontDisplay, m3Font = ctx.fontWeight, ctx.fontEmphasis, ctx.fontTitle, ctx.fontDisplay, ctx.m3Font
+	local fontWeight, fontEmphasis, fontTitle, fontDisplay, fontChrome, m3Font, applyTextLabel =
+		ctx.fontWeight, ctx.fontEmphasis, ctx.fontTitle, ctx.fontDisplay, ctx.fontChrome, ctx.m3Font, ctx.applyTextLabel
 	local beginCardRow, closeBuildCard, tintRow = ctx.beginCardRow, ctx.closeBuildCard, ctx.tintRow
 	local playFeedback = ctx.playFeedback
 	local onRender, onInputChanged, onInputEnded = ctx.onRender, ctx.onInputChanged, ctx.onInputEnded
@@ -702,13 +703,10 @@ local function makeUI(titleText: string?, options: MakeUIOptions?): Window
 		end
 
 		local label = Instance.new("TextLabel")
-		label.AutomaticSize = Enum.AutomaticSize.X
-		label.Size = UDim2.new(0, 0, 1, 0)
-		label.BackgroundTransparency = 1
 		label.Text = txt
-		label.FontFace = m3Font
-		label.TextSize = textSize("md")
+		applyTextLabel(label, fontChrome, textSize("md"), "autoX")
 		label.TextColor3 = curTheme.out
+		label.TextXAlignment = Enum.TextXAlignment.Left
 		label.LayoutOrder = 1
 		label.ZIndex = 3
 		label.Parent = btn
