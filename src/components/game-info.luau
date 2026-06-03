@@ -18,7 +18,7 @@ return function(ctx)
 	local trySetClipboard = ctx.trySetClipboard
 	local tooltip = ctx.tooltip
 	local textSize = ctx.textSize
-	local hubGrid = ctx.hubGrid
+	local HubGrid = ctx.hubGrid
 	local MEDIA_PAGE_SIZE, MEDIA_PAGE_COUNT = ctx.MEDIA_PAGE_SIZE, ctx.MEDIA_PAGE_COUNT
 	local ContentProvider = Services.ContentProvider or game:GetService("ContentProvider")
 	local Players = game:GetService("Players")
@@ -460,11 +460,9 @@ return function(ctx)
 			extraBadgeRow.Visible = extraBadgeRow:FindFirstChild("Badge") ~= nil
 		end
 
-		local BADGE_COLS = hubGrid.badgeCols
-		local BADGE_CELL_W = hubGrid.badgeCell[1]
-		local BADGE_CELL_H = hubGrid.badgeCell[2]
-		local BADGE_ICON = hubGrid.badgeIcon
-		local BADGE_GAP = hubGrid.cellGap
+		local badgeSpec = HubGrid.specForCell(HubGrid.badgeCell)
+		local BADGE_COLS = HubGrid.badgeCols
+		local BADGE_ICON = HubGrid.badgeIcon
 		local CLAIMED_GREEN = Color3.fromRGB(56, 170, 92)
 
 		local badgesSection = makeSection(3)
@@ -504,8 +502,8 @@ return function(ctx)
 		badgeGrid.Parent = badgesSection
 
 		local badgeGridLayout = Instance.new("UIGridLayout")
-		badgeGridLayout.CellSize = UDim2.fromOffset(BADGE_CELL_W, BADGE_CELL_H)
-		badgeGridLayout.CellPadding = UDim2.fromOffset(BADGE_GAP, BADGE_GAP)
+		badgeGridLayout.CellSize = UDim2.fromOffset(badgeSpec.cellW, badgeSpec.cellH)
+		badgeGridLayout.CellPadding = UDim2.fromOffset(badgeSpec.cellGap, badgeSpec.cellGap)
 		badgeGridLayout.SortOrder = Enum.SortOrder.LayoutOrder
 		badgeGridLayout.HorizontalAlignment = Enum.HorizontalAlignment.Left
 		badgeGridLayout.Parent = badgeGrid
@@ -553,66 +551,49 @@ return function(ctx)
 			badgesHeading.Text = string.format("Badges · %d / %s claimed", claimed, totalLabel)
 
 			for i, badge in badges do
-				local cell = Instance.new("TextButton")
+				local cell, _thumbWrap, icon, nameLbl = HubGrid.createCard(badgeGrid, badgeSpec, i, corner)
 				cell.Name = "Badge" .. tostring(badge.id)
-				cell.LayoutOrder = i
-				cell.Text = ""
-				cell.AutoButtonColor = false
-				cell.Size = UDim2.fromOffset(BADGE_CELL_W, BADGE_CELL_H)
 				cell.BackgroundTransparency = if badge.claimed then 0.35 else 0.55
-				cell.BorderSizePixel = 0
-				cell.Parent = badgeGrid
-				corner(cell, 10)
 				reg(cell, "BackgroundColor3", "bg")
 
-				local icon = Instance.new("ImageLabel")
-				icon.Name = "Icon"
 				icon.Size = UDim2.fromOffset(BADGE_ICON, BADGE_ICON)
-				icon.Position = UDim2.new(0.5, 0, 0, 4)
-				icon.AnchorPoint = Vector2.new(0.5, 0)
-				icon.BackgroundTransparency = 1
+				icon.AnchorPoint = Vector2.new(0.5, 0.5)
+				icon.Position = UDim2.new(0.5, 0, 0.5, 0)
 				icon.ScaleType = Enum.ScaleType.Fit
 				icon.ImageTransparency = if badge.claimed then 0 else 0.45
 				icon.Active = false
 				icon.Selectable = false
-				icon.Parent = cell
 				local uri = badgeThumbUri(badge)
 				if uri then
 					icon.Image = uri
-					icon.ImageTransparency = if badge.claimed then 0 else 0.45
 				end
 
 				if badge.claimed then
 					local tick = Instance.new("TextLabel")
 					tick.Name = "Claimed"
-					tick.Size = UDim2.fromOffset(18, 18)
-					tick.Position = UDim2.new(1, -4, 0, 4)
+					tick.Size = UDim2.fromOffset(16, 16)
+					tick.Position = UDim2.new(1, -3, 0, 3)
 					tick.AnchorPoint = Vector2.new(1, 0)
 					tick.BackgroundColor3 = CLAIMED_GREEN
 					tick.Text = "✓"
 					tick.FontFace = fontWeight(Enum.FontWeight.Bold)
 					tick.TextSize = textSize("sm")
 					tick.TextColor3 = VIP_BADGE_ON
+					tick.ZIndex = 4
 					tick.Active = false
 					tick.Selectable = false
-					tick.Parent = cell
+					tick.Parent = icon.Parent
 					corner(tick, 999)
 				end
 
-				local nameLbl = Instance.new("TextLabel")
-				nameLbl.Name = "Name"
-				nameLbl.Size = UDim2.new(1, -6, 0, 28)
-				nameLbl.Position = UDim2.new(0, 3, 1, -30)
-				nameLbl.BackgroundTransparency = 1
 				nameLbl.Text = badge.name
 				nameLbl.FontFace = m3Font
 				nameLbl.TextSize = textSize("sm")
 				nameLbl.TextWrapped = true
-				nameLbl.TextYAlignment = Enum.TextYAlignment.Top
+				nameLbl.TextTruncate = Enum.TextTruncate.AtEnd
 				nameLbl.TextColor3 = if badge.claimed then curTheme.fg else curTheme.out
 				nameLbl.Active = false
 				nameLbl.Selectable = false
-				nameLbl.Parent = cell
 
 				if tooltip then
 					tooltip.attach(cell, function()
@@ -622,7 +603,12 @@ return function(ctx)
 			end
 
 			local rows = math.max(1, math.ceil(count / BADGE_COLS))
-			badgeGrid.Size = UDim2.new(1, 0, 0, rows * (BADGE_CELL_H + BADGE_GAP) - BADGE_GAP)
+			badgeGrid.Size = UDim2.new(
+				1,
+				0,
+				0,
+				rows * (badgeSpec.cellH + badgeSpec.cellGap) - badgeSpec.cellGap
+			)
 		end
 
 		-- Public servers (sorted low → high, paged like Media tab)

@@ -17,9 +17,9 @@ return function(ctx)
 	local playFeedback = ctx.playFeedback
 	local fontWeight = ctx.fontWeight
 	local tooltip = ctx.tooltip
-	local textSize = ctx.textSize
-	local hubGrid = ctx.hubGrid
 	local trySetClipboard = ctx.trySetClipboard
+	local textSize = ctx.textSize
+	local HubGrid = ctx.hubGrid
 
 	local launching: { [string]: boolean } = {}
 
@@ -70,6 +70,7 @@ return function(ctx)
 
 	function lib:PopulateToolsHub(entries: { ToolEntry }?)
 		local list = entries or ToolsRegistry.load()
+		local spec = HubGrid.specForCell(HubGrid.toolsCell)
 
 		local holder = Instance.new("Frame")
 		holder.Name = "ToolsHub"
@@ -79,7 +80,8 @@ return function(ctx)
 		holder.Parent = beginCardRow(nil, true)
 
 		local header = Instance.new("TextLabel")
-		header.Size = UDim2.new(1, 0, 0, 22)
+		header.Size = UDim2.new(1, 0, 0, 0)
+		header.AutomaticSize = Enum.AutomaticSize.Y
 		header.BackgroundTransparency = 1
 		header.Text = "Developer tools — click a card to load"
 		header.FontFace = fontWeight(Enum.FontWeight.Medium)
@@ -96,46 +98,14 @@ return function(ctx)
 		gridHost.Parent = holder
 
 		local layout = Instance.new("UIListLayout")
-		layout.Padding = UDim.new(0, 10)
+		layout.Padding = UDim.new(0, 8)
 		layout.SortOrder = Enum.SortOrder.LayoutOrder
 		layout.Parent = holder
 		header.LayoutOrder = 0
 		gridHost.LayoutOrder = 1
 
-		local cellW, cellH = hubGrid.toolsCell[1], hubGrid.toolsCell[2]
-		local pad = hubGrid.scrollPad
-		local gap = hubGrid.cellGap
-		local cols = math.max(2, math.min(4, math.ceil(math.sqrt(#list))))
-		local rows = math.max(1, math.ceil(#list / cols))
-		local gridScroll = Instance.new("ScrollingFrame")
-		gridScroll.Size = UDim2.new(1, 0, 0, math.min(420, 56 + rows * (cellH + gap)))
-		gridScroll.BackgroundTransparency = 1
-		gridScroll.BorderSizePixel = 0
-		gridScroll.ScrollBarThickness = 4
-		gridScroll.CanvasSize = UDim2.new(0, 0, 0, 0)
-		gridScroll.AutomaticCanvasSize = Enum.AutomaticSize.Y
-		gridScroll.Parent = gridHost
-		corner(gridScroll, 12)
-		reg(gridScroll, "BackgroundColor3", "bg")
-
-		local gridPad = Instance.new("UIPadding")
-		gridPad.PaddingTop = UDim.new(0, pad)
-		gridPad.PaddingBottom = UDim.new(0, pad)
-		gridPad.PaddingLeft = UDim.new(0, pad)
-		gridPad.PaddingRight = UDim.new(0, pad)
-		gridPad.Parent = gridScroll
-
-		local gridInner = Instance.new("Frame")
-		gridInner.Size = UDim2.new(1, -(pad * 2), 0, 0)
-		gridInner.AutomaticSize = Enum.AutomaticSize.Y
-		gridInner.BackgroundTransparency = 1
-		gridInner.Parent = gridScroll
-
-		local gridLayout = Instance.new("UIGridLayout")
-		gridLayout.CellSize = UDim2.fromOffset(cellW, cellH)
-		gridLayout.CellPadding = UDim2.fromOffset(gap, gap)
-		gridLayout.SortOrder = Enum.SortOrder.LayoutOrder
-		gridLayout.Parent = gridInner
+		local grid = HubGrid.createGridHost(gridHost, spec, 400, corner, reg)
+		gridHost.Size = UDim2.new(1, 0, 0, 0)
 
 		local sorted = table.clone(list)
 		table.sort(sorted, function(a, b)
@@ -143,15 +113,8 @@ return function(ctx)
 		end)
 
 		for order, entry in sorted do
-			local btn = Instance.new("TextButton")
+			local btn, _thumbWrap, thumb, nameLbl = HubGrid.createCard(grid.inner, spec, order, corner)
 			btn.Name = entry.id
-			btn.LayoutOrder = order
-			btn.BackgroundTransparency = 0
-			btn.Text = ""
-			btn.AutoButtonColor = false
-			btn.ClipsDescendants = true
-			btn.Parent = gridInner
-			corner(btn, 14)
 			reg(btn, "BackgroundColor3", "inact")
 
 			local stroke = Instance.new("UIStroke")
@@ -160,62 +123,30 @@ return function(ctx)
 			stroke.Parent = btn
 			reg(stroke, "Color", "out")
 
-			local state = Instance.new("Frame")
-			state.Size = UDim2.fromScale(1, 1)
-			state.BackgroundTransparency = 1
-			state.BorderSizePixel = 0
-			state.ZIndex = 2
-			state.Parent = btn
-			corner(state, 14)
-			reg(state, "BackgroundColor3", "fg")
+			local state = HubGrid.addStateLayer(btn, spec, corner, reg)
 
-			local thumb = Instance.new("ImageLabel")
-			thumb.Name = "Thumbnail"
-			thumb.Size = UDim2.new(1, -12, 0, cellH - 50)
-			thumb.Position = UDim2.new(0, 6, 0, 6)
-			thumb.BackgroundTransparency = 1
 			thumb.Image = formatThumb(entry.thumbnail)
-			thumb.ScaleType = Enum.ScaleType.Crop
 			ToolAssets.resolveToolThumbnailAsync(entry.thumbnail, function(uri)
 				if thumb.Parent and uri and uri ~= ToolAssets.PLACEHOLDER then
 					thumb.Image = uri
 				end
 			end)
-			thumb.ZIndex = 3
-			thumb.Active = false
-			thumb.Selectable = false
-			thumb.Parent = btn
-			corner(thumb, 10)
 
-			local nameLbl = Instance.new("TextLabel")
-			nameLbl.Size = UDim2.new(1, -10, 0, 40)
-			nameLbl.AnchorPoint = Vector2.new(0.5, 1)
-			nameLbl.Position = UDim2.new(0.5, 0, 1, -6)
-			nameLbl.BackgroundTransparency = 1
 			nameLbl.Text = entry.name
 			nameLbl.FontFace = fontWeight(Enum.FontWeight.Medium)
 			nameLbl.TextSize = textSize("sm")
-			nameLbl.TextWrapped = true
-			nameLbl.TextTruncate = Enum.TextTruncate.AtEnd
-			nameLbl.TextYAlignment = Enum.TextYAlignment.Top
-			nameLbl.ZIndex = 3
-			nameLbl.Active = false
-			nameLbl.Selectable = false
-			nameLbl.Parent = btn
 			reg(nameLbl, "TextColor3", "fg")
 
 			local extBadge = Instance.new("TextLabel")
-			extBadge.Size = UDim2.new(0, 54, 0, 16)
-			extBadge.Position = UDim2.new(1, -6, 0, 6)
+			extBadge.Size = UDim2.new(0, 52, 0, 16)
+			extBadge.Position = UDim2.new(1, -4, 0, 4)
 			extBadge.AnchorPoint = Vector2.new(1, 0)
 			extBadge.BackgroundTransparency = 0
 			extBadge.Text = "External"
 			extBadge.FontFace = fontWeight(Enum.FontWeight.Bold)
 			extBadge.TextSize = textSize("sm")
 			extBadge.ZIndex = 4
-			extBadge.Active = false
-			extBadge.Selectable = false
-			extBadge.Parent = btn
+			extBadge.Parent = thumb.Parent
 			corner(extBadge, 6)
 			reg(extBadge, "BackgroundColor3", "pri")
 			reg(extBadge, "TextColor3", "onpri")
@@ -247,5 +178,7 @@ return function(ctx)
 				end)
 			end
 		end
+
+		grid.setCount(#sorted)
 	end
 end

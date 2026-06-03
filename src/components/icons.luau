@@ -29,7 +29,7 @@ return function(ctx)
 	local win, gui = ctx.win, ctx.gui
 	local tooltip = ctx.tooltip
 	local textSize = ctx.textSize
-	local hubGrid = ctx.hubGrid
+	local HubGrid = ctx.hubGrid
 	type Palette = { bg: Color3, fg: Color3, pri: Color3, onpri: Color3, inact: Color3, out: Color3 }
 	type Callback = (...any) -> ()
 	type MediaHit = { id: number, title: string, subtitle: string? }
@@ -91,46 +91,16 @@ return function(ctx)
 		statusLbl.Parent = holder
 		reg(statusLbl, "TextColor3", "out")
 
+		local spec = HubGrid.specForCell(HubGrid.iconsCell)
+
 		local gridHost = Instance.new("Frame")
 		gridHost.LayoutOrder = 3
-		gridHost.Size = UDim2.new(1, 0, 0, 430)
+		gridHost.Size = UDim2.new(1, 0, 0, 0)
+		gridHost.AutomaticSize = Enum.AutomaticSize.Y
 		gridHost.BackgroundTransparency = 1
-		gridHost.ClipsDescendants = true
 		gridHost.Parent = holder
-		corner(gridHost, 16)
-		reg(gridHost, "BackgroundColor3", "bg")
 
-		local gridScroll = Instance.new("ScrollingFrame")
-		gridScroll.Size = UDim2.fromScale(1, 1)
-		gridScroll.BackgroundTransparency = 1
-		gridScroll.BorderSizePixel = 0
-		gridScroll.ScrollBarThickness = 4
-		gridScroll.CanvasSize = UDim2.new(0, 0, 0, 0)
-		gridScroll.AutomaticCanvasSize = Enum.AutomaticSize.Y
-		gridScroll.Parent = gridHost
-
-		local pad = hubGrid.scrollPad
-		local gap = hubGrid.cellGap
-		local cellW, cellH = hubGrid.iconsCell[1], hubGrid.iconsCell[2]
-
-		local gridPad = Instance.new("UIPadding")
-		gridPad.PaddingTop = UDim.new(0, pad)
-		gridPad.PaddingBottom = UDim.new(0, pad)
-		gridPad.PaddingLeft = UDim.new(0, pad)
-		gridPad.PaddingRight = UDim.new(0, pad)
-		gridPad.Parent = gridScroll
-
-		local gridInner = Instance.new("Frame")
-		gridInner.Size = UDim2.new(1, -(pad * 2), 0, 0)
-		gridInner.AutomaticSize = Enum.AutomaticSize.Y
-		gridInner.BackgroundTransparency = 1
-		gridInner.Parent = gridScroll
-
-		local gridLayout = Instance.new("UIGridLayout")
-		gridLayout.CellSize = UDim2.fromOffset(cellW, cellH)
-		gridLayout.CellPadding = UDim2.fromOffset(gap, gap)
-		gridLayout.SortOrder = Enum.SortOrder.LayoutOrder
-		gridLayout.Parent = gridInner
+		local grid = HubGrid.createGridHost(gridHost, spec, 380, corner, reg)
 
 		type IconCell = { root: TextButton, name: string, nameLower: string, id: number }
 		local cells: { IconCell } = {}
@@ -176,51 +146,22 @@ return function(ctx)
 		end
 
 		local function makeIconCell(icon: { name: string, id: number }, order: number)
-			local btn = Instance.new("TextButton")
+			local btn, _thumbWrap, iconImg, nameLbl = HubGrid.createCard(grid.inner, spec, order, corner)
 			btn.Name = icon.name
-			btn.LayoutOrder = order
-			btn.BackgroundTransparency = 0
-			btn.Text = ""
-			btn.AutoButtonColor = false
-			btn.ClipsDescendants = true
-			btn.Parent = gridInner
-			corner(btn, 14)
 			reg(btn, "BackgroundColor3", "inact")
 
-			-- M3 state layer for hover/press feedback.
-			local state = Instance.new("Frame")
-			state.Size = UDim2.fromScale(1, 1)
-			state.BackgroundTransparency = 1
-			state.BorderSizePixel = 0
-			state.ZIndex = 2
-			state.Parent = btn
-			corner(state, 14)
-			reg(state, "BackgroundColor3", "fg")
+			local state = HubGrid.addStateLayer(btn, spec, corner, reg)
 
-			local iconImg = Instance.new("ImageLabel")
-			iconImg.Size = UDim2.fromOffset(36, 36)
-			iconImg.AnchorPoint = Vector2.new(0.5, 0)
-			iconImg.Position = UDim2.new(0.5, 0, 0, 8)
-			iconImg.BackgroundTransparency = 1
+			iconImg.Size = UDim2.fromOffset(32, 32)
+			iconImg.AnchorPoint = Vector2.new(0.5, 0.5)
+			iconImg.Position = UDim2.new(0.5, 0, 0.5, 0)
 			iconImg.Image = "rbxassetid://" .. tostring(icon.id)
 			iconImg.ScaleType = Enum.ScaleType.Fit
-			iconImg.ZIndex = 3
-			iconImg.Parent = btn
 			reg(iconImg, "ImageColor3", "fg")
 
-			local nameLbl = Instance.new("TextLabel")
-			nameLbl.Size = UDim2.new(1, -8, 0, 22)
-			nameLbl.AnchorPoint = Vector2.new(0.5, 1)
-			nameLbl.Position = UDim2.new(0.5, 0, 1, -4)
-			nameLbl.BackgroundTransparency = 1
 			nameLbl.Text = icon.name:gsub("_", " ")
 			nameLbl.FontFace = m3Font
 			nameLbl.TextSize = textSize("sm")
-			nameLbl.TextWrapped = true
-			nameLbl.TextTruncate = Enum.TextTruncate.AtEnd
-			nameLbl.TextYAlignment = Enum.TextYAlignment.Top
-			nameLbl.ZIndex = 3
-			nameLbl.Parent = btn
 			reg(nameLbl, "TextColor3", "out")
 
 			btn.MouseEnter:Connect(function()
@@ -273,6 +214,7 @@ return function(ctx)
 			end
 
 			applyFilter()
+			grid.setCount(#cells)
 		end)
 	end
 
