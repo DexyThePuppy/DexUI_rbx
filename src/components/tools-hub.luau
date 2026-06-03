@@ -2,6 +2,7 @@
 -- Tools hub grid: external utilities loaded from release URLs.
 
 local ToolsRegistry = require("../hub/tools-registry")
+local ToolAssets = require("../hub/tool-assets")
 local runTool = require("../hub/run-tool")
 
 export type ToolEntry = ToolsRegistry.ToolEntry
@@ -21,14 +22,7 @@ return function(ctx)
 	local launching: { [string]: boolean } = {}
 
 	local function formatThumb(url: string): string
-		if string.find(url, "rbxassetid://", 1, true) or string.find(url, "rbxthumb://", 1, true) or string.find(url, "http", 1, true) then
-			return url
-		end
-		local digits = string.match(url, "(%d+)")
-		if digits then
-			return "rbxassetid://" .. digits
-		end
-		return url
+		return ToolAssets.resolveToolThumbnail(url)
 	end
 
 	local function buildToolTooltip(entry: ToolEntry): any

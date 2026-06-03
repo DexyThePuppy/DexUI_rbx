@@ -6,7 +6,7 @@ return {
 		id = "dexplusplus",
 		name = "Dex++",
 		description = "Extended Moon Dex explorer — decompiler, save instance, model viewer, console, and mobile input.",
-		thumbnail = "rbxassetid://6034509993",
+		thumbnail = "asset:dexplusplus",
 		url = "https://github.com/AZYsGithub/DexPlusPlus/releases/latest/download/out.lua",
 		repo = "https://github.com/AZYsGithub/DexPlusPlus",
 	},
