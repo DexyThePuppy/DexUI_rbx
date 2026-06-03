@@ -123,8 +123,12 @@ local function loadFromSource(source: string): { GameEntry }
 	if not ok or type(data) ~= "table" then
 		return {}
 	end
+	local list = data.scripts
+	if type(list) ~= "table" then
+		list = data
+	end
 	local entries: { GameEntry } = {}
-	for _, raw in data do
+	for _, raw in list do
 		local entry = normalizeEntry(raw)
 		if entry then
 			table.insert(entries, entry)

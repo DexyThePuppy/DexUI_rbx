@@ -2,8 +2,8 @@
 -- Built-in and workspace-defined external tools (Dex++, Cobalt, etc.).
 
 local INDEX_PATHS = {
-	"scripts/tools/index.lua",
-	"DexUI/scripts/tools/index.lua",
+	"scripts/index.lua",
+	"DexUI/scripts/index.lua",
 }
 
 local FALLBACK_TOOLS = {
@@ -74,7 +74,7 @@ local function normalizeEntry(raw: any): ToolEntry?
 end
 
 local function loadFromSource(source: string): { ToolEntry }
-	local chunk = loadstring(source, "scripts/tools/index.lua")
+	local chunk = loadstring(source, "scripts/index.lua")
 	if not chunk then
 		return {}
 	end
@@ -82,8 +82,12 @@ local function loadFromSource(source: string): { ToolEntry }
 	if not ok or type(data) ~= "table" then
 		return {}
 	end
+	local list = data.tools
+	if type(list) ~= "table" then
+		return {}
+	end
 	local entries: { ToolEntry } = {}
-	for _, raw in data do
+	for _, raw in list do
 		local entry = normalizeEntry(raw)
 		if entry then
 			table.insert(entries, entry)
