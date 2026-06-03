@@ -16,8 +16,28 @@ export type GameMetadata = {
 	name: string,
 	description: string?,
 	creatorName: string?,
+	creatorId: number?,
+	creatorType: string?,
+	creatorVerified: boolean?,
 	playing: number?,
 	visits: number?,
+	maxPlayers: number?,
+	favoritedCount: number?,
+	upVotes: number?,
+	downVotes: number?,
+	genre: string?,
+	created: string?,
+	updated: string?,
+	badgeCount: number?,
+	badgeCountAtLeast: boolean?,
+	groupMemberCount: number?,
+	copyingAllowed: boolean?,
+	createVipServersAllowed: boolean?,
+	universeAvatarType: string?,
+	canonicalPath: string?,
+	placeVersion: number?,
+	jobId: string?,
+	serverLabel: string?,
 	images: { string },
 	privateServersEnabled: boolean?,
 }
@@ -192,19 +212,89 @@ local function fetchFromMarketplace(universeId: number, placeId: number): (strin
 	return name, description, creatorName, iconAssetId
 end
 
-local function fetchFromGamesApi(universeId: number): (string?, string?, string?, number?, number?, number?)
+local function fetchGamesApiRow(universeId: number): any?
 	local data = httpGetJson("https://games.roblox.com/v1/games?universeIds=" .. tostring(universeId))
 	if type(data) ~= "table" or type(data.data) ~= "table" or #data.data == 0 then
-		return nil, nil, nil, nil, nil, nil
+		return nil
+	end
+	return data.data[1]
+end
+
+local function formatGenre(row: any): string?
+	if type(row) ~= "table" then
+		return nil
+	end
+	local parts: { string } = {}
+	if type(row.genre_l1) == "string" and row.genre_l1 ~= "" then
+		local g1 = row.genre_l1
+		table.insert(parts, string.upper(g1:sub(1, 1)) .. g1:sub(2))
+	end
+	if type(row.genre_l2) == "string" and row.genre_l2 ~= "" then
+		table.insert(parts, row.genre_l2)
+	elseif type(row.genre) == "string" and row.genre ~= "" and row.genre ~= "All" then
+		table.insert(parts, row.genre)
+	end
+	if #parts == 0 then
+		return nil
+	end
+	return table.concat(parts, " · ")
+end
+
+local function fetchVotes(universeId: number): (number?, number?)
+	local data = httpGetJson("https://games.roblox.com/v1/games/votes?universeIds=" .. tostring(universeId))
+	if type(data) ~= "table" or type(data.data) ~= "table" or #data.data == 0 then
+		return nil, nil
 	end
 	local row = data.data[1]
-	local name = if type(row.name) == "string" then row.name else nil
-	local description = if type(row.description) == "string" and row.description ~= "" then row.description else nil
-	local creatorName = if type(row.creator) == "table" and type(row.creator.name) == "string" then row.creator.name else nil
-	local playing = if type(row.playing) == "number" then row.playing else nil
-	local visits = if type(row.visits) == "number" then row.visits else nil
-	local rootPlaceId = if type(row.rootPlaceId) == "number" then row.rootPlaceId else nil
-	return name, description, creatorName, playing, visits, rootPlaceId
+	return if type(row.upVotes) == "number" then row.upVotes else nil,
+		if type(row.downVotes) == "number" then row.downVotes else nil
+end
+
+local function fetchGroupMemberCount(groupId: number): number?
+	local data = httpGetJson("https://groups.roblox.com/v1/groups/" .. tostring(groupId))
+	if type(data) == "table" and type(data.memberCount) == "number" then
+		return data.memberCount
+	end
+	return nil
+end
+
+local function fetchBadgeCount(universeId: number): (number?, boolean)
+	local data = httpGetJson(
+		"https://badges.roblox.com/v1/universes/" .. tostring(universeId) .. "/badges?limit=100&sortOrder=Asc"
+	)
+	if type(data) ~= "table" or type(data.data) ~= "table" then
+		return nil, false
+	end
+	local atLeast = type(data.nextPageCursor) == "string" and data.nextPageCursor ~= ""
+	return #data.data, atLeast
+end
+
+local function fetchMediaAssetIds(universeId: number): { number }
+	local data = httpGetJson("https://games.roblox.com/v2/games/" .. tostring(universeId) .. "/media?limit=10")
+	local ids: { number } = {}
+	if type(data) ~= "table" or type(data.data) ~= "table" then
+		return ids
+	end
+	for _, row in data.data do
+		if type(row) == "table" and type(row.imageId) == "number" and row.imageId > 0 then
+			table.insert(ids, row.imageId)
+		end
+	end
+	return ids
+end
+
+local function readSessionInfo(): (number?, string?, string?)
+	local placeVersion: number? = nil
+	pcall(function()
+		placeVersion = game.PlaceVersion
+	end)
+	local jobId = if type(game.JobId) == "string" then game.JobId else nil
+	local vipId = ""
+	pcall(function()
+		vipId = game.PrivateServerId
+	end)
+	local serverLabel = if type(vipId) == "string" and vipId ~= "" then "VIP session" else "Public session"
+	return placeVersion, jobId, serverLabel
 end
 
 local function fetchLoadableThumbnailUris(universeId: number, iconAssetId: number?): { string }
@@ -322,29 +412,77 @@ local function fetchCurrentGameMetadata(): GameMetadata
 	local universeId = game.GameId
 
 	local name, description, creator, iconAssetId = fetchFromMarketplace(universeId, placeId)
-	local playing, visits, rootPlaceId
-	local apiName, apiDesc, apiCreator, apiPlaying, apiVisits, apiRoot = fetchFromGamesApi(universeId)
-	if apiName then
-		name = apiName
+	local row = fetchGamesApiRow(universeId)
+
+	local playing: number? = nil
+	local visits: number? = nil
+	local rootPlaceId: number? = nil
+	local maxPlayers: number? = nil
+	local favoritedCount: number? = nil
+	local copyingAllowed: boolean? = nil
+	local createVipServersAllowed: boolean? = nil
+	local universeAvatarType: string? = nil
+	local canonicalPath: string? = nil
+	local created: string? = nil
+	local updated: string? = nil
+	local genre: string? = nil
+	local creatorId: number? = nil
+	local creatorType: string? = nil
+	local creatorVerified: boolean? = nil
+
+	if type(row) == "table" then
+		if type(row.name) == "string" then
+			name = row.name
+		end
+		if type(row.description) == "string" and row.description ~= "" then
+			description = row.description
+		end
+		if type(row.creator) == "table" then
+			if type(row.creator.name) == "string" then
+				creator = row.creator.name
+			end
+			if type(row.creator.id) == "number" then
+				creatorId = row.creator.id
+			end
+			if type(row.creator.type) == "string" then
+				creatorType = row.creator.type
+			end
+			if type(row.creator.hasVerifiedBadge) == "boolean" then
+				creatorVerified = row.creator.hasVerifiedBadge
+			end
+		end
+		playing = if type(row.playing) == "number" then row.playing else nil
+		visits = if type(row.visits) == "number" then row.visits else nil
+		rootPlaceId = if type(row.rootPlaceId) == "number" then row.rootPlaceId else nil
+		maxPlayers = if type(row.maxPlayers) == "number" then row.maxPlayers else nil
+		favoritedCount = if type(row.favoritedCount) == "number" then row.favoritedCount else nil
+		copyingAllowed = if type(row.copyingAllowed) == "boolean" then row.copyingAllowed else nil
+		createVipServersAllowed = if type(row.createVipServersAllowed) == "boolean" then row.createVipServersAllowed else nil
+		universeAvatarType = if type(row.universeAvatarType) == "string" then row.universeAvatarType else nil
+		canonicalPath = if type(row.canonicalUrlPath) == "string" then row.canonicalUrlPath else nil
+		created = if type(row.created) == "string" then row.created else nil
+		updated = if type(row.updated) == "string" then row.updated else nil
+		genre = formatGenre(row)
 	end
-	if apiDesc then
-		description = apiDesc
-	end
-	if apiCreator then
-		creator = apiCreator
-	end
-	playing = apiPlaying
-	visits = apiVisits
-	rootPlaceId = apiRoot
 
 	if not name or name == "" then
 		name = "Current experience"
+	end
+
+	local upVotes, downVotes = fetchVotes(universeId)
+	local badgeCount, badgeAtLeast = fetchBadgeCount(universeId)
+	local groupMemberCount: number? = nil
+	if creatorType == "Group" and creatorId then
+		groupMemberCount = fetchGroupMemberCount(creatorId)
 	end
 
 	local images: { string } = {}
 	local seen: { [string]: boolean } = {}
 	for _, uri in fetchLoadableThumbnailUris(universeId, iconAssetId) do
 		addImage(images, seen, uri)
+	end
+	for _, assetId in fetchMediaAssetIds(universeId) do
+		addImage(images, seen, "rbxassetid://" .. string.format("%.0f", assetId))
 	end
 	if rootPlaceId then
 		addImage(images, seen, placeThumb(rootPlaceId, 768, 432))
@@ -354,6 +492,9 @@ local function fetchCurrentGameMetadata(): GameMetadata
 		addImage(images, seen, placeThumb(placeId, 768, 432))
 	end
 
+	local placeVersion, jobId, serverLabel = readSessionInfo()
+	local vipEnabled = fetchPrivateServersEnabled(universeId)
+
 	return {
 		placeId = placeId,
 		universeId = universeId,
@@ -361,10 +502,30 @@ local function fetchCurrentGameMetadata(): GameMetadata
 		name = name,
 		description = description,
 		creatorName = creator,
+		creatorId = creatorId,
+		creatorType = creatorType,
+		creatorVerified = creatorVerified,
 		playing = playing,
 		visits = visits,
+		maxPlayers = maxPlayers,
+		favoritedCount = favoritedCount,
+		upVotes = upVotes,
+		downVotes = downVotes,
+		genre = genre,
+		created = created,
+		updated = updated,
+		badgeCount = badgeCount,
+		badgeCountAtLeast = badgeAtLeast,
+		groupMemberCount = groupMemberCount,
+		copyingAllowed = copyingAllowed,
+		createVipServersAllowed = createVipServersAllowed,
+		universeAvatarType = universeAvatarType,
+		canonicalPath = canonicalPath,
+		placeVersion = placeVersion,
+		jobId = jobId,
+		serverLabel = serverLabel,
 		images = images,
-		privateServersEnabled = fetchPrivateServersEnabled(universeId),
+		privateServersEnabled = if vipEnabled ~= nil then vipEnabled else createVipServersAllowed,
 	}
 end
 

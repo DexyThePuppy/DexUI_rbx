@@ -48,6 +48,23 @@ return function(ctx)
 		return tostring(n)
 	end
 
+	local MONTHS = { "Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec" }
+
+	local function formatShortDate(iso: string?): string?
+		if not iso then
+			return nil
+		end
+		local y, m, d = string.match(iso, "(%d%d%d%d)%-(%d%d)%-(%d%d)")
+		if not y or not m or not d then
+			return nil
+		end
+		local mi = tonumber(m)
+		if not mi or mi < 1 or mi > 12 then
+			return nil
+		end
+		return MONTHS[mi] .. " " .. tonumber(d) .. ", " .. y
+	end
+
 	function lib:AddGameInfo()
 		local entry = Registry.findForCurrentGame()
 
@@ -208,6 +225,7 @@ return function(ctx)
 
 		local VIP_BADGE_RED = Color3.fromRGB(210, 48, 48)
 		local VIP_BADGE_ON = Color3.fromRGB(255, 255, 255)
+		local BADGE_VERIFIED = Color3.fromRGB(0, 162, 255)
 
 		local settingsRow = Instance.new("Frame")
 		settingsRow.Name = "Settings"
@@ -259,14 +277,77 @@ return function(ctx)
 
 		local function renderGameSettings(meta: any)
 			clearSettingBadges()
-			if meta.privateServersEnabled == true then
+			if meta.createVipServersAllowed == true or meta.privateServersEnabled == true then
 				addSettingBadge("VIP server", VIP_BADGE_RED, VIP_BADGE_ON)
+			end
+			if meta.copyingAllowed == true then
+				addSettingBadge("Copying on", curTheme.inact, curTheme.fg)
+			end
+			if meta.creatorVerified == true then
+				addSettingBadge("Verified", BADGE_VERIFIED, VIP_BADGE_ON)
+			end
+			if meta.universeAvatarType == "MorphToR15" then
+				addSettingBadge("R15", curTheme.bg, curTheme.out)
+			elseif meta.universeAvatarType == "MorphToR6" then
+				addSettingBadge("R6", curTheme.bg, curTheme.out)
 			end
 			settingsRow.Visible = settingsRow:FindFirstChild("Badge") ~= nil
 		end
 
+		local statsLbl = Instance.new("TextLabel")
+		statsLbl.Name = "Stats"
+		statsLbl.LayoutOrder = 1
+		statsLbl.Size = UDim2.new(1, 0, 0, 0)
+		statsLbl.AutomaticSize = Enum.AutomaticSize.Y
+		statsLbl.BackgroundTransparency = 1
+		statsLbl.Text = ""
+		statsLbl.FontFace = m3Font
+		statsLbl.TextSize = 12
+		statsLbl.TextXAlignment = Enum.TextXAlignment.Left
+		statsLbl.TextWrapped = true
+		statsLbl.Parent = descSection
+		reg(statsLbl, "TextColor3", "out")
+
+		local function renderGameStats(meta: any)
+			local parts: { string } = {}
+			if meta.genre then
+				table.insert(parts, meta.genre)
+			end
+			if meta.maxPlayers then
+				table.insert(parts, meta.maxPlayers .. " players / server")
+			end
+			if meta.upVotes then
+				local down = meta.downVotes or 0
+				local total = meta.upVotes + down
+				local pct = if total > 0 then math.floor(meta.upVotes / total * 100 + 0.5) else 0
+				table.insert(parts, string.format("%s likes (%d%%)", formatNumber(meta.upVotes), pct))
+			end
+			if meta.favoritedCount then
+				table.insert(parts, formatNumber(meta.favoritedCount) .. " favorites")
+			end
+			if meta.badgeCount and meta.badgeCount > 0 then
+				local label = if meta.badgeCountAtLeast
+					then tostring(meta.badgeCount) .. "+ badges"
+					else tostring(meta.badgeCount) .. " badges"
+				table.insert(parts, label)
+			end
+			if meta.groupMemberCount then
+				table.insert(parts, formatNumber(meta.groupMemberCount) .. " group members")
+			end
+			local created = formatShortDate(meta.created)
+			if created then
+				table.insert(parts, "Created " .. created)
+			end
+			local updated = formatShortDate(meta.updated)
+			if updated and updated ~= created then
+				table.insert(parts, "Updated " .. updated)
+			end
+			statsLbl.Text = if #parts > 0 then table.concat(parts, " · ") else ""
+			statsLbl.Visible = statsLbl.Text ~= ""
+		end
+
 		local bodyLbl = Instance.new("TextLabel")
-		bodyLbl.LayoutOrder = 1
+		bodyLbl.LayoutOrder = 2
 		bodyLbl.Size = UDim2.new(1, 0, 0, 0)
 		bodyLbl.AutomaticSize = Enum.AutomaticSize.Y
 		bodyLbl.BackgroundTransparency = 1
@@ -280,7 +361,7 @@ return function(ctx)
 		reg(bodyLbl, "TextColor3", "fg")
 
 		local extraLbl = Instance.new("TextLabel")
-		extraLbl.LayoutOrder = 2
+		extraLbl.LayoutOrder = 3
 		extraLbl.Size = UDim2.new(1, 0, 0, 0)
 		extraLbl.AutomaticSize = Enum.AutomaticSize.Y
 		extraLbl.BackgroundTransparency = 1
@@ -808,10 +889,15 @@ return function(ctx)
 			if meta.visits then
 				table.insert(metaParts, formatNumber(meta.visits) .. " visits")
 			end
+			if meta.creatorType then
+				table.insert(metaParts, meta.creatorType)
+			end
 			if entry and Registry.entryMatchesCurrent(entry) then
 				table.insert(metaParts, "Recognised in hub")
 			end
 			metaLbl.Text = table.concat(metaParts, " · ")
+
+			renderGameStats(meta)
 
 			local description = if entry and entry.description and entry.description ~= ""
 				then entry.description
@@ -839,14 +925,24 @@ return function(ctx)
 				extraLbl.Text = "Thumbnails could not load. Executor needs request + getcustomasset, or rbxthumb support."
 			end
 
-			if entry then
-				extraLbl.Text = "Hub script: " .. entry.script
-			elseif meta.rootPlaceId then
-				extraLbl.Text = string.format(
-					"Website link uses root place id (e.g. roblox.com/games/%d/…)",
-					meta.rootPlaceId
-				)
+			local extraParts: { string } = {}
+			if meta.serverLabel then
+				table.insert(extraParts, meta.serverLabel)
 			end
+			if meta.placeVersion then
+				table.insert(extraParts, "Place v" .. tostring(meta.placeVersion))
+			end
+			if meta.jobId then
+				table.insert(extraParts, "Job " .. string.sub(meta.jobId, 1, 8) .. "…")
+			end
+			if meta.canonicalPath then
+				table.insert(extraParts, "roblox.com" .. meta.canonicalPath)
+			end
+			if entry then
+				table.insert(extraParts, "Hub script: " .. entry.script)
+			end
+			extraLbl.Text = table.concat(extraParts, " · ")
+			extraLbl.Visible = extraLbl.Text ~= ""
 
 			joinPlaceId = meta.rootPlaceId or meta.placeId
 			local servers, serversErr = GameMetadata.fetchPublicServers(joinPlaceId)
