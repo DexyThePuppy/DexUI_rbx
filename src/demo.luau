@@ -56,7 +56,7 @@ local function buildDemo(withIntro: boolean?)
 	ui:AddMediaBrowser()
 
 	--// Tab 4: Scripts hub -----------------------------------------------------
-	ui:AddTab("Scripts", 6031284944)
+	ui:AddTab("Scripts", 6023426986) -- find_in_page
 	ui:AddParagraph(
 		"Scripts hub",
 		"Grid of games from scripts/index.lua. Click a card to run that game's standalone script in a new DexUI window."
@@ -64,7 +64,7 @@ local function buildDemo(withIntro: boolean?)
 	ui:PopulateScriptsHub()
 
 	--// Tab 5: Tools ---------------------------------------------------------
-	ui:AddTab("Tools", 6034767804)
+	ui:AddTab("Tools", 6031289442) -- settings_remote
 	ui:AddParagraph(
 		"Tools",
 		"External developer utilities. Click a card to download and run the latest release. Right-click a card to copy its GitHub link."
@@ -72,7 +72,7 @@ local function buildDemo(withIntro: boolean?)
 	ui:PopulateToolsHub()
 
 	--// Tab 6: Game info -----------------------------------------------------
-	ui:AddTab("Game Info", 6034509993)
+	ui:AddTab("Game Info", 6026568227) -- info
 	ui:AddGameInfo()
 
 	--// Tab 7: Icons (Material Icons library) --------------------------------
